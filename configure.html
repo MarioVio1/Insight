@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="it" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InsightBoard – Configurazione</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+<style>
+:root,[data-theme="dark"]{--bg:#171614;--surface:#1c1b19;--surface2:#201f1d;--border:#393836;--text:#cdccca;--muted:#797876;--faint:#5a5957;--primary:#4f98a3;--primary-h:#227f8b;--success:#6daa45;--error:#dd6974;--radius:.75rem;--radius-sm:.375rem;--space-2:.5rem;--space-3:.75rem;--space-4:1rem;--space-6:1.5rem;--space-8:2rem;--font:'Satoshi',system-ui,sans-serif}
+[data-theme="light"]{--bg:#f7f6f2;--surface:#f9f8f5;--surface2:#fbfbf9;--border:#d4d1ca;--text:#28251d;--muted:#7a7974;--faint:#bab9b4;--primary:#01696f;--primary-h:#0c4e54}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0} body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100dvh;font-size:1rem;line-height:1.6}
+.container{max-width:760px;margin:0 auto;padding:var(--space-8) var(--space-4)} header{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-8)}
+.logo{display:flex;align-items:center;gap:var(--space-3);font-weight:700;font-size:1.25rem} .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:var(--space-6);margin-bottom:var(--space-4)}
+.card h2{font-size:1rem;font-weight:700;margin-bottom:var(--space-4)} .card p{font-size:.92rem;color:var(--muted);margin-bottom:var(--space-4)}
+.field{margin-bottom:var(--space-4)} .field label{display:block;font-size:.875rem;font-weight:500;margin-bottom:var(--space-2);color:var(--muted)}
+.field input{width:100%;padding:.75rem .9rem;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font)}
+.field input:focus{outline:none;border-color:var(--primary)} .btn{display:inline-flex;align-items:center;gap:.4rem;padding:.7rem 1.1rem;border-radius:var(--radius-sm);font-size:.9rem;font-weight:600;cursor:pointer;border:none;transition:background 180ms,opacity 180ms}
+.btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-h)} .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+.badge{display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .6rem;border-radius:999px;font-size:.75rem;font-weight:600}.badge-ok{background:color-mix(in oklch,var(--success) 15%,transparent);color:var(--success)}
+.row{display:flex;gap:var(--space-3);flex-wrap:wrap;align-items:center}.profiles-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:var(--space-3);margin-top:var(--space-4)}
+.profile-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:var(--space-4);display:flex;flex-direction:column;gap:var(--space-2)}
+.profile-emoji{font-size:2rem;text-align:center}.profile-name{font-weight:700;text-align:center}.profile-slug{font-size:.75rem;color:var(--muted);text-align:center;font-family:monospace}
+.manifest-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:var(--space-3);font-family:monospace;font-size:.78rem;color:var(--primary);word-break:break-all;margin-top:var(--space-3)}
+.section-title{font-size:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-bottom:var(--space-3)} .divider{border:none;border-top:1px solid var(--border);margin:var(--space-6) 0}
+.toast{position:fixed;bottom:var(--space-6);right:var(--space-4);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.6rem 1rem;font-size:.875rem;box-shadow:0 8px 24px rgba(0,0,0,.3);z-index:99;opacity:0;transform:translateY(8px);transition:all 300ms;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)} .hidden{display:none!important}
+@media(max-width:480px){.row{flex-direction:column;align-items:flex-start}.btn{width:100%;justify-content:center}}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo">📊 InsightBoard</div>
+    <button id="themeBtn" class="btn btn-ghost" type="button">Tema</button>
+  </header>
+
+  <div class="card" id="step-user">
+    <div class="section-title">Step 1 – Account</div>
+    <h2>Crea o accedi al tuo account</h2>
+    <p>Scegli uno username univoco. Verrà usato nell'URL del manifest Stremio.</p>
+    <div class="field">
+      <label for="i-slug">Username (solo lettere, numeri, _ -)</label>
+      <input id="i-slug" type="text" placeholder="es. mario" maxlength="32" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="i-tmdb">TMDB API Key <span style="color:var(--faint)">(opzionale)</span></label>
+      <input id="i-tmdb" type="text" placeholder="La tua TMDB API Key">
+    </div>
+    <div class="row">
+      <button class="btn btn-primary" type="button" onclick="saveUser()">Continua →</button>
+      <span id="user-badge"></span>
+    </div>
+  </div>
+
+  <div class="card hidden" id="step-connect">
+    <div class="section-title">Step 2 – Trakt</div>
+    <h2>Collega Trakt</h2>
+    <p>Trakt importa automaticamente la tua cronologia. Dopo il collegamento esegui una sync.</p>
+    <div class="row" style="margin-bottom:var(--space-4)">
+      <button class="btn btn-ghost" type="button" onclick="connectTrakt()">🔗 Collega Trakt</button>
+      <span id="trakt-badge"></span>
+    </div>
+    <div class="row">
+      <button class="btn btn-primary" type="button" onclick="runSync()">🔄 Sincronizza ora</button>
+      <span id="sync-status"></span>
+    </div>
+  </div>
+
+  <div class="card hidden" id="step-profiles">
+    <div class="section-title">Step 3 – Profili</div>
+    <h2>Profili</h2>
+    <p>Crea almeno un profilo. Ogni profilo avrà un manifest URL separato.</p>
+    <div class="row">
+      <button class="btn btn-ghost" type="button" onclick="addDefaultProfile()">+ Crea profilo default</button>
+    </div>
+    <div class="profiles-grid" id="profiles-grid"></div>
+  </div>
+
+  <div class="card hidden" id="step-manifest">
+    <div class="section-title">Step 4 – Installa su Stremio</div>
+    <h2>Manifest URL</h2>
+    <p>Copia l'URL e incollalo in Stremio → Addons → +.</p>
+    <div id="manifest-list"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+let user = null;
+let profiles = [];
+
+function $(id){ return document.getElementById(id); }
+function show(id){ $(id).classList.remove('hidden'); }
+function hide(id){ $(id).classList.add('hidden'); }
+function showToast(msg, err=false){ const t=$('toast'); t.textContent=msg; t.style.borderColor=err?'var(--error)':'var(--success)'; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 3500); }
+
+(function(){
+  const params = new URLSearchParams(location.search);
+  const themeBtn = $('themeBtn');
+  let dark = true;
+  themeBtn.addEventListener('click', ()=>{ dark=!dark; document.documentElement.setAttribute('data-theme', dark?'dark':'light'); });
+  if (params.get('user')) { $('i-slug').value = params.get('user'); loadUser(params.get('user')); }
+  if (params.get('trakt') === 'ok') showToast('✅ Trakt collegato');
+  if (params.get('error')) showToast('❌ ' + params.get('error'), true);
+})();
+
+async function saveUser(){
+  const slug = $('i-slug').value.trim().toLowerCase();
+  const tmdb = $('i-tmdb').value.trim();
+  if (!slug) return showToast('⚠️ Inserisci uno username', true);
+  let r, d;
+  try {
+    r = await fetch('/api/user', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ slug, tmdb_key: tmdb || undefined })
+    });
+    d = await r.json();
+  } catch(e) {
+    console.error(e);
+    return showToast('❌ Errore rete/server: ' + e.message, true);
+  }
+  if (!r.ok || d.error) return showToast('❌ ' + (d?.error || ('Errore server ' + r.status)), true);
+  user = d.user;
+  profiles = d.profiles || [];
+  $('user-badge').innerHTML = `<span class="badge badge-ok">✓ ${user.slug}</span>`;
+  show('step-connect');
+  show('step-profiles');
+  show('step-manifest');
+  if (user.trakt_username) $('trakt-badge').innerHTML = `<span class="badge badge-ok">✓ ${user.trakt_username}</span>`;
+  if (!profiles.length) {
+    try {
+      const r2 = await fetch(`/api/user/${encodeURIComponent(user.slug)}/profiles`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ slug:'default', name:'Default', emoji:'🎬', color:'#01696f' })
+      });
+      const p = await r2.json();
+      if (r2.ok && !p.error) profiles = [p];
+    } catch(e) { console.error('auto profile', e); }
+  }
+  renderProfiles();
+  updateManifestList();
+}
+
+async function loadUser(slug){
+  try {
+    const r = await fetch(`/api/user/${encodeURIComponent(slug)}`);
+    const d = await r.json();
+    if (!d.user) return;
+    user = d.user;
+    profiles = d.profiles || [];
+    $('user-badge').innerHTML = `<span class="badge badge-ok">✓ ${user.slug}</span>`;
+    show('step-connect'); show('step-manual-trakt'); show('step-profiles'); show('step-manifest');
+    if (user.trakt_username) $('trakt-badge').innerHTML = `<span class="badge badge-ok">✓ ${user.trakt_username}</span>`;
+    renderProfiles(); updateManifestList();
+  } catch(e) { console.error(e); }
+}
+
+function connectTrakt(){
+  const slug = $('i-slug').value.trim().toLowerCase();
+  if (!slug) return showToast('Prima crea l\'utente', true);
+  location.href = `/auth/trakt/start?userSlug=${encodeURIComponent(slug)}`;
+}
+
+async function runSync(){
+  if (!user?.slug) return showToast('Prima crea l\'utente', true);
+  $('sync-status').textContent = '⏳ Syncing...';
+  try {
+    const r = await fetch(`/api/user/${encodeURIComponent(user.slug)}/sync`, { method:'POST' });
+    const d = await r.json();
+    if (!r.ok || d.error) return showToast('❌ ' + (d.error || 'errore sync'), true);
+    $('sync-status').innerHTML = `<span class="badge badge-ok">✓ Trakt: ${d.trakt || 0}</span>`;
+    showToast('✅ Sync completata');
+  } catch(e) {
+    $('sync-status').textContent = '';
+    showToast('❌ ' + e.message, true);
+  }
+}
+
+async function addDefaultProfile(){
+  if (!user?.slug) return showToast('Prima crea l\'utente', true);
+  try {
+    const payload = { slug: 'default', name: 'Default', emoji: '🎬', color: '#01696f' };
+    const r = await fetch(`/api/user/${encodeURIComponent(user.slug)}/profiles`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const d = await r.json();
+    if (!r.ok || d.error) return showToast('❌ ' + (d.error || 'errore profilo'), true);
+    const exists = profiles.find(p => p.slug === d.slug);
+    if (!exists) profiles.push(d);
+    renderProfiles();
+    updateManifestList();
+    showToast('✅ Profilo creato');
+  } catch(e) {
+    console.error(e);
+    showToast('❌ ' + e.message, true);
+  }
+}
+
+function renderProfiles(){
+  const g = $('profiles-grid');
+  if (!profiles.length) { g.innerHTML = '<div style="color:var(--muted);font-size:.875rem">Nessun profilo ancora.</div>'; return; }
+  g.innerHTML = profiles.map(p => `
+    <div class="profile-card">
+      <div class="profile-emoji">${p.emoji || '🎬'}</div>
+      <div class="profile-name">${p.name || p.slug}</div>
+      <div class="profile-slug">${p.slug}</div>
+    </div>`).join('');
+}
+
+function updateManifestList(){
+  const ml = $('manifest-list');
+  if (!user || !profiles.length) { ml.innerHTML = '<div style="color:var(--muted);font-size:.875rem">Crea prima un profilo.</div>'; return; }
+  ml.innerHTML = profiles.map(p => {
+    const url = `${location.origin}/${encodeURIComponent(user.slug)}/${encodeURIComponent(p.slug)}/manifest.json`;
+    return `<div style="margin-bottom:var(--space-4)">
+      <div style="font-size:.875rem;font-weight:600;margin-bottom:var(--space-2)">${p.emoji || '🎬'} ${p.name || p.slug}</div>
+      <div class="manifest-box">${url}</div>
+      <div class="row" style="margin-top:var(--space-2)">
+        <button class="btn btn-ghost" type="button" onclick="navigator.clipboard.writeText('${url.replace(/'/g, "\\'")}').then(()=>showToast('✅ URL copiato'))">📋 Copia URL</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+</script>
+</body>
+</html>
