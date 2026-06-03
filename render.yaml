@@ -1,0 +1,30 @@
+
+services:
+  - type: web
+    name: insightboard
+    env: node
+    build:
+      command: npm install
+    start: node src/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 7000
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: TRAKT_CLIENT_ID
+        sync: false
+      - key: TRAKT_CLIENT_SECRET
+        sync: false
+      - key: TRAKT_REDIRECT_URI
+        sync: false
+      - key: TRAKT_USER_AGENT
+        sync: false
+        value: InsightBoard/1.1.0 (Render)
+      - key: BASE_URL
+        sync: false
+      - key: TMDB_API_KEY
+        sync: false
