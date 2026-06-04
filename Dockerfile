@@ -1,8 +1,8 @@
-FROM node:20-slim
+FROM node:20-alpine
 WORKDIR /app
-COPY package.json ./
-RUN npm install --omit=dev
-RUN npm install ws
+COPY package*.json ./
+RUN npm install
 COPY . .
-EXPOSE 7860
-CMD ["node", "src/server.js"]
+RUN npm run build
+EXPOSE 3000
+CMD ["npm", "start"]
