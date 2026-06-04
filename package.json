@@ -9,14 +9,16 @@
     "dev": "tsx watch src/server.ts"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.50.0",
-    "axios": "^1.9.0",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.21.2",
-    "node-cron": "^3.0.3",
-    "pino": "^9.3.2"
-  },
+  "@supabase/supabase-js": "^2.50.0",
+  "axios": "^1.9.0",
+  "cors": "^2.8.5",
+  "dotenv": "^16.4.5",
+  "express": "^4.21.2",
+  "node-cron": "^3.0.3",
+  "pino": "^9.3.2",
+  "ws": "^8.18.0"
+}
+,
   "devDependencies": {
   "@types/cors": "^2.8.17",
   "@types/express": "^5.0.1",
