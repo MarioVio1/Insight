@@ -90,6 +90,92 @@ app.get('/api/debug/trakt-url/:slug', (req, res) => {
 });
 
 app.get('/health', (req, res) => res.json({ ok:true }));
+
+// ─────────────────────────────────────────────
+// ─ TRAKT PIN FLOW (urn:ietf:wg:oauth:2.0:oob)
+// ─────────────────────────────────────────────
+
+app.get('/api/trakt/pin/start', async (req, res) => {
+  try {
+    const slug = (req.query.userSlug || '').trim().toLowerCase();
+    if (!slug) return res.status(400).json({ error: 'userSlug required' });
+    const state = Buffer.from(JSON.stringify({ userSlug: slug })).toString('base64url');
+    // Nessun redirect_uri nel flow PIN
+    const url = `https://trakt.tv/oauth/authorize?response_type=code&client_id=${encodeURIComponent(process.env.TRAKT_CLIENT_ID)}&redirect_uri=urn:ietf:wg:oauth:2.0:oob&state=${state}`;
+    return res.json({ ok: true, authorize_url: url });
+  } catch (e) {
+    console.error('[TRAKT PIN START]', e);
+    return res.status(500).json({ error: e?.message || 'pin start failed' });
+  }
+});
+
+app.post('/api/trakt/pin/exchange', async (req, res) => {
+  try {
+    const code = (req.body?.code || '').trim();
+    const slug = (req.body?.userSlug || '').trim().toLowerCase();
+    if (!code || !slug) {
+      return res.status(400).json({ error: 'code e userSlug obbligatori' });
+    }
+    const user = await getUserBySlug(slug);
+    if (!user) return res.status(404).json({ error: 'user not found' });
+
+    // Scambio codice con token
+    const r = await fetch('https://api.trakt.tv/oauth/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        code,
+        client_id: process.env.TRAKT_CLIENT_ID,
+        client_secret: process.env.TRAKT_CLIENT_SECRET,
+        redirect_uri: 'urn:ietf:wg:oauth:2.0:oob',
+        grant_type: 'authorization_code'
+      })
+    });
+
+    if (!r.ok) {
+      const text = await r.text().catch(() => '');
+      return res.status(r.status).json({ error: 'trakt_token_exchange_failed', details: text.slice(0,200) });
+    }
+
+    const data = await r.json();
+    const access_token = data.access_token;
+    const refresh_token = data.refresh_token;
+    const expires_in = data.expires_in || 7776000;
+
+    if (!access_token || !refresh_token) {
+      return res.status(500).json({ error: 'trakt_response_missing_tokens' });
+    }
+
+    const updated = await upsertUser(user.slug, {
+      trakt_token: access_token,
+      trakt_refresh: refresh_token,
+      trakt_username: data.trakt_username || null,
+      trakt_expires: Date.now() + (expires_in * 1000)
+    });
+
+    await saveUserProfilesData(slug, user.id, data); // (opzionale)
+
+    return res.json({
+      ok: true,
+      user: {
+        slug: updated.slug,
+        trakt_username: updated.trakt_username,
+        has_trakt_token: !!updated.trakt_token
+      },
+      trakt_token: access_token
+    });
+  } catch (e) {
+    console.error('[TRAKT PIN EXCHANGE]', e);
+    return res.status(500).json({ error: e?.message || 'pin exchange failed' });
+  }
+});
+
+// Salvataggio profili (opzionale – placeholder)
+async function saveUserProfilesData(slug, userId, traktData) {
+  // Se vuoi, qui puoi salvare info extra, generare profili, ecc.
+  // Per ora lascia vuoto.
+}
+
 app.get('/api/debug/env', (req, res) => {
   res.json({
     base_url: BASE_URL,
