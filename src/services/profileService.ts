@@ -14,13 +14,3 @@ export async function ensureDefaultProfile(configId: string) {
     accent_color: '#0ea5e9'
   });
 }
-
-export async function listProfiles(configId: string) {
-  const { data, error } = await supabase
-    .from('user_profiles')
-    .select('id,name,slug,is_default,avatar_url,accent_color')
-    .eq('config_id', configId)
-    .order('created_at', { ascending: true });
-  if (error) throw error;
-  return data ?? [];
-}

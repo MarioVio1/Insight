@@ -31,11 +31,6 @@ export async function getUserSettings(accessToken: string) {
   const { data } = await api.get('/users/settings', { headers: { Authorization: `Bearer ${accessToken}` } });
   return data;
 }
-export async function getWatchlist(accessToken: string, type: 'movies'|'shows') {
-  const path = type === 'movies' ? '/sync/watchlist/movies' : '/sync/watchlist/shows';
-  const { data } = await api.get(path, { headers: { Authorization: `Bearer ${accessToken}` } });
-  return data;
-}
 export async function getHistory(accessToken: string, type: 'movies'|'shows') {
   const path = type === 'movies' ? '/sync/history/movies' : '/sync/history/shows';
   const { data } = await api.get(path, { headers: { Authorization: `Bearer ${accessToken}` } });
