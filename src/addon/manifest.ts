@@ -3,9 +3,9 @@ export function getManifest(configId?: string) {
 
   return {
     id: configId ? `community.stremio.adaptive.insights.${configId}` : 'community.stremio.adaptive.insights',
-    version: '3.1.0',
+    version: '3.2.0',
     name: 'Adaptive Insights',
-    description: 'Una riga dinamica di card personalizzate, stagionali e apribili come episodi.',
+    description: 'Statistiche personali vive, stagionali e apribili come episodi.',
     logo: `${baseUrl}/logo.png`,
     resources: ['catalog', 'meta'],
     types: ['movie', 'series'],
@@ -16,8 +16,19 @@ export function getManifest(configId?: string) {
     idPrefixes: ['adaptive_'],
     catalogs: configId
       ? [
-          { type: 'movie', id: 'adaptive-insights', name: 'Your Adaptive Insights' },
-          { type: 'series', id: 'adaptive-insights-series', name: 'Your Adaptive Insights (Series)' }
+          {
+            type: 'movie',
+            id: 'adaptive-insights',
+            name: '✨ Your Adaptive Insights',
+            behaviorHints: {
+              defaultVideoId: null
+            }
+          },
+          {
+            type: 'series',
+            id: 'adaptive-insights-series',
+            name: 'Your Adaptive Insights (Series)'
+          }
         ]
       : []
   };
