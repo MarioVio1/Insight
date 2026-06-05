@@ -1,20 +1,18 @@
-# Trakt Insights Cloud for Stremio
+# Stremio Adaptive Insights
 
-Railway-ready Stremio addon with:
-- Trakt OAuth
-- Supabase storage
-- Profiles
-- Stats overview cards
-- Recurring habits cards
-- Top genres / people
-- Rewatch insights
+A Railway-ready Stremio addon that builds one adaptive row of personalized insight cards from Trakt, with configurable card types, seasonal logic, profiles, and series-style detail views.
 
-## Required steps
-1. Set Railway variables from `.env.example`
-2. Run `supabase/migrations.sql` in Supabase SQL Editor
-3. Set Trakt redirect URI to `https://YOUR-DOMAIN/auth/callback`
-4. Optionally add TMDb API key for richer artwork
+## Core idea
+- One single row in Stremio
+- Adaptive cards based on user taste
+- Configure before generating installable manifest
+- Cards open as series-style detail pages with videos that behave like episodes
+- TMDb artwork enrichment with SVG generated fallback posters
+
+## Setup
+1. Fill Railway variables from `.env.example`
+2. Run `supabase/migrations.sql` in Supabase SQL editor
+3. Set Trakt callback to `https://YOUR-DOMAIN/auth/callback`
+4. Optionally set TMDb credentials for artwork enrichment
 5. Deploy and open `/configure`
-
-## Important
-The addon serves custom Stremio cards via catalog + meta resources. Install the manifest URL shown in the config page.
+6. Create config, connect Trakt, choose card preferences, install manifest URL
