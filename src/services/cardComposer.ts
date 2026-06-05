@@ -7,7 +7,7 @@ async function cardMeta(id: string, name: string, description: string, poster: s
   const finalBackground = background || art.background || finalPoster;
   return {
     id,
-    type: 'series',
+    type: 'movie',
     name,
     poster: finalPoster || undefined,
     background: finalBackground || undefined,
