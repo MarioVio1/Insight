@@ -5,7 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import routes from './api/routes.js';
 import { getManifest } from './addon/manifest.js';
-import { catalogHandler } from './addon/handlers.js';
+import { catalogHandler, metaHandler } from './addon/handlers.js';
 import { startCron } from './jobs/cron.js';
 import { logger } from './utils/logger.js';
 
@@ -33,6 +33,18 @@ app.get('/catalog/:type/:id/:extra?.json', async (req, res) => {
   } catch (error) {
     logger.error({ error }, 'Catalog error');
     res.status(500).json({ metas: [] });
+  }
+});
+
+app.get('/meta/:type/:id.json', async (req, res) => {
+  try {
+    const configId = String(req.query.configId || '');
+    if (!configId) return res.status(400).json({ error: 'Missing configId' });
+    const result = await metaHandler(configId, req.params.id);
+    res.json(result);
+  } catch (error) {
+    logger.error({ error }, 'Meta error');
+    res.status(500).json({ meta: null });
   }
 });
 
