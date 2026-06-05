@@ -3,20 +3,31 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Trakt Insights Cloud</title>
+  <title>Adaptive Insights Configurator</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
   <main class="wrap">
-    <h1>Trakt Insights Cloud</h1>
-    <p>Collega Trakt, crea profili e installa il manifest personalizzato per vedere card statistiche e insight in Stremio.</p>
+    <h1>Adaptive Insights</h1>
+    <p>Crea una sola riga di card intelligenti che si adattano al profilo, alla stagione e alle ricorrenze.</p>
     <section class="card">
       <div id="status">Caricamento...</div>
       <button id="createBtn">Crea configurazione</button>
       <a id="loginBtn" class="button secondary" href="#" style="display:none">Collega Trakt</a>
+      <form id="prefsForm" style="display:none">
+        <h3>Configuratore</h3>
+        <label><input type="checkbox" name="cardType" value="totals" checked> Totali</label>
+        <label><input type="checkbox" name="cardType" value="weekly" checked> Settimanali</label>
+        <label><input type="checkbox" name="cardType" value="genre" checked> Generi</label>
+        <label><input type="checkbox" name="cardType" value="recurring" checked> Ricorrenze</label>
+        <label><input type="checkbox" name="cardType" value="rewatch" checked> Rewatch</label>
+        <label><input type="checkbox" name="cardType" value="seasonal" checked> Stagionali/Feste</label>
+        <div class="field"><label>Numero max di card <input type="number" id="maxCards" value="10" min="4" max="16"></label></div>
+        <div class="field"><label>Focus <select id="focusMode"><option value="adaptive">Adaptive</option><option value="anime">Anime</option><option value="movies">Movies</option><option value="series">Series</option><option value="rewatch">Rewatch</option></select></label></div>
+        <button type="submit">Salva preferenze</button>
+      </form>
       <button id="installBtn" style="display:none">Copia manifest URL</button>
       <pre id="manifestBox"></pre>
-      <div id="profilesBox"></div>
     </section>
   </main>
   <script src="/config.js"></script>
