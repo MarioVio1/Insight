@@ -3,19 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Stremio Trakt Addon</title>
+  <title>Trakt Insights Cloud</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
   <main class="wrap">
-    <h1>Stremio Trakt Addon</h1>
-    <p>Configura il tuo addon cloud e collega Trakt.</p>
+    <h1>Trakt Insights Cloud</h1>
+    <p>Collega Trakt, crea profili e installa il manifest personalizzato per vedere card statistiche e insight in Stremio.</p>
     <section class="card">
       <div id="status">Caricamento...</div>
       <button id="createBtn">Crea configurazione</button>
       <a id="loginBtn" class="button secondary" href="#" style="display:none">Collega Trakt</a>
       <button id="installBtn" style="display:none">Copia manifest URL</button>
       <pre id="manifestBox"></pre>
+      <div id="profilesBox"></div>
     </section>
   </main>
   <script src="/config.js"></script>
