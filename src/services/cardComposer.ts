@@ -41,6 +41,14 @@ function video(id: string, title: string, released: string, overview: string) {
   return { id, title, released, overview };
 }
 
+/**
+ * Rebuild the adaptive insights row for a config.
+ * This version:
+ *  - uses real stats from Trakt events
+ *  - finds recurring & rewatch titles
+ *  - builds card previews with poster/background from artwork or SVG
+ *  - builds meta details with full metadata and videos
+ */
 export async function rebuildAdaptiveRow(configId: string) {
   const cfgRes = await supabase
     .from('addon_configs')
@@ -66,20 +74,25 @@ export async function rebuildAdaptiveRow(configId: string) {
 
   if (!cfg || !insight) return;
 
+  const summary = insight.summary || {};
   const enabled = prefs?.enabled_card_types || ['totals', 'weekly', 'genre', 'recurring', 'rewatch', 'seasonal'];
   const cards: any[] = [];
   const details: { meta_id: string; meta: any }[] = [];
 
   if (enabled.includes('totals')) {
     const id = `adaptive_${configId}_totals`;
+    const movieCount = summary.movieCount || 0;
+    const episodeCount = summary.episodeCount || 0;
+    const totalHours = summary.totalHours || 0;
+
     cards.push(
       await cardMeta(
         id,
-        `${insight.summary.movieCount} film nel tuo viaggio`,
-        `Finora hai accumulato ${insight.summary.movieCount} film, ${insight.summary.episodeCount} episodi e ${insight.summary.totalHours} ore di visione.`,
+        `${movieCount} film nel tuo viaggio`,
+        `Finora hai accumulato ${movieCount} film, ${episodeCount} episodi e ${totalHours} ore di visione.`,
         null,
         null,
-        insight.rewatch_titles?.[0]?.title || insight.recurring_titles?.[0]?.title,
+        null,
         '#22c55e'
       )
     );
@@ -92,9 +105,9 @@ export async function rebuildAdaptiveRow(configId: string) {
         name: 'Il tuo viaggio finora',
         description: 'Una panoramica completa del tuo profilo di visione.',
         videos: [
-          video(`${id}_1`, `${insight.summary.movieCount} film visti`, new Date().toISOString(), 'Totale film presenti nella tua cronologia.'),
-          video(`${id}_2`, `${insight.summary.episodeCount} episodi visti`, new Date().toISOString(), 'Totale episodi registrati nel tuo profilo.'),
-          video(`${id}_3`, `${insight.summary.totalHours} ore guardate`, new Date().toISOString(), 'Tempo totale stimato dai runtime disponibili.')
+          video(`${id}_1`, `${movieCount} film visti`, new Date().toISOString(), 'Totale film presenti nella tua cronologia.'),
+          video(`${id}_2`, `${episodeCount} episodi visti`, new Date().toISOString(), 'Totale episodi registrati nel tuo profilo.'),
+          video(`${id}_3`, `${totalHours} ore guardate`, new Date().toISOString(), 'Tempo totale stimato dai runtime disponibili.')
         ]
       }
     });
@@ -102,17 +115,19 @@ export async function rebuildAdaptiveRow(configId: string) {
 
   if (enabled.includes('weekly')) {
     const id = `adaptive_${configId}_weekly`;
-    const weeklyTitle = insight.summary.topWeeklyTitle
-      ? `Settimana scorsa eri dentro ${insight.summary.topWeeklyTitle}`
-      : `${insight.summary.lastWeekCount} visioni negli ultimi 7 giorni`;
+    const topWeeklyTitle = summary.topWeeklyTitle || null;
+    const topWeeklyCount = summary.topWeeklyCount || 0;
+    const lastWeekCount = summary.lastWeekCount || 0;
 
-    const weeklyDesc = insight.summary.topWeeklyTitle
-      ? `Negli ultimi 7 giorni questo è stato il tuo titolo dominante, con ${insight.summary.topWeeklyCount} passaggi registrati.`
+    const weeklyTitle = topWeeklyTitle
+      ? `Settimana scorsa eri dentro ${topWeeklyTitle}`
+      : `${lastWeekCount} visioni negli ultimi 7 giorni`;
+
+    const weeklyDesc = topWeeklyTitle
+      ? `Negli ultimi 7 giorni questo è stato il tuo titolo dominante, con ${topWeeklyCount} passaggi registrati.`
       : 'Una card che segue il tuo ritmo più recente.';
 
-    cards.push(
-      await cardMeta(id, weeklyTitle, weeklyDesc, null, null, insight.summary.topWeeklyTitle, '#38bdf8')
-    );
+    cards.push(await cardMeta(id, weeklyTitle, weeklyDesc, null, null, topWeeklyTitle, '#38bdf8'));
 
     details.push({
       meta_id: id,
@@ -120,32 +135,35 @@ export async function rebuildAdaptiveRow(configId: string) {
         id,
         type: 'series',
         name: 'Il tuo ritmo settimanale',
-        description: 'Cosa ti ha preso davvero nell’ultima settimana.',
+        description: 'Cosa ti ha preso davvero nell'ultima settimana.',
         videos: [
-          video(`${id}_1`, `${insight.summary.lastWeekCount} attività recenti`, new Date().toISOString(), 'Conteggio totale degli ultimi 7 giorni.'),
+          video(`${id}_1`, `${lastWeekCount} attività recenti`, new Date().toISOString(), 'Conteggio totale degli ultimi 7 giorni.'),
           video(
             `${id}_2`,
-            insight.summary.topWeeklyTitle || 'Nessun titolo dominante',
+            topWeeklyTitle || 'Nessun titolo dominante',
             new Date().toISOString(),
-            insight.summary.topWeeklyTitle
-              ? `Hai guardato questo contenuto ${insight.summary.topWeeklyCount} volte nella settimana.`
-              : 'Questa settimana non c’è ancora un titolo dominante.'
+            topWeeklyTitle
+              ? `Hai guardato questo contenuto ${topWeeklyCount} volte nella settimana.`
+              : 'Questa settimana non c'è®© ancora un titolo dominante.'
           )
         ]
       }
     });
   }
 
-  if (enabled.includes('genre') && insight.summary.topGenre) {
+  if (enabled.includes('genre') && summary.topGenre) {
     const id = `adaptive_${configId}_genre`;
+    const topGenre = summary.topGenre || '';
+    const genreCounts = summary.genre_counts || [];
+
     cards.push(
       await cardMeta(
         id,
-        `Il tuo mood ora è ${insight.summary.topGenre}`,
+        `Il tuo mood ora è ${topGenre}`,
         'Questo è il genere che racconta meglio il tuo profilo in questo momento.',
         null,
         null,
-        insight.recurring_titles?.[0]?.title || insight.rewatch_titles?.[0]?.title,
+        null,
         '#a855f7'
       )
     );
@@ -157,7 +175,7 @@ export async function rebuildAdaptiveRow(configId: string) {
         type: 'series',
         name: 'I generi che ti definiscono',
         description: 'Una lettura veloce del tuo gusto attuale.',
-        videos: (insight.genre_counts || []).slice(0, 10).map((g: any, i: number) =>
+        videos: genreCounts.slice(0, 10).map((g: any, i: number) =>
           video(`${id}_${i}`, g.name, new Date().toISOString(), `${g.count} visioni associate a questo genere.`)
         )
       }
@@ -166,14 +184,16 @@ export async function rebuildAdaptiveRow(configId: string) {
 
   if (enabled.includes('recurring')) {
     const id = `adaptive_${configId}_recurring`;
+    const recurringTitles = insight.recurring_titles || [];
+
     cards.push(
       await cardMeta(
         id,
         'Hai delle ricorrenze tutte tue',
-        'Alcuni titoli o abitudini stanno tornando nello stesso periodo dell’anno.',
+        'Alcuni titoli o abitudini stanno tornando nello stesso periodo dell'anno.',
         null,
         null,
-        insight.recurring_titles?.[0]?.title,
+        recurringTitles[0]?.title,
         '#f59e0b'
       )
     );
@@ -185,7 +205,7 @@ export async function rebuildAdaptiveRow(configId: string) {
         type: 'series',
         name: 'Le tue ricorrenze',
         description: 'Pattern che tornano nel tempo e raccontano il tuo lato più personale.',
-        videos: (insight.recurring_titles || []).slice(0, 12).map((r: any, i: number) =>
+        videos: recurringTitles.slice(0, 12).map((r: any, i: number) =>
           video(`${id}_${i}`, r.title, new Date().toISOString(), `Questo titolo compare ${r.count} volte nello stesso mese attraverso gli anni.`)
         )
       }
@@ -194,6 +214,8 @@ export async function rebuildAdaptiveRow(configId: string) {
 
   if (enabled.includes('rewatch')) {
     const id = `adaptive_${configId}_rewatch`;
+    const rewatchTitles = insight.rewatch_titles || [];
+
     cards.push(
       await cardMeta(
         id,
@@ -201,7 +223,7 @@ export async function rebuildAdaptiveRow(configId: string) {
         'Ci sono titoli verso cui torni più spesso del normale.',
         null,
         null,
-        insight.rewatch_titles?.[0]?.title,
+        rewatchTitles[0]?.title,
         '#ef4444'
       )
     );
@@ -213,7 +235,7 @@ export async function rebuildAdaptiveRow(configId: string) {
         type: 'series',
         name: 'I tuoi titoli del cuore',
         description: 'Quelli che non guardi una volta sola.',
-        videos: (insight.rewatch_titles || []).slice(0, 12).map((r: any, i: number) =>
+        videos: rewatchTitles.slice(0, 12).map((r: any, i: number) =>
           video(`${id}_${i}`, r.title, new Date().toISOString(), `Hai rivisto questo titolo ${r.count} volte.`)
         )
       }
@@ -222,22 +244,25 @@ export async function rebuildAdaptiveRow(configId: string) {
 
   if (enabled.includes('seasonal')) {
     const id = `adaptive_${configId}_seasonal`;
+    const seasonalKey = insight.seasonal_key || 'standard';
+    const recurringTitles = insight.recurring_titles || [];
+    const rewatchTitles = insight.rewatch_titles || [];
 
     const seasonText =
-      insight.seasonal_key === 'christmas'
-        ? 'L’anno scorso in questo periodo avevi già iniziato il tuo mood natalizio.'
-        : insight.seasonal_key === 'halloween'
-        ? 'C’è odore di horror di stagione nel tuo profilo.'
-        : insight.seasonal_key === 'summer'
-        ? 'L’estate tende a riaccendere maratone e rewatch più leggeri.'
+      seasonalKey === 'christmas'
+        ? 'L'anno scorso in questo periodo avevi già iniziato il tuo mood natalizio.'
+        : seasonalKey === 'halloween'
+        ? 'C'è©® odore di horror di stagione nel tuo profilo.'
+        : seasonalKey === 'summer'
+        ? 'L'estate tende a riaccendere maratone e rewatch più leggeri.'
         : 'Questa card cambia con il calendario e con il tuo profilo.';
 
     const seasonalAccent =
-      insight.seasonal_key === 'christmas'
+      seasonalKey === 'christmas'
         ? '#dc2626'
-        : insight.seasonal_key === 'halloween'
+        : seasonalKey === 'halloween'
         ? '#f97316'
-        : insight.seasonal_key === 'summer'
+        : seasonalKey === 'summer'
         ? '#f59e0b'
         : '#0ea5e9';
 
@@ -248,7 +273,7 @@ export async function rebuildAdaptiveRow(configId: string) {
         seasonText,
         null,
         null,
-        insight.recurring_titles?.[0]?.title || insight.rewatch_titles?.[0]?.title,
+        recurringTitles[0]?.title || rewatchTitles[0]?.title,
         seasonalAccent
       )
     );
@@ -261,7 +286,7 @@ export async function rebuildAdaptiveRow(configId: string) {
         name: 'La stagione del tuo profilo',
         description: 'Un insight che cambia grafica e significato in base al periodo.',
         videos: [
-          video(`${id}_1`, insight.seasonal_key, new Date().toISOString(), seasonText)
+          video(`${id}_1`, seasonalKey, new Date().toISOString(), seasonText)
         ]
       }
     });
