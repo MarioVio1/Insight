@@ -110,7 +110,9 @@ export async function rebuildAdaptiveRow(configId: string) {
       ? `Negli ultimi 7 giorni questo è stato il tuo titolo dominante, con ${insight.summary.topWeeklyCount} passaggi registrati.`
       : 'Una card che segue il tuo ritmo più recente.';
 
-    cards.push(await cardMeta(id, weeklyTitle, weeklyDesc, null, null, insight.summary.topWeeklyTitle, '#38bdf8'));
+    cards.push(
+      await cardMeta(id, weeklyTitle, weeklyDesc, null, null, insight.summary.topWeeklyTitle, '#38bdf8')
+    );
 
     details.push({
       meta_id: id,
@@ -246,4 +248,46 @@ export async function rebuildAdaptiveRow(configId: string) {
         seasonText,
         null,
         null,
-        insight.recurring_titles?.[0]?.title || insight.rewatch_titles?.[0]
+        insight.recurring_titles?.[0]?.title || insight.rewatch_titles?.[0]?.title,
+        seasonalAccent
+      )
+    );
+
+    details.push({
+      meta_id: id,
+      meta: {
+        id,
+        type: 'series',
+        name: 'La stagione del tuo profilo',
+        description: 'Un insight che cambia grafica e significato in base al periodo.',
+        videos: [
+          video(`${id}_1`, insight.seasonal_key, new Date().toISOString(), seasonText)
+        ]
+      }
+    });
+  }
+
+  const finalCards = cards.slice(0, prefs?.max_cards || 10);
+
+  await supabase.from('adaptive_rows').upsert(
+    {
+      config_id: configId,
+      catalog_id: 'adaptive-insights',
+      metas: finalCards,
+      updated_at: new Date().toISOString()
+    },
+    { onConflict: 'config_id,catalog_id' }
+  );
+
+  for (const d of details) {
+    await supabase.from('adaptive_meta').upsert(
+      {
+        config_id: configId,
+        meta_id: d.meta_id,
+        meta: d.meta,
+        updated_at: new Date().toISOString()
+      },
+      { onConflict: 'config_id,meta_id' }
+    );
+  }
+}
