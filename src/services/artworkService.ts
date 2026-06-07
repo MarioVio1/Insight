@@ -2,7 +2,10 @@ export function generateSvgPoster(opts: { title: string; subtitle: string; accen
   const accent = opts.accent || '#0ea5e9';
   const theme = opts.theme || '#0f172a';
   const title = escapeXml(opts.title || '');
-  const subtitle = escapeXml(opts.subtitle || '');
+  // Pulisci subtitle: rimuovi "0.XXXX" pattern
+  let subtitle = escapeXml(opts.subtitle || '');
+  subtitle = subtitle.replace(/\b0\.\d+\s+/g, ''); // Rimuove "0.74 " → mantiene solo il resto
+  
   const statValue = opts.statValue ? escapeXml(opts.statValue) : '';
   const statLabel = opts.statLabel ? escapeXml(opts.statLabel) : '';
   const imageUrl = opts.imageUrl || '';
