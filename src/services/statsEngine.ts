@@ -99,7 +99,6 @@ export function computeTraktStats(events: any[]) {
 
   const yearEvents = watchedAts.filter(ts => ts >= yearStart);
   const weekEvents = watchedAts.filter(ts => ts >= weekStart);
-  const monthEvents = watchedAts.filter(ts => ts >= monthStart);
 
   const movies = events.filter((e) => e.trakt_type === 'movie');
   const episodes = events.filter((e) => e.trakt_type !== 'movie');

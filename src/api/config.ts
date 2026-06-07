@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import crypto from 'crypto';
 import { supabase } from '../services/supabase.js';
+import { syncConfig } from '../services/syncService.js';
 
 const router = Router();
 
@@ -41,6 +42,11 @@ router.put('/config/:configId/preferences', async (req, res) => {
   const { error } = await supabase.from('config_preferences').update(req.body).eq('config_id', req.params.configId);
   if (error) return res.status(500).json({ ok: false, error: error.message });
   return res.json({ ok: true });
+});
+
+router.post('/config/:configId/sync', async (req, res) => {
+  const result = await syncConfig(req.params.configId);
+  return res.json(result);
 });
 
 export default router;

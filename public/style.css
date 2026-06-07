@@ -249,6 +249,19 @@ select{
   color:var(--muted);
   margin-top:12px;
 }
+.sync-section{
+  margin-top:16px;
+  padding-top:16px;
+  border-top:1px solid var(--border);
+}
+.sync-status{
+  margin-top:8px;
+  font-size:13px;
+  color:var(--muted);
+  text-align:center;
+}
+.sync-status.success{color:#22c55e}
+.sync-status.error{color:#ef4444}
 .footer{
   text-align:center;
   padding:32px 0 16px;

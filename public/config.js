@@ -14,6 +14,8 @@ const stepInstall = document.getElementById('stepInstall');
 const connectedBadge = document.getElementById('connectedBadge');
 const usernameDisplay = document.getElementById('usernameDisplay');
 
+const syncBtn = document.getElementById('syncBtn');
+const syncStatus = document.getElementById('syncStatus');
 const pathParts = location.pathname.split('/').filter(Boolean);
 let configId = pathParts[1] || null;
 
@@ -155,6 +157,25 @@ prefsForm.addEventListener('submit', async (e) => {
   } else {
     submitBtn.textContent = 'Errore, riprova';
     setTimeout(() => { submitBtn.textContent = 'Salva preferenze'; }, 2000);
+  }
+});
+
+syncBtn.addEventListener('click', async () => {
+  if (!configId) return;
+  syncBtn.disabled = true;
+  syncBtn.textContent = 'Sincronizzazione...';
+  syncStatus.textContent = '';
+  syncStatus.className = 'sync-status';
+  const res = await fetch(`/api/config/${configId}/sync`, { method: 'POST' });
+  const data = await res.json();
+  syncBtn.disabled = false;
+  syncBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10a6 6 0 0112 0M16 10l-3-3M4 10l3-3" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg> Sincronizza ora con Trakt';
+  if (data.ok) {
+    syncStatus.textContent = `Sync riuscita! ${data.count} eventi importati.`;
+    syncStatus.className = 'sync-status success';
+  } else {
+    syncStatus.textContent = data.error || 'Errore sync';
+    syncStatus.className = 'sync-status error';
   }
 });
 
