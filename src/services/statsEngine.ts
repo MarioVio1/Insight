@@ -163,8 +163,7 @@ export function computeTraktStats(events: any[]) {
     episodeHours: Math.round(episodes.reduce((s, e) => s + runtime(e), 0) / 60 * 10) / 10,
     weekCount,
     animeCount,
-    animeHours: Math.round(anime.reduce((s, e) => s + runtime(e), 0) / 60 * 10) / 10,
-    weekCount
+    animeHours: Math.round(anime.reduce((s, e) => s + runtime(e), 0) / 60 * 10) / 10
   };
 }
 
@@ -226,10 +225,11 @@ export async function computeTopPeople(events: any[]): Promise<{ actors: { name:
     );
     for (const result of results) {
       if (result.status === 'fulfilled' && result.value) {
-        for (const actor of result.value.cast.slice(0, 5)) {
+        const credits = result.value as { cast: string[]; crew: { directors: string[] } };
+        for (const actor of credits.cast.slice(0, 5)) {
           actorCount[actor] = (actorCount[actor] || 0) + 1;
         }
-        for (const director of result.value.crew.directors) {
+        for (const director of credits.crew.directors) {
           directorCount[director] = (directorCount[director] || 0) + 1;
         }
       }
@@ -254,9 +254,9 @@ export async function computeRankings(configId: string, stats: { totalHours: num
     .select('config_id, summary');
   if (!all) return null;
 
-  const entries = all
-    .filter(s => s.summary && s.summary.totalHours != null)
-    .map(s => ({
+  const entries = (all as any[])
+    .filter((s: any) => s.summary && s.summary.totalHours != null)
+    .map((s: any) => ({
       configId: s.config_id,
       totalHours: s.summary.totalHours as number,
       totalMovies: s.summary.totalMovies as number || 0,
