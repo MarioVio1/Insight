@@ -1,3 +1,7 @@
+export const INSIGHT_TYPE = 'insight';
+export const INSIGHT_CATALOG_ID = 'insight-stats';
+export const LEGACY_INSIGHT_CATALOG_ID = 'adaptive-insights';
+
 export function getManifest(uuid?: string, slug?: string) {
   const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
   const idStr = slug || uuid;
@@ -5,12 +9,12 @@ export function getManifest(uuid?: string, slug?: string) {
 
   return {
     id: idStr ? `community.stremio.adaptive.insights.${idStr}` : 'community.stremio.adaptive.insights',
-    version: '3.3.0',
+    version: '3.3.2',
     name: `Adaptive Insights${slug ? ` (${slug})` : ''}`,
     description: 'Statistiche personali Trakt nella home di Stremio. 32 card dinamiche: streak, binge, generi, attori, anime e molto altro.',
     logo: `${baseUrl}/logo.png`,
     resources: ['catalog', 'meta'],
-    types: ['movie'],
+    types: [INSIGHT_TYPE],
     behaviorHints: {
       configurable: true,
       configurationRequired: !isConfigured,
@@ -19,8 +23,8 @@ export function getManifest(uuid?: string, slug?: string) {
     idPrefixes: ['adaptive_'],
     catalogs: [
       {
-        type: 'movie',
-        id: 'insight-stats',
+        type: INSIGHT_TYPE,
+        id: INSIGHT_CATALOG_ID,
         name: isConfigured ? 'Insight' : 'Insight (configura)',
         extra: [],
         behaviorHints: {

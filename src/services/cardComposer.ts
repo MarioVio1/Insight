@@ -1,6 +1,7 @@
 import { supabase } from './supabase.js';
 import { generateSvgPoster, svgToDataUri } from './artworkService.js';
 import { fetchTmdbDetails } from './tmdbService.js';
+import { INSIGHT_CATALOG_ID } from '../addon/manifest.js';
 
 async function getEvents(configId: string, daysBack?: number): Promise<any[]> {
   let q = supabase.from('trakt_events').select('*').eq('config_id', configId);
@@ -902,7 +903,7 @@ export async function rebuildAdaptiveRow(configId: string) {
 
   await supabase.from('adaptive_rows').upsert({
     config_id: configId,
-    catalog_id: 'adaptive-insights',
+    catalog_id: INSIGHT_CATALOG_ID,
     metas: cards,
     updated_at: new Date().toISOString()
   }, { onConflict: 'config_id,catalog_id' });

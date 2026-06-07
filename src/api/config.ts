@@ -4,6 +4,7 @@ import { supabase } from '../services/supabase.js';
 import { syncConfig } from '../services/syncService.js';
 import { resolveConfigId, checkTablesDetailed } from '../services/db.js';
 import { logger } from '../utils/logger.js';
+import { INSIGHT_CATALOG_ID, LEGACY_INSIGHT_CATALOG_ID } from '../addon/manifest.js';
 
 const router = Router();
 
@@ -23,7 +24,7 @@ router.post('/config', async (req, res) => {
     }
 
     const id = crypto.randomUUID();
-    const payload = { id, slug, sync_enabled: true, selected_catalogs: ['adaptive-insights'] };
+    const payload = { id, slug, sync_enabled: true, selected_catalogs: [INSIGHT_CATALOG_ID] };
     const { error } = await supabase.from('addon_configs').insert(payload);
     if (error) return res.status(500).json({ ok: false, error: error.message });
 
@@ -109,12 +110,13 @@ router.get('/status/:configId', async (req, res) => {
   const eventCount = await countTable('trakt_events', uuid);
   const cardCount = await countTable('adaptive_rows', uuid);
 
-  const { data: rowData } = await supabase
+  const { data: rowsData } = await supabase
     .from('adaptive_rows')
-    .select('metas')
+    .select('catalog_id, metas')
     .eq('config_id', uuid)
-    .eq('catalog_id', 'adaptive-insights')
-    .maybeSingle();
+    .in('catalog_id', [INSIGHT_CATALOG_ID, LEGACY_INSIGHT_CATALOG_ID])
+    .order('updated_at', { ascending: false });
+  const rowData = rowsData?.find((row: any) => row.catalog_id === INSIGHT_CATALOG_ID) || rowsData?.[0];
   const actualCards = Array.isArray(rowData?.metas) ? rowData.metas.length : 0;
 
   const hasTmdb = !!(process.env.TMDB_API_KEY || process.env.TMDB_BEARER_TOKEN);

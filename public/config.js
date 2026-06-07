@@ -28,13 +28,7 @@ if (!isConfig) {
     if (r.ok) window.location.href = `/configure/${d.slug}`;
   };
 
-  // Show setup box on CTA click
-  document.querySelectorAll('a[href="/configure"]').forEach(a => {
-    a.addEventListener('click', (e) => {
-      const box = $('setupBox');
-      if (box) { e.preventDefault(); box.style.display = box.style.display === 'none' ? 'block' : 'none'; }
-    });
-  });
+  // CTA links navigate directly to the configurator, so they work before JS hydration finishes.
 } else {
   // Configurator mode
   const app = $('app');
@@ -103,7 +97,7 @@ if (!isConfig) {
     previewGrid.innerHTML = '<div class="pempty"><div class="spin" style="width:16px;height:16px"></div><p>Caricamento...</p></div>';
     document.querySelector('[data-section="preview"]')?.click();
     try {
-      const r = await fetch(`/${configId}/catalog/movie/adaptive-insights.json`);
+      const r = await fetch(`/${configId}/catalog/insight/insight-stats.json`);
       const d = await r.json();
       if (!d.metas || !d.metas.length) { previewGrid.innerHTML = '<div class="pempty"><p>Nessuna card. Fai il sync.</p></div>'; return; }
       previewGrid.innerHTML = '';
@@ -121,7 +115,7 @@ if (!isConfig) {
 
   async function openCardDetail(metaId) {
     try {
-      const r = await fetch(`/${configId}/meta/movie/${metaId}.json`);
+      const r = await fetch(`/${configId}/meta/insight/${metaId}.json`);
       const d = await r.json();
       if (!d.meta) return;
       const meta = d.meta;

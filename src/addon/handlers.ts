@@ -1,5 +1,6 @@
 import { supabase } from '../services/supabase.js';
 import { fetchTmdbDetails, searchTmdbPerson, tmdbPersonImage } from '../services/tmdbService.js';
+import { INSIGHT_CATALOG_ID, INSIGHT_TYPE, LEGACY_INSIGHT_CATALOG_ID } from './manifest.js';
 
 const tmdbCache = new Map<string, { poster: string | null; rating: number | null; age: number }>();
 const TMDB_CACHE_TTL = 86_400_000;
@@ -40,17 +41,28 @@ async function getPersonImage(name: string): Promise<string | null> {
 }
 
 export async function catalogHandler(configId: string, catalogId: string) {
-  const { data } = await supabase
+  const requestedCatalogId = catalogId === INSIGHT_CATALOG_ID ? INSIGHT_CATALOG_ID : LEGACY_INSIGHT_CATALOG_ID;
+  let { data } = await supabase
     .from('adaptive_rows')
     .select('metas')
     .eq('config_id', configId)
-    .eq('catalog_id', 'insight-stats')
+    .eq('catalog_id', requestedCatalogId)
     .maybeSingle();
+
+  if (!data?.metas?.length && requestedCatalogId !== LEGACY_INSIGHT_CATALOG_ID) {
+    const fallback = await supabase
+      .from('adaptive_rows')
+      .select('metas')
+      .eq('config_id', configId)
+      .eq('catalog_id', LEGACY_INSIGHT_CATALOG_ID)
+      .maybeSingle();
+    data = fallback.data;
+  }
 
   if (!data?.metas?.length) {
     return { metas: [{
       id: 'adaptive_setup',
-      type: 'movie',
+      type: INSIGHT_TYPE,
       name: '⚙️ Configura l\'addon',
       poster: 'data:image/svg+xml;base64,' + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900"><rect fill="#0f172a" width="600" height="900"/><text x="300" y="400" fill="#fff" font-size="48" text-anchor="middle">Setup</text></svg>').toString('base64'),
       background: 'data:image/svg+xml;base64,' + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900"><rect fill="#0f172a" width="600" height="900"/></svg>').toString('base64'),
@@ -63,7 +75,7 @@ export async function catalogHandler(configId: string, catalogId: string) {
     const descWithStats = `${m.statLabel ? `[${m.statLabel}: ${m.statValue}]\n` : ''}${m.description}`;
     return { 
       ...rest, 
-      type: 'movie',
+      type: INSIGHT_TYPE,
       description: descWithStats,
       poster: m.poster || m.background
     };
@@ -84,7 +96,7 @@ export async function metaHandler(configId: string, metaId: string) {
 
   const meta = {
     ...data.meta,
-    type: 'movie'
+    type: INSIGHT_TYPE
   };
 
   const cardType = (metaId.split('_').pop() || '').toLowerCase();

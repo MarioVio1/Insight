@@ -2,6 +2,7 @@ import { supabase } from '../services/supabase.js';
 import { generateBackgroundSvg, generateOverlaySvg, generateSvgPoster } from '../services/artworkService.js';
 import { resolveConfigId } from '../services/db.js';
 import { fetchImageBuffer } from '../services/tmdbService.js';
+import { INSIGHT_CATALOG_ID, LEGACY_INSIGHT_CATALOG_ID } from '../addon/manifest.js';
 
 const CACHE_TTL = 300_000;
 const POSTER_W = 600;
@@ -150,12 +151,22 @@ export async function posterHandler(req: any, res: any) {
       return;
     }
 
-    const { data: rowData } = await supabase
+    let { data: rowData } = await supabase
       .from('adaptive_rows')
       .select('metas')
       .eq('config_id', uuid)
-      .eq('catalog_id', 'insight-stats')
+      .eq('catalog_id', INSIGHT_CATALOG_ID)
       .maybeSingle();
+
+    if (!rowData?.metas?.length) {
+      const fallback = await supabase
+        .from('adaptive_rows')
+        .select('metas')
+        .eq('config_id', uuid)
+        .eq('catalog_id', LEGACY_INSIGHT_CATALOG_ID)
+        .maybeSingle();
+      rowData = fallback.data;
+    }
 
     const cardData = buildCardData(rowData, cardId);
     const svg = generateSvgPoster({
