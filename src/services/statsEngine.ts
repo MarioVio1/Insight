@@ -136,7 +136,6 @@ export function computeTraktStats(events: any[]) {
   const genreCountsArr = Object.entries(genreCounts).map(([name, count]) => ({ name, count }));
 
   const lastWeekCount = weekEvents.length;
-  const lastMonthCount = monthEvents.length;
 
   const streak = computeStreak(events);
   const peakHour = computePeakHour(events);
@@ -164,7 +163,6 @@ export function computeTraktStats(events: any[]) {
     topWeeklyTitle,
     topWeeklyCount,
     lastWeekCount,
-    lastMonthCount,
     totalMovies,
     totalEpisodes,
     uniqueTitles,
