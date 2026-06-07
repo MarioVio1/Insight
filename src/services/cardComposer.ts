@@ -5,9 +5,9 @@ async function cardMeta(
   id: string,
   name: string,
   description: string,
-  poster: string | null,
-  background: string | null,
-  artworkQuery?: string,
+  poster?: string | null,
+  background?: string | null,
+  artworkQuery?: string | null,
   accent?: string
 ) {
   const art = artworkQuery
