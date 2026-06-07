@@ -1,4 +1,3 @@
-import { Request, Response } from 'express';
 import { supabase } from '../services/supabase.js';
 import { generateBackgroundSvg, generateOverlaySvg, generateSvgPoster } from '../services/artworkService.js';
 import { resolveConfigId } from '../services/db.js';
@@ -126,14 +125,14 @@ async function renderPng(data: CardData): Promise<Buffer | null> {
 
 const cache = new Map<string, { buffer: Buffer; age: number }>();
 
-function setCors(res: Response) {
+function setCors(res: any) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', '*');
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
 }
 
-export async function posterHandler(req: Request, res: Response) {
+export async function posterHandler(req: any, res: any) {
   setCors(res);
   try {
     const { configId, cardId } = req.params;
@@ -155,7 +154,7 @@ export async function posterHandler(req: Request, res: Response) {
       .from('adaptive_rows')
       .select('metas')
       .eq('config_id', uuid)
-      .eq('catalog_id', 'adaptive-insights')
+      .eq('catalog_id', 'insight-stats')
       .maybeSingle();
 
     const cardData = buildCardData(rowData, cardId);
