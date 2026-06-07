@@ -35,6 +35,7 @@ export async function posterHandler(req: Request, res: Response) {
     let statValue = '';
     let statLabel = '';
 
+    let imageUrl = '';
     if (rowData?.metas) {
       const found = rowData.metas.find((m: any) => m.id === cardId);
       if (found) {
@@ -42,6 +43,7 @@ export async function posterHandler(req: Request, res: Response) {
         cardDesc = found.description || cardDesc;
         statValue = found.statValue || '';
         statLabel = found.statLabel || '';
+        imageUrl = found.imageUrl || '';
       }
     }
 
@@ -60,13 +62,17 @@ export async function posterHandler(req: Request, res: Response) {
     else if (cardId.includes('director')) cardAccent = '#8b5cf6';
     else if (cardId.includes('anime')) cardAccent = '#f43f5e';
     else if (cardId.includes('ranking')) cardAccent = '#fbbf24';
+    else if (cardId.includes('memories')) cardAccent = '#d946ef';
+    else if (cardId.includes('giorni')) cardAccent = '#06b6d4';
+    else if (cardId.includes('migliore')) cardAccent = '#fbbf24';
 
     const svg = generateSvgPoster({
       title: cardTitle,
       subtitle: cardDesc.slice(0, 60),
       accent: cardAccent,
       statValue,
-      statLabel
+      statLabel,
+      imageUrl
     });
 
     cache.set(cacheKey, { svg, age: Date.now() });

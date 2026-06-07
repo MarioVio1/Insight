@@ -20,6 +20,23 @@ export function tmdbImage(path?: string | null) {
   return path ? `${IMAGE_BASE}${path}` : null;
 }
 
+export async function fetchTmdbPoster(tmdbId: number | string | null, type: string): Promise<string | null> {
+  if (!tmdbId) return null;
+  if (!process.env.TMDB_API_KEY && !process.env.TMDB_BEARER_TOKEN) return null;
+  const params: Record<string, string> = {};
+  if (process.env.TMDB_API_KEY) params.api_key = process.env.TMDB_API_KEY;
+  try {
+    const mediaType = type === 'movie' ? 'movie' : 'tv';
+    const { data } = await axios.get(`${TMDB_BASE}/${mediaType}/${tmdbId}`, { params, headers: authHeaders() });
+    if (data?.poster_path) {
+      return `https://image.tmdb.org/t/p/w500${data.poster_path}`;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchCredits(tmdbId: string, type: 'movie' | 'tv') {
   if (!process.env.TMDB_API_KEY && !process.env.TMDB_BEARER_TOKEN) return null;
   const params: Record<string, string> = {};

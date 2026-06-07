@@ -8,7 +8,7 @@ export function getManifest(configId?: string) {
     description: 'Statistiche personali vive, stagionali e apribili come episodi.',
     logo: `${baseUrl}/logo.png`,
     resources: ['catalog', 'meta'],
-    types: ['movie', 'series'],
+    types: ['movie'],
     behaviorHints: {
       configurable: true,
       configurationRequired: !configId
@@ -23,11 +23,6 @@ export function getManifest(configId?: string) {
             behaviorHints: {
               defaultVideoId: null
             }
-          },
-          {
-            type: 'series',
-            id: 'adaptive-insights-series',
-            name: 'Your Adaptive Insights (Series)'
           }
         ]
       : []

@@ -33,14 +33,7 @@ document.querySelectorAll('.card-option').forEach(el => {
   });
 });
 
-document.getElementById('incCards')?.addEventListener('click', () => {
-  let v = parseInt(maxCards.value || '10');
-  if (v < 16) maxCards.value = String(v + 1);
-});
-document.getElementById('decCards')?.addEventListener('click', () => {
-  let v = parseInt(maxCards.value || '10');
-  if (v > 3) maxCards.value = String(v - 1);
-});
+
 
 function setStatus(text, done) {
   if (!statusEl) return;
@@ -122,10 +115,9 @@ async function loadConfig() {
   }
 
   if (data.preferences) {
-    maxCards.value = data.preferences.max_cards || 10;
     focusMode.value = data.preferences.focus_mode || 'adaptive';
     const savedTypes = data.preferences.enabled_card_types || [];
-    const allDefaults = ['totals','streak','peak','weekly','genre','binge','monthly','recurring','rewatch','seasonal','actor','director','anime','ranking'];
+    const allDefaults = ['totals','streak','peak','weekly','genre','binge','monthly','recurring','rewatch','seasonal','actor','director','anime','ranking','memories','giorni','migliore'];
     document.querySelectorAll('input[name="cardType"]').forEach(el => {
       const checked = savedTypes.includes(el.value) || (savedTypes.length === 0 && allDefaults.includes(el.value));
       el.checked = checked;
@@ -162,7 +154,6 @@ createForm.onsubmit = async (e) => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       slug,
-      max_cards: parseInt(maxCards.value || '10', 10),
       enabled_card_types: selectedCardTypes(),
       focus_mode: focusMode.value,
       seasonal_enabled: true,
@@ -190,7 +181,6 @@ prefsForm.addEventListener('submit', async (e) => {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      max_cards: parseInt(maxCards.value || '10', 10),
       enabled_card_types: selectedCardTypes(),
       focus_mode: focusMode.value,
       seasonal_enabled: true,

@@ -19,8 +19,7 @@ create unique index if not exists idx_addon_configs_slug on addon_configs(slug) 
 create table if not exists config_preferences (
   id uuid primary key default gen_random_uuid(),
   config_id uuid not null references addon_configs(id) on delete cascade,
-  max_cards integer not null default 10,
-  enabled_card_types jsonb not null default '["totals","streak","peak","weekly","genre","binge","monthly","recurring","rewatch","seasonal","actor","director","anime","ranking"]'::jsonb,
+  enabled_card_types jsonb not null default '["totals","streak","peak","weekly","genre","binge","monthly","recurring","rewatch","seasonal","actor","director","anime","ranking","memories","giorni","migliore"]'::jsonb,
   focus_mode text not null default 'adaptive',
   seasonal_enabled boolean not null default true,
   festive_enabled boolean not null default true,

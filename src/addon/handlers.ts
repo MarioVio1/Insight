@@ -1,20 +1,16 @@
 import { supabase } from '../services/supabase.js';
 
 export async function catalogHandler(configId: string, catalogId: string) {
-  const normalizedCatalogId = catalogId === 'adaptive-insights-series' ? 'adaptive-insights' : catalogId;
   const { data } = await supabase
     .from('adaptive_rows')
     .select('metas')
     .eq('config_id', configId)
-    .eq('catalog_id', normalizedCatalogId)
+    .eq('catalog_id', 'adaptive-insights')
     .maybeSingle();
 
   const metas = (data?.metas ?? []).map((m: any) => {
-    const { statValue, statLabel, ...clean } = m;
-    return {
-      ...clean,
-      type: catalogId === 'adaptive-insights-series' ? 'series' : 'movie'
-    };
+    const { statValue, statLabel, imageUrl, ...clean } = m;
+    return { ...clean, type: 'movie' };
   });
 
   return { metas };

@@ -154,24 +154,32 @@
                 <span class="card-option-label">Classifica</span>
                 <span class="card-option-desc">Confronto utenti</span>
               </label>
+              <label class="card-option" data-value="memories">
+                <input type="checkbox" name="cardType" value="memories" hidden>
+                <span class="card-option-icon" style="background:#d946ef20;color:#d946ef">💭</span>
+                <span class="card-option-label">Ricordi</span>
+                <span class="card-option-desc">Cosa guardavi negli anni scorsi</span>
+              </label>
+              <label class="card-option" data-value="giorni">
+                <input type="checkbox" name="cardType" value="giorni" hidden>
+                <span class="card-option-icon" style="background:#06b6d420;color:#06b6d4">📆</span>
+                <span class="card-option-label">Giorni</span>
+                <span class="card-option-desc">Giorni unici di visione</span>
+              </label>
+              <label class="card-option" data-value="migliore">
+                <input type="checkbox" name="cardType" value="migliore" hidden>
+                <span class="card-option-icon" style="background:#fbbf2420;color:#fbbf24">⭐</span>
+                <span class="card-option-label">Miglior anno</span>
+                <span class="card-option-desc">L'anno con più ore</span>
+              </label>
             </div>
-            <div class="pref-row">
-              <div class="pref-field">
-                <label for="maxCards">Numero massimo card</label>
-                <div class="input-group">
-                  <button type="button" class="input-btn" id="decCards">−</button>
-                  <input type="number" id="maxCards" value="10" min="3" max="16">
-                  <button type="button" class="input-btn" id="incCards">+</button>
-                </div>
-              </div>
-              <div class="pref-field">
-                <label for="focusMode">Focus</label>
-                <select id="focusMode">
-                  <option value="adaptive">Adaptive</option>
-                  <option value="movies">Film</option>
-                  <option value="series">Serie</option>
-                </select>
-              </div>
+            <div class="pref-field">
+              <label for="focusMode">Focus</label>
+              <select id="focusMode">
+                <option value="adaptive">Adaptive</option>
+                <option value="movies">Film</option>
+                <option value="series">Serie</option>
+              </select>
             </div>
             <button type="submit" class="btn primary full">Salva preferenze</button>
           </form>
