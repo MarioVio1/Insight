@@ -44,7 +44,7 @@ export async function catalogHandler(configId: string, catalogId: string) {
     .from('adaptive_rows')
     .select('metas')
     .eq('config_id', configId)
-    .eq('catalog_id', 'adaptive-insights')
+    .eq('catalog_id', 'insight-stats')
     .maybeSingle();
 
   if (!data?.metas?.length) {
@@ -60,13 +60,11 @@ export async function catalogHandler(configId: string, catalogId: string) {
 
   const metas = (data?.metas ?? []).map((m: any) => {
     const { imageUrl, ...rest } = m;
-    // Costruisci una description con il testo delle statistiche
     const descWithStats = `${m.statLabel ? `[${m.statLabel}: ${m.statValue}]\n` : ''}${m.description}`;
     return { 
       ...rest, 
       type: 'movie',
       description: descWithStats,
-      // Mantieni poster se disponibile altrimenti usa il background (fallback SVG)
       poster: m.poster || m.background
     };
   });
@@ -121,9 +119,6 @@ export async function metaHandler(configId: string, metaId: string) {
       ...(v.tmdb_id ? { tmdb_id: v.tmdb_id } : {})
     });
   }
-
-  // RIMOSSO: non aggiungere video di fallback "contenuto recente"
-  // Mantieni solo i video reali della card
 
   meta.videos = enrichedVideos;
   return { meta };
