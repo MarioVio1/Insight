@@ -89,7 +89,7 @@ export async function rebuildAdaptiveRow(configId: string) {
 
   const s = insight.summary || {};
   const saved = prefs?.enabled_card_types || [];
-  const allEnabled = ['totals','streak','peak','weekly','genre','binge','dropped','monthly','recurring','rewatch','seasonal','actor','director','anime','ranking','memories','giorni','migliore','anno','mese','split','notturno','events','pace','weekend','annuale','primetime'];
+  const allEnabled = ['totals','streak','peak','weekly','genre','binge','dropped','monthly','recurring','rewatch','seasonal','actor','director','anime','ranking','memories','giorni','migliore','anno','mese','split','notturno','events','pace','weekend','annuale','primetime','decade','break'];
   const enabled = saved.length > 0 ? [...new Set([...saved, ...allEnabled])] : allEnabled;
   const cards: any[] = [];
   const details: { meta_id: string; meta: any }[] = [];
@@ -113,7 +113,7 @@ export async function rebuildAdaptiveRow(configId: string) {
 
     details.push({
       meta_id: id, meta: {
-        id, type: 'series', name: 'Il tuo viaggio totale',
+        id, type: 'movie', name: 'Il tuo viaggio totale',
         description: 'Tutto quello che hai guardato su Trakt.',
         videos: [
           video(`${id}_1`, `${totalM} film visti (${Math.floor(mh)} ore)`, new Date().toISOString(), 'Totale film.'),
@@ -138,7 +138,7 @@ export async function rebuildAdaptiveRow(configId: string) {
 
     details.push({
       meta_id: id, meta: {
-        id, type: 'series', name: 'La tua streak',
+        id, type: 'movie', name: 'La tua streak',
         description: 'Giorni consecutivi di visione.',
         videos: [video(`${id}_1`, `${streak} giorni`, new Date().toISOString(), streak > 0 ? `Stai guardando qualcosa da ${streak} giorni di fila!` : 'Nessuna streak.')]
       }
@@ -158,7 +158,7 @@ export async function rebuildAdaptiveRow(configId: string) {
 
     details.push({
       meta_id: id, meta: {
-        id, type: 'series', name: 'Il tuo orario preferito',
+        id, type: 'movie', name: 'Il tuo orario preferito',
         description: 'Quando guardi di più?',
         videos: [video(`${id}_1`, `${hourStr}`, new Date().toISOString(), `${ph.count} visioni in questa fascia oraria.`)]
       }
@@ -177,7 +177,7 @@ export async function rebuildAdaptiveRow(configId: string) {
 
     details.push({
       meta_id: id, meta: {
-        id, type: 'series', name: 'Giorni della settimana',
+        id, type: 'movie', name: 'Giorni della settimana',
         description: 'Distribuzione delle tue visioni per giorno.',
         videos: [video(`${id}_1`, `${td.name}`, new Date().toISOString(), `${td.count} visioni in questo giorno.`)]
       }
@@ -206,7 +206,7 @@ export async function rebuildAdaptiveRow(configId: string) {
 
     details.push({
       meta_id: id, meta: {
-        id, type: 'series', name: `I tuoi ${tg ? `${tg}: ` : ''}contenuti`,
+        id, type: 'movie', name: `I tuoi ${tg ? `${tg}: ` : ''}contenuti`,
         description: 'Quali generi guardi di più.',
         videos: genreVids
       }
@@ -232,7 +232,7 @@ export async function rebuildAdaptiveRow(configId: string) {
 
     details.push({
       meta_id: id, meta: {
-        id, type: 'series', name: 'Le tue maratone',
+        id, type: 'movie', name: 'Le tue maratone',
         description: 'I giorni in cui hai guardato più episodi della stessa serie.',
         videos: s.binges.slice(0, 10).map((b: any, i: number) => ({
           id: `${id}_${i}`,
@@ -264,7 +264,7 @@ export async function rebuildAdaptiveRow(configId: string) {
 
       details.push({
         meta_id: id, meta: {
-          id, type: 'series', name: 'Serie in pausa',
+          id, type: 'movie', name: 'Serie in pausa',
           description: 'Serie che non guardi da più di 3 mesi.',
           videos: s.dropped.slice(0, 10).map((d: any, i: number) => ({
             id: `${id}_${i}`,
@@ -297,7 +297,7 @@ export async function rebuildAdaptiveRow(configId: string) {
 
     details.push({
       meta_id: id, meta: {
-        id, type: 'series', name: `Contenuti degli ultimi 30 giorni (${curr})`,
+        id, type: 'movie', name: `Contenuti degli ultimi 30 giorni (${curr})`,
         description: 'Cosa hai guardato questo mese.',
         videos: monthlyVids.length > 0 ? monthlyVids : [
           video(`${id}_1`, `${curr} questo mese`, new Date().toISOString(), `Contenuti guardati negli ultimi 30 giorni.`),
@@ -320,7 +320,7 @@ export async function rebuildAdaptiveRow(configId: string) {
 
       details.push({
         meta_id: id, meta: {
-          id, type: 'series', name: 'Le tue ricorrenze',
+          id, type: 'movie', name: 'Le tue ricorrenze',
           description: 'Titoli che guardi sempre nello stesso mese.',
           videos: recurringTitles.slice(0, 12).map((r: any, i: number) =>
             video(`${id}_${i}`, r.title, new Date().toISOString(), `Visto ${r.count} volte nei mesi: ${r.months.join(', ')}.`)
@@ -356,7 +356,7 @@ export async function rebuildAdaptiveRow(configId: string) {
 
       details.push({
         meta_id: id, meta: {
-          id, type: 'series', name: 'I tuoi comfort rewatch',
+          id, type: 'movie', name: 'I tuoi comfort rewatch',
           description: 'Quelli che non guardi una volta sola.',
           videos: rewatchTitles.slice(0, 12).map((r: any, i: number) => ({
             id: `${id}_${i}`,
@@ -398,7 +398,7 @@ export async function rebuildAdaptiveRow(configId: string) {
 
     details.push({
       meta_id: id, meta: {
-        id, type: 'series', name: 'La stagione del tuo profilo',
+        id, type: 'movie', name: 'La stagione del tuo profilo',
         description: desc,
         videos: seasonalTitles.length > 0
           ? seasonalTitles.map((t: any, i: number) =>
@@ -423,7 +423,7 @@ export async function rebuildAdaptiveRow(configId: string) {
 
       details.push({
         meta_id: id, meta: {
-          id, type: 'series', name: 'Attori preferiti',
+          id, type: 'movie', name: 'Attori preferiti',
           description: 'Gli attori che vedi più spesso.',
           videos: actors.map((a: any, i: number) =>
             video(`${id}_${i}`, a.name, new Date().toISOString(), `Appare in ${a.count} contenuti.`)
@@ -447,7 +447,7 @@ export async function rebuildAdaptiveRow(configId: string) {
 
       details.push({
         meta_id: id, meta: {
-          id, type: 'series', name: 'Registi preferiti',
+          id, type: 'movie', name: 'Registi preferiti',
           description: 'I registi che guardi di più.',
           videos: directors.map((d: any, i: number) =>
             video(`${id}_${i}`, d.name, new Date().toISOString(), `Compare in ${d.count} contenuti.`)
@@ -488,7 +488,7 @@ export async function rebuildAdaptiveRow(configId: string) {
 
     details.push({
       meta_id: id, meta: {
-        id, type: 'series', name: 'Anime guardati',
+        id, type: 'movie', name: 'Anime guardati',
         description: 'I tuoi anime guardati su Trakt.',
         videos: animeVids
       }
@@ -508,7 +508,7 @@ export async function rebuildAdaptiveRow(configId: string) {
 
     details.push({
       meta_id: id, meta: {
-        id, type: 'series', name: 'Confronto con altri utenti',
+        id, type: 'movie', name: 'Confronto con altri utenti',
         description: 'Come ti posizioni rispetto agli altri?',
         videos: [
           video(`${id}_1`, `Ore: #${r.hoursRank} su ${r.totalUsers}`, new Date().toISOString(), `${r.totalUsers} utenti totali.`),
@@ -546,7 +546,7 @@ export async function rebuildAdaptiveRow(configId: string) {
 
       details.push({
         meta_id: id, meta: {
-          id, type: 'series', name: 'I tuoi ricordi',
+          id, type: 'movie', name: 'I tuoi ricordi',
           description: 'Cosa guardavi negli stessi giorni degli anni scorsi.',
           videos: memories.slice(0, 10).map((m: any, i: number) => ({
             id: `${id}_${i}`,
@@ -572,7 +572,7 @@ export async function rebuildAdaptiveRow(configId: string) {
 
     details.push({
       meta_id: id, meta: {
-        id, type: 'series', name: 'I tuoi giorni di visione',
+        id, type: 'movie', name: 'I tuoi giorni di visione',
         description: 'Quanti giorni hai guardato qualcosa.',
         videos: [video(`${id}_1`, `${s.totalDays} giorni unici`, new Date().toISOString(), `Hai guardato contenuti in ${s.totalDays} giorni diversi.`)]
       }
@@ -591,7 +591,7 @@ export async function rebuildAdaptiveRow(configId: string) {
 
     details.push({
       meta_id: id, meta: {
-        id, type: 'series', name: 'Il tuo miglior anno',
+        id, type: 'movie', name: 'Il tuo miglior anno',
         description: 'L\'anno con più ore di visione.',
         videos: Object.entries(s.yearlyTotals || {}).sort((a: any, b: any) => b[1].hours - a[1].hours).map(([year, data]: [string, any], i: number) =>
           video(`${id}_${i}`, year, new Date().toISOString(), `${Math.floor(data.hours)} ore, ${data.movies} film, ${data.episodes} episodi.`)
@@ -615,7 +615,7 @@ export async function rebuildAdaptiveRow(configId: string) {
 
     details.push({
       meta_id: id, meta: {
-        id, type: 'series', name: `Progresso ${new Date().getFullYear()}`,
+        id, type: 'movie', name: `Progresso ${new Date().getFullYear()}`,
         description: 'Quanto hai guardato quest\'anno.',
         videos: Object.entries(s.yearlyTotals || {}).sort((a: any, b: any) => Number(a[0]) - Number(b[0])).map(([year, data]: [string, any], i: number) =>
           video(`${id}_${i}`, year, new Date().toISOString(), `${Math.floor(data.hours)} ore, ${data.movies} film, ${data.episodes} episodi.`)
@@ -638,7 +638,7 @@ export async function rebuildAdaptiveRow(configId: string) {
 
     details.push({
       meta_id: id, meta: {
-        id, type: 'series', name: 'I tuoi mesi',
+        id, type: 'movie', name: 'I tuoi mesi',
         description: 'Distribuzione delle visioni per mese.',
         videos: monthNames.map((name, i) =>
           video(`${id}_${i}`, name, new Date().toISOString(), `${i === monthIdx ? '⬅ MESE CON PIÙ VISIONI' : ''}`)
@@ -663,7 +663,7 @@ export async function rebuildAdaptiveRow(configId: string) {
 
       details.push({
         meta_id: id, meta: {
-          id, type: 'series', name: 'Film vs Serie',
+          id, type: 'movie', name: 'Film vs Serie',
           description: 'Come si dividono le tue visioni.',
           videos: [
             video(`${id}_1`, `${mp}% film (${s.totalMovies})`, new Date().toISOString(), 'Film visti.'),
@@ -699,7 +699,7 @@ export async function rebuildAdaptiveRow(configId: string) {
 
       details.push({
         meta_id: id, meta: {
-          id, type: 'series', name: 'Le tue fasce orarie',
+          id, type: 'movie', name: 'Le tue fasce orarie',
           description: 'Quando guardi durante il giorno.',
           videos: labels.map((l, i) =>
             video(`${id}_${i}`, l.label, new Date().toISOString(), `${l.value} visioni (${Math.round(l.value / totalTd * 100)}% del totale).`)
@@ -723,7 +723,7 @@ export async function rebuildAdaptiveRow(configId: string) {
 
     details.push({
       meta_id: id, meta: {
-        id, type: 'series', name: 'Attività recente',
+        id, type: 'movie', name: 'Attività recente',
         description: 'Tutto ciò che hai guardato negli ultimi 7 giorni.',
         videos: evtVids.length > 0 ? evtVids : [video(`${id}_1`, 'Nessuna attività recente', new Date().toISOString(), '')]
       }
@@ -740,7 +740,7 @@ export async function rebuildAdaptiveRow(configId: string) {
     ));
     details.push({
       meta_id: id, meta: {
-        id, type: 'series', name: 'Il tuo ritmo',
+        id, type: 'movie', name: 'Il tuo ritmo',
         description: 'Quanto guardi in media ogni settimana.',
         videos: [video(`${id}_1`, `${s.avgPerWeek} a settimana`, new Date().toISOString(), `Media contenuti per settimana attiva.`)]
       }
@@ -761,7 +761,7 @@ export async function rebuildAdaptiveRow(configId: string) {
     ));
     details.push({
       meta_id: id, meta: {
-        id, type: 'series', name: 'Feriale vs Weekend',
+        id, type: 'movie', name: 'Feriale vs Weekend',
         description: 'Quando guardi di più?',
         videos: [
           video(`${id}_1`, `Feriale: ${s.weekdayPct}%`, new Date().toISOString(), 'Lunedì-Venerdì.'),
@@ -783,12 +783,51 @@ export async function rebuildAdaptiveRow(configId: string) {
     ));
     details.push({
       meta_id: id, meta: {
-        id, type: 'series', name: 'Confronto annuale',
+        id, type: 'movie', name: 'Confronto annuale',
         description: 'Come cambiano le tue visioni anno dopo anno.',
         videos: [
           video(`${id}_1`, `Ultimo anno: ${s.lastYearCount || 0}`, new Date().toISOString(), 'Contenuti degli ultimi 12 mesi.'),
           video(`${id}_2`, `Anno prima: ${s.prevYearCount || 0}`, new Date().toISOString(), 'Contenuti dei 12 mesi precedenti.')
         ]
+      }
+    });
+  }
+
+  // Decade più attivo
+  if (enabled.includes('decade') && s.topDecade) {
+    const id = `adaptive_${configId}_decade`;
+    cards.push(await cardMeta(id,
+      `Anni ${s.topDecade}: ${s.decadeEvents} contenuti`,
+      `Il decennio in cui hai guardato più roba.`,
+      configId, { accent: '#06b6d4', statValue: s.topDecade, statLabel: 'DECENNIO' }
+    ));
+    details.push({
+      meta_id: id, meta: {
+        id, type: 'movie', name: `I tuoi anni ${s.topDecade}`,
+        description: 'In che decennio guardi di più?',
+        videos: [video(`${id}_1`, `${s.topDecade}`, new Date().toISOString(), `${s.decadeEvents} contenuti guardati in questo decennio.`)]
+      }
+    });
+  }
+
+  // Pausa massima
+  if (enabled.includes('break') && s.maxBreak !== undefined && s.maxBreak > 0) {
+    const id = `adaptive_${configId}_break`;
+    const days = s.maxBreak;
+    cards.push(await cardMeta(id,
+      days >= 365
+        ? `Pausa di ${Math.floor(days / 365)} anni e ${Math.floor((days % 365) / 30)} mesi`
+        : days >= 30
+          ? `Pausa di ${Math.floor(days / 30)} mesi`
+          : `Pausa max: ${days} giorni`,
+      `Il periodo più lungo senza guardare nulla.`,
+      configId, { accent: '#6b7280', statValue: days >= 30 ? `${Math.floor(days / 30)}m` : `${days}g`, statLabel: 'PAUSA MAX' }
+    ));
+    details.push({
+      meta_id: id, meta: {
+        id, type: 'movie', name: 'La tua pausa più lunga',
+        description: 'Per quanto tempo sei stato senza guardare niente.',
+        videos: [video(`${id}_1`, `${days} giorni`, new Date().toISOString(), `Periodo più lungo senza visioni.`)]
       }
     });
   }
@@ -803,7 +842,7 @@ export async function rebuildAdaptiveRow(configId: string) {
     ));
     details.push({
       meta_id: id, meta: {
-        id, type: 'series', name: 'Prima serata',
+        id, type: 'movie', name: 'Prima serata',
         description: 'Le tue abitudini in fascia serale.',
         videos: [video(`${id}_1`, `${s.primeTimePct}% in prima serata`, new Date().toISOString(), 'Visioni tra le 20:00 e le 2:00.')]
       }

@@ -263,6 +263,26 @@ export function computeTraktStats(events: any[]) {
   }).length;
   const primeTimePct = totalWatched > 0 ? Math.round(primeTime / totalWatched * 100) : 0;
 
+  // Decade più attivo
+  const decadeCounts: Record<string, number> = {};
+  for (const e of events) {
+    if (!e.watched_at) continue;
+    const year = new Date(e.watched_at).getFullYear();
+    const decade = Math.floor(year / 10) * 10;
+    decadeCounts[String(decade)] = (decadeCounts[String(decade)] || 0) + 1;
+  }
+  const topDecade = Object.entries(decadeCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+  const decadeEvents = topDecade ? decadeCounts[topDecade] : 0;
+
+  // Pausa massima
+  const sortedDates = events.map(e => e.watched_at).filter(Boolean).sort() as string[];
+  let longestBreak = 0;
+  for (let i = 1; i < sortedDates.length; i++) {
+    const gap = (new Date(sortedDates[i]).getTime() - new Date(sortedDates[i - 1]).getTime()) / DAY_MS;
+    if (gap > longestBreak) longestBreak = gap;
+  }
+  const maxBreak = Math.round(longestBreak);
+
   return {
     totalHours: Math.round(totalHours * 10) / 10,
     yearHours: Math.round(yearHours * 10) / 10,
@@ -307,7 +327,10 @@ export function computeTraktStats(events: any[]) {
     lastYearCount,
     prevYearCount,
     yoyChange,
-    primeTimePct
+    primeTimePct,
+    topDecade,
+    decadeEvents,
+    maxBreak
   };
 }
 
@@ -492,7 +515,7 @@ export async function enrichEventsWithTmdbAnime(events: any[]): Promise<any[]> {
   }
 
   const animeSet = new Set<string>();
-  const batch = [...unique.values()].slice(0, 50);
+  const batch = [...unique.values()];
   for (let i = 0; i < batch.length; i += 5) {
     const chunk = batch.slice(i, i + 5);
     const results = await Promise.allSettled(
@@ -506,20 +529,19 @@ export async function enrichEventsWithTmdbAnime(events: any[]): Promise<any[]> {
         if (isAnime) {
           animeSet.add(item.tmdb_id);
         } else if (r.value.originalLanguage === 'ja') {
-          // TMDB says Japanese but not Animation genre — double-check with Kitsu
           try {
             const kitsuHit = await isAnimeByKitsu(item.tmdb_id, item.type);
             if (kitsuHit) animeSet.add(item.tmdb_id);
           } catch {}
         }
       } else if (r.status === 'rejected') {
-        // TMDB failed — try Kitsu as fallback
         try {
           const kitsuHit = await isAnimeByKitsu(item.tmdb_id, item.type);
           if (kitsuHit) animeSet.add(item.tmdb_id);
         } catch {}
       }
     }
+    if (i + 5 < batch.length) await new Promise(r => setTimeout(r, 120));
   }
 
   return events.map(e => {

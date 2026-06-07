@@ -62,7 +62,7 @@ export async function metaHandler(configId: string, metaId: string) {
 
   const meta = {
     ...data.meta,
-    type: 'series'
+    type: 'movie'
   };
 
   const cardType = (metaId.split('_').pop() || '').toLowerCase();
