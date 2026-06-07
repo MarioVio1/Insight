@@ -71,3 +71,8 @@ export async function fetchCredits(tmdbId: string, type: 'movie' | 'tv') {
     return null;
   }
 }
+
+export async function fetchImageBuffer(url: string): Promise<Buffer> {
+  const { data } = await axios.get(url, { responseType: 'arraybuffer' });
+  return Buffer.from(data);
+}
