@@ -9,15 +9,6 @@ export async function posterHandler(req: Request, res: Response) {
       return res.status(400).send('Missing params');
     }
 
-    // Try to get meta from adaptive_meta table
-    const { data } = await supabase
-      .from('adaptive_meta')
-      .select('meta')
-      .eq('config_id', configId)
-      .eq('meta_id', cardId)
-      .maybeSingle();
-
-    // Also check adaptive_rows for the full cards list
     const { data: rowData } = await supabase
       .from('adaptive_rows')
       .select('metas')
@@ -31,20 +22,16 @@ export async function posterHandler(req: Request, res: Response) {
     let statValue = '';
     let statLabel = '';
 
-    if (data?.meta?.name) {
-      cardTitle = data.meta.name;
-      cardDesc = data.meta.description || '';
-    }
-
     if (rowData?.metas) {
       const found = rowData.metas.find((m: any) => m.id === cardId);
       if (found) {
         cardTitle = found.name || cardTitle;
         cardDesc = found.description || cardDesc;
+        statValue = found.statValue || '';
+        statLabel = found.statLabel || '';
       }
     }
 
-    // Extract accent from card ID patterns
     if (cardId.includes('totals')) cardAccent = '#22c55e';
     else if (cardId.includes('streak')) cardAccent = '#f97316';
     else if (cardId.includes('peak')) cardAccent = '#a855f7';
@@ -59,14 +46,14 @@ export async function posterHandler(req: Request, res: Response) {
 
     const svg = generateSvgPoster({
       title: cardTitle,
-      subtitle: cardDesc.slice(0, 50),
+      subtitle: cardDesc.slice(0, 60),
       accent: cardAccent,
       statValue,
       statLabel
     });
 
     res.setHeader('Content-Type', 'image/svg+xml');
-    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader('Cache-Control', 'no-cache');
     res.send(svg);
   } catch (error) {
     const fallback = generateSvgPoster({ title: 'Insight', subtitle: 'Statistiche personali' });

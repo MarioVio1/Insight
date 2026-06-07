@@ -9,10 +9,13 @@ export async function catalogHandler(configId: string, catalogId: string) {
     .eq('catalog_id', normalizedCatalogId)
     .maybeSingle();
 
-  const metas = (data?.metas ?? []).map((m: any) => ({
-    ...m,
-    type: catalogId === 'adaptive-insights-series' ? 'series' : 'movie'
-  }));
+  const metas = (data?.metas ?? []).map((m: any) => {
+    const { statValue, statLabel, ...clean } = m;
+    return {
+      ...clean,
+      type: catalogId === 'adaptive-insights-series' ? 'series' : 'movie'
+    };
+  });
 
   return { metas };
 }

@@ -30,7 +30,9 @@ async function cardMeta(
     background: posterUrl(configId, id),
     description,
     posterShape: 'poster',
-    genres: ['Insights']
+    genres: ['Insights'],
+    statValue: opts?.statValue || null,
+    statLabel: opts?.statLabel || null
   };
 }
 

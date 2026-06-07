@@ -23,13 +23,21 @@ app.get('/logo.png', (_req, res) => {
   res.send(`<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><rect width="128" height="128" rx="24" fill="#0ea5e9"/><text x="64" y="80" fill="#fff" font-size="64" font-weight="bold" font-family="Arial" text-anchor="middle">i</text></svg>`);
 });
 app.get('/poster/:configId/:cardId.svg', posterHandler);
-app.get('/manifest.json', (_req, res) => res.json(getManifest()));
-app.get('/:configId/manifest.json', (req, res) => res.json(getManifest(req.params.configId)));
+app.get('/manifest.json', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.json(getManifest());
+});
+app.get('/:configId/manifest.json', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.json(getManifest(req.params.configId));
+});
 app.get('/:configId/catalog/:type/:id/:extra?.json', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   try { res.json(await catalogHandler(req.params.configId, req.params.id)); }
   catch (error) { logger.error({ error }, 'Catalog error'); res.status(500).json({ metas: [] }); }
 });
 app.get('/:configId/meta/:type/:id.json', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   try { res.json(await metaHandler(req.params.configId, req.params.id)); }
   catch (error) { logger.error({ error }, 'Meta error'); res.status(500).json({ meta: null }); }
 });

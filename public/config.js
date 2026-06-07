@@ -47,6 +47,17 @@ function setStatus(text, done) {
   }
 }
 
+function updateManifestUrl(lastSync) {
+  const t = Date.now();
+  const manifestUrl = `${location.origin}/${configId}/manifest.json?_=${t}`;
+  manifestBox.textContent = manifestUrl;
+  const syncInfo = document.getElementById('syncInfo');
+  if (syncInfo && lastSync) {
+    const d = new Date(lastSync);
+    syncInfo.textContent = `Ultimo sync: ${d.toLocaleDateString('it-IT')} ${d.toLocaleTimeString('it-IT')}`;
+  }
+}
+
 function selectedCardTypes() {
   return [...document.querySelectorAll('input[name="cardType"]:checked')].map(el => el.value);
 }
@@ -89,8 +100,7 @@ async function loadConfig() {
     });
   }
 
-  const manifestUrl = `${location.origin}/${configId}/manifest.json`;
-  manifestBox.textContent = manifestUrl;
+  updateManifestUrl(data.last_sync_at);
   installBtn.onclick = async () => {
     await navigator.clipboard.writeText(manifestUrl);
     installBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M6 10l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Copiato!';
@@ -173,6 +183,8 @@ syncBtn.addEventListener('click', async () => {
   if (data.ok) {
     syncStatus.textContent = `Sync riuscita! ${data.count} eventi importati.`;
     syncStatus.className = 'sync-status success';
+    // Ricarica la config per aggiornare l'URL manifest
+    loadConfig();
   } else {
     syncStatus.textContent = data.error || 'Errore sync';
     syncStatus.className = 'sync-status error';
