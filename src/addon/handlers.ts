@@ -52,15 +52,23 @@ export async function catalogHandler(configId: string, catalogId: string) {
       id: 'adaptive_setup',
       type: 'movie',
       name: '⚙️ Configura l\'addon',
-      poster: 'data:image/svg+xml;base64,' + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900"><rect fill="#0f172a" width="600" height="900"/><text x="300" y="400" fill="#0ea5e9" font-size="28" font-weight="800" text-anchor="middle" font-family="Arial">Configura</text><text x="300" y="440" fill="#64748b" font-size="16" text-anchor="middle" font-family="Arial">Connetti Trakt e fai il sync</text></svg>').toString('base64'),
+      poster: 'data:image/svg+xml;base64,' + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900"><rect fill="#0f172a" width="600" height="900"/><text x="300" y="400" fill="#fff" font-size="48" text-anchor="middle">Setup</text></svg>').toString('base64'),
       background: 'data:image/svg+xml;base64,' + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900"><rect fill="#0f172a" width="600" height="900"/></svg>').toString('base64'),
       description: 'Collega Trakt e sincronizza per vedere le tue statistiche.'
     }]};
   }
 
   const metas = (data?.metas ?? []).map((m: any) => {
-    const { statValue, statLabel, imageUrl, ...clean } = m;
-    return { ...clean, type: 'movie' };
+    const { imageUrl, ...rest } = m;
+    // Costruisci una description con il testo delle statistiche
+    const descWithStats = `${m.statLabel ? `[${m.statLabel}: ${m.statValue}]\n` : ''}${m.description}`;
+    return { 
+      ...rest, 
+      type: 'movie',
+      description: descWithStats,
+      // Mantieni poster se disponibile altrimenti usa il background (fallback SVG)
+      poster: m.poster || m.background
+    };
   });
 
   return { metas };
