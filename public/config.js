@@ -10,14 +10,17 @@ const maxCards = document.getElementById('maxCards');
 const focusMode = document.getElementById('focusMode');
 const stepAuth = document.getElementById('stepAuth');
 const stepPrefs = document.getElementById('stepPrefs');
+const stepPreview = document.getElementById('stepPreview');
 const stepInstall = document.getElementById('stepInstall');
+const previewGrid = document.getElementById('previewGrid');
 const connectedBadge = document.getElementById('connectedBadge');
 const usernameDisplay = document.getElementById('usernameDisplay');
-
 const syncBtn = document.getElementById('syncBtn');
 const syncStatus = document.getElementById('syncStatus');
+
 const pathParts = location.pathname.split('/').filter(Boolean);
 let configId = pathParts[1] || null;
+let manifestUrl = '';
 
 document.querySelectorAll('.card-option').forEach(el => {
   el.addEventListener('click', () => {
@@ -49,7 +52,7 @@ function setStatus(text, done) {
 
 function updateManifestUrl(lastSync) {
   const t = Date.now();
-  const manifestUrl = `${location.origin}/${configId}/manifest.json?_=${t}`;
+  manifestUrl = `${location.origin}/${configId}/manifest.json?_=${t}`;
   manifestBox.textContent = manifestUrl;
   const syncInfo = document.getElementById('syncInfo');
   if (syncInfo && lastSync) {
@@ -60,6 +63,32 @@ function updateManifestUrl(lastSync) {
 
 function selectedCardTypes() {
   return [...document.querySelectorAll('input[name="cardType"]:checked')].map(el => el.value);
+}
+
+async function loadPreview() {
+  if (!configId || !previewGrid) return;
+  previewGrid.innerHTML = '<p style="color:var(--muted)">Caricamento anteprima...</p>';
+  stepPreview.style.display = 'flex';
+  try {
+    const res = await fetch(`/${configId}/catalog/movie/adaptive-insights.json`);
+    const data = await res.json();
+    if (!data.metas || data.metas.length === 0) {
+      previewGrid.innerHTML = '<p style="color:var(--muted)">Nessuna card disponibile. Fai il sync con Trakt.</p>';
+      return;
+    }
+    previewGrid.innerHTML = '';
+    for (const m of data.metas) {
+      const card = document.createElement('div');
+      card.className = 'preview-card';
+      card.innerHTML = `
+        <img src="${m.poster}" alt="${m.name}" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22300%22><rect fill=%22%230f172a%22 width=%22200%22 height=%22300%22/><text x=%22100%22 y=%22150%22 fill=%22%2364748b%22 font-size=%2214%22 text-anchor=%22middle%22 font-family=%22Arial%22>${encodeURIComponent(m.name)}</text></svg>'">
+        <div class="preview-label">${m.name}</div>
+      `;
+      previewGrid.appendChild(card);
+    }
+  } catch {
+    previewGrid.innerHTML = '<p style="color:var(--muted)">Errore nel caricamento anteprima.</p>';
+  }
 }
 
 async function loadConfig() {
@@ -103,16 +132,21 @@ async function loadConfig() {
   }
 
   updateManifestUrl(data.last_sync_at);
-  installBtn.onclick = async () => {
-    await navigator.clipboard.writeText(manifestUrl);
-    installBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M6 10l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Copiato!';
-    installBtn.style.background = '#22c55e';
-    setTimeout(() => {
-      installBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M6 14l4 4 4-4M10 2v12" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Copia URL';
-      installBtn.style.background = '';
-    }, 2000);
-  };
+
+  if (data.last_sync_at) {
+    loadPreview();
+  }
 }
+
+installBtn.onclick = async () => {
+  await navigator.clipboard.writeText(manifestUrl);
+  installBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M6 10l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Copiato!';
+  installBtn.style.background = '#22c55e';
+  setTimeout(() => {
+    installBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M6 14l4 4 4-4M10 2v12" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Copia URL';
+    installBtn.style.background = '';
+  }, 2000);
+};
 
 createBtn.onclick = async () => {
   createBtn.disabled = true;
@@ -185,8 +219,8 @@ syncBtn.addEventListener('click', async () => {
   if (data.ok) {
     syncStatus.textContent = `Sync riuscita! ${data.count} eventi importati.`;
     syncStatus.className = 'sync-status success';
-    // Ricarica la config per aggiornare l'URL manifest
     loadConfig();
+    loadPreview();
   } else {
     syncStatus.textContent = data.error || 'Errore sync';
     syncStatus.className = 'sync-status error';

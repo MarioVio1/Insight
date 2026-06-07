@@ -287,7 +287,7 @@ export async function computeAdaptiveInsights(configId: string) {
     .eq('config_id', configId);
 
   if (!events || events.length === 0) {
-    await supabase.from('insight_snapshots').upsert({
+    await safeUpsert(configId, {
       config_id: configId,
       taste_profile: 'mixed',
       seasonal_key: 'standard',
@@ -299,7 +299,7 @@ export async function computeAdaptiveInsights(configId: string) {
       top_directors: [],
       ranking: null,
       generated_at: new Date().toISOString()
-    }, { onConflict: 'config_id' });
+    });
     return;
   }
 
@@ -325,7 +325,7 @@ export async function computeAdaptiveInsights(configId: string) {
     // errore ranking
   }
 
-  await supabase.from('insight_snapshots').upsert({
+  await safeUpsert(configId, {
     config_id: configId,
     taste_profile: 'mixed',
     seasonal_key: season.seasonKey,
@@ -337,5 +337,15 @@ export async function computeAdaptiveInsights(configId: string) {
     top_directors: topDirectors,
     ranking,
     generated_at: new Date().toISOString()
-  }, { onConflict: 'config_id' });
+  });
+}
+
+async function safeUpsert(configId: string, payload: Record<string, any>) {
+  const { error } = await supabase.from('insight_snapshots').upsert(payload, { onConflict: 'config_id' });
+  if (error && String(error).includes('does not exist')) {
+    const { top_actors, top_directors, ranking, ...basic } = payload;
+    await supabase.from('insight_snapshots').upsert(basic, { onConflict: 'config_id' });
+  } else if (error) {
+    console.error('insight_snapshots upsert error:', error);
+  }
 }
