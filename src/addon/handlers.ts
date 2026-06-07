@@ -47,6 +47,17 @@ export async function catalogHandler(configId: string, catalogId: string) {
     .eq('catalog_id', 'adaptive-insights')
     .maybeSingle();
 
+  if (!data?.metas?.length) {
+    return { metas: [{
+      id: 'adaptive_setup',
+      type: 'movie',
+      name: '⚙️ Configura l\'addon',
+      poster: 'data:image/svg+xml;base64,' + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900"><rect fill="#0f172a" width="600" height="900"/><text x="300" y="400" fill="#0ea5e9" font-size="28" font-weight="800" text-anchor="middle" font-family="Arial">Configura</text><text x="300" y="440" fill="#64748b" font-size="16" text-anchor="middle" font-family="Arial">Connetti Trakt e fai il sync</text></svg>').toString('base64'),
+      background: 'data:image/svg+xml;base64,' + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900"><rect fill="#0f172a" width="600" height="900"/></svg>').toString('base64'),
+      description: 'Collega Trakt e sincronizza per vedere le tue statistiche.'
+    }]};
+  }
+
   const metas = (data?.metas ?? []).map((m: any) => {
     const { statValue, statLabel, imageUrl, ...clean } = m;
     return { ...clean, type: 'movie' };
