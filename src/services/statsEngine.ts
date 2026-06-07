@@ -341,11 +341,15 @@ export async function computeAdaptiveInsights(configId: string) {
 }
 
 async function safeUpsert(configId: string, payload: Record<string, any>) {
+  if (!payload) return;
   const { error } = await supabase.from('insight_snapshots').upsert(payload, { onConflict: 'config_id' });
-  if (error && String(error).includes('does not exist')) {
-    const { top_actors, top_directors, ranking, ...basic } = payload;
-    await supabase.from('insight_snapshots').upsert(basic, { onConflict: 'config_id' });
-  } else if (error) {
-    console.error('insight_snapshots upsert error:', error);
+  if (!error) return;
+  const msg = String(error);
+  if (msg.includes('does not exist')) {
+    const { top_actors, top_directors, ranking, ...basic } = payload as any;
+    const { error: e2 } = await supabase.from('insight_snapshots').upsert(basic, { onConflict: 'config_id' });
+    if (e2) console.error('safeUpsert retry error:', String(e2).slice(0, 200));
+  } else {
+    console.error('safeUpsert error:', msg.slice(0, 200));
   }
 }
