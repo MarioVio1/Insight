@@ -9,7 +9,7 @@ import { catalogHandler, metaHandler } from './addon/handlers.js';
 import { startCron } from './jobs/cron.js';
 import { logger } from './utils/logger.js';
 import { posterHandler } from './api/poster.js';
-import { ensureTables } from './services/db.js';
+import { resolveConfigId, checkTables } from './services/db.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,25 +28,39 @@ app.get('/manifest.json', (_req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.json(getManifest());
 });
-app.get('/:configId/manifest.json', (req, res) => {
+
+app.get('/:configId/manifest.json', async (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-  res.json(getManifest(req.params.configId));
+  const uuid = await resolveConfigId(req.params.configId);
+  if (!uuid) return res.status(404).json({ error: 'Config not found' });
+  res.json(getManifest(uuid));
 });
+
 app.get('/:configId/catalog/:type/:id/:extra?.json', async (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-  try { res.json(await catalogHandler(req.params.configId, req.params.id)); }
+  const uuid = await resolveConfigId(req.params.configId);
+  if (!uuid) return res.status(404).json({ metas: [] });
+  try { res.json(await catalogHandler(uuid, req.params.id)); }
   catch (error) { logger.error({ error }, 'Catalog error'); res.status(500).json({ metas: [] }); }
 });
+
 app.get('/:configId/meta/:type/:id.json', async (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-  try { res.json(await metaHandler(req.params.configId, req.params.id)); }
+  const uuid = await resolveConfigId(req.params.configId);
+  if (!uuid) return res.status(404).json({ meta: null });
+  try { res.json(await metaHandler(uuid, req.params.id)); }
   catch (error) { logger.error({ error }, 'Meta error'); res.status(500).json({ meta: null }); }
 });
+
 app.get('/configure/:configId?', (_req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
 app.use(routes);
+
 const PORT = parseInt(process.env.PORT || '3000', 10);
 app.listen(PORT, '0.0.0.0', async () => {
   logger.info({ port: PORT }, 'Server started');
-  await ensureTables();
+  const tablesOk = await checkTables();
+  if (!tablesOk) {
+    logger.warn('Tabelle DB mancanti! Esegui supabase/init.sql nel Supabase SQL Editor.');
+  }
   startCron();
 });

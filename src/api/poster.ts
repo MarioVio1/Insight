@@ -1,18 +1,20 @@
 import { Request, Response } from 'express';
 import { supabase } from '../services/supabase.js';
 import { generateSvgPoster } from '../services/artworkService.js';
+import { resolveConfigId } from '../services/db.js';
 
 const cache = new Map<string, { svg: string; age: number }>();
-const CACHE_TTL = 60_000; // 1 minuto
+const CACHE_TTL = 60_000;
 
 export async function posterHandler(req: Request, res: Response) {
   try {
     const { configId, cardId } = req.params;
-    if (!configId || !cardId) {
-      return res.status(400).send('Missing params');
-    }
+    if (!configId || !cardId) return res.status(400).send('Missing params');
 
-    const cacheKey = `${configId}_${cardId}`;
+    const uuid = await resolveConfigId(configId);
+    if (!uuid) return res.status(404).send('Config not found');
+
+    const cacheKey = `${uuid}_${cardId}`;
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.age < CACHE_TTL) {
       res.setHeader('Content-Type', 'image/svg+xml');
@@ -23,7 +25,7 @@ export async function posterHandler(req: Request, res: Response) {
     const { data: rowData } = await supabase
       .from('adaptive_rows')
       .select('metas')
-      .eq('config_id', configId)
+      .eq('config_id', uuid)
       .eq('catalog_id', 'adaptive-insights')
       .maybeSingle();
 

@@ -28,11 +28,16 @@
         <div class="step-number">1</div>
         <div class="step-content">
           <h3>Crea la tua configurazione</h3>
-          <p>Avvia una nuova istanza per iniziare.</p>
-          <button id="createBtn" class="btn primary">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
-            Nuova configurazione
-          </button>
+          <p>Scegli un nome unico per la tua configurazione (es. il tuo username).</p>
+          <form id="createForm" style="display:flex;gap:8px;flex-wrap:wrap">
+            <input type="text" id="slugInput" placeholder="es. mario123" required
+              style="flex:1;min-width:160px;padding:12px 16px;border-radius:12px;border:1px solid var(--border);background:var(--bg-card);color:var(--fg);font-size:15px;outline:none">
+            <button id="createBtn" class="btn primary">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+              Crea / Apri
+            </button>
+          </form>
+          <p class="hint" style="margin-top:8px">Se il nome esiste, la configurazione verrà aperta.</p>
         </div>
       </div>
 

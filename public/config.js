@@ -1,7 +1,9 @@
 const statusEl = document.getElementById('status');
 const spinner = statusEl?.querySelector('.spinner');
 const statusText = statusEl?.querySelector('span:last-child');
+const createForm = document.getElementById('createForm');
 const createBtn = document.getElementById('createBtn');
+const slugInput = document.getElementById('slugInput');
 const loginBtn = document.getElementById('loginBtn');
 const installBtn = document.getElementById('installBtn');
 const manifestBox = document.getElementById('manifestBox');
@@ -93,14 +95,14 @@ async function loadPreview() {
 
 async function loadConfig() {
   if (!configId) {
-    setStatus('Crea una configurazione per iniziare.', false);
+    setStatus('Inserisci un nome e premi "Crea / Apri".', false);
     return;
   }
   setStatus('Caricamento configurazione...', false);
   const res = await fetch(`/api/config/${configId}`);
   const data = await res.json();
   if (!res.ok) {
-    setStatus(data.error || 'Errore', false);
+    setStatus(data.error || 'Configurazione non trovata. Creane una nuova sopra.', false);
     return;
   }
   setStatus('', true);
@@ -148,13 +150,18 @@ installBtn.onclick = async () => {
   }, 2000);
 };
 
-createBtn.onclick = async () => {
+createForm.onsubmit = async (e) => {
+  e.preventDefault();
+  const slug = slugInput.value.trim().replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
+  if (!slug) return;
+
   createBtn.disabled = true;
   createBtn.textContent = 'Creazione...';
   const res = await fetch('/api/config', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
+      slug,
       max_cards: parseInt(maxCards.value || '10', 10),
       enabled_card_types: selectedCardTypes(),
       focus_mode: focusMode.value,
@@ -164,13 +171,13 @@ createBtn.onclick = async () => {
     })
   });
   const data = await res.json();
+  createBtn.disabled = false;
+  createBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg> Crea / Apri';
   if (!res.ok) {
     setStatus(data.error || 'Errore creazione', false);
-    createBtn.disabled = false;
-    createBtn.textContent = 'Crea configurazione';
     return;
   }
-  window.location.href = `/configure/${data.id}`;
+  window.location.href = `/configure/${data.slug}`;
 };
 
 prefsForm.addEventListener('submit', async (e) => {
