@@ -3,9 +3,62 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Insight Configurator</title>
+  <title>Adaptive Insights — Statistiche Trakt in Stremio</title>
   <link rel="stylesheet" href="/style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%230ea5e9'/%3E%3Cstop offset='100%25' stop-color='%237c3aed'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='256' height='256' rx='48' fill='url(%23g)'/%3E%3Cg transform='translate(128,128)'%3E%3Cpolygon points='-40,-60 40,-60 0,60' fill='%23ffffff' opacity='0.95'/%3E%3Cpolygon points='-20,-30 20,-30 0,30' fill='%230ea5e9'/%3E%3C/g%3E%3Ccircle cx='188' cy='68' r='24' fill='%23fbbf24' opacity='0.9'/%3E%3Ctext x='188' y='76' fill='%23020617' font-size='22' font-weight='900' font-family='Arial' text-anchor='middle'%3Ei%3C/text%3E%3C/svg%3E">
+  <style>
+    .landing {
+      display: flex; flex-direction: column; min-height: 100vh;
+      position: relative; z-index: 1;
+    }
+    .hero {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 60px 20px 40px; flex: 1;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 12px; border-radius: 20px;
+      background: rgba(249,115,22,.1); border: 1px solid rgba(249,115,22,.2);
+      color: #fb923c; font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: .5px; margin-bottom: 16px;
+    }
+    .hero-icon {
+      width: 72px; height: 72px; margin-bottom: 20px;
+      filter: drop-shadow(0 4px 20px rgba(249,115,22,.3));
+    }
+    .hero h1 {
+      font-size: clamp(28px,5vw,52px); font-weight: 800; letter-spacing: -1px;
+      line-height: 1.1; margin-bottom: 12px;
+    }
+    .hero h1 span { background: linear-gradient(135deg,#0ea5e9,#a855f7,#f97316); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero p {
+      font-size: clamp(14px,2vw,17px); color: rgba(255,255,255,.6);
+      max-width: 520px; line-height: 1.6; margin-bottom: 24px;
+    }
+    .hero-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+    .features {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px; padding: 20px; max-width: 900px; margin: 0 auto;
+    }
+    .fcard {
+      padding: 16px; border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.06);
+      background: rgba(255,255,255,.02);
+    }
+    .fcard-icon { font-size: 20px; margin-bottom: 6px; }
+    .fcard h4 { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
+    .fcard p { font-size: 11px; color: rgba(255,255,255,.45); line-height: 1.5; }
+    .footer {
+      text-align: center; padding: 20px;
+      font-size: 11px; color: rgba(255,255,255,.25);
+    }
+    .setup-box {
+      max-width: 420px; margin: 0 auto; width: 100%;
+    }
+    .show-config { display: none; }
+    .show-config.active { display: flex; }
+  </style>
 </head>
 <body>
   <div class="ambient">
@@ -14,16 +67,79 @@
     <div class="ambient-glow ag-3"></div>
   </div>
 
-  <div id="app">
-    <!-- NAV -->
-    <nav class="nav">
+  <div class="landing" id="landingPage">
+    <nav class="nav" style="background:transparent;backdrop-filter:none;border:none">
       <div class="nav-brand">
-        <svg width="32" height="32" viewBox="0 0 256 256">
+        <svg width="28" height="28" viewBox="0 0 256 256">
           <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0ea5e9"/><stop offset="100%" stop-color="#7c3aed"/></linearGradient></defs>
           <rect width="256" height="256" rx="48" fill="url(#lg)"/>
           <g transform="translate(128,128)"><polygon points="-40,-60 40,-60 0,60" fill="#ffffff" opacity="0.95"/><polygon points="-20,-30 20,-30 0,30" fill="#0ea5e9"/></g>
         </svg>
+        <span>Adaptive Insights</span>
+      </div>
+      <div class="nav-actions" style="margin-left:auto">
+        <a href="/configure" class="btn btn-primary btn-sm" style="text-decoration:none">Configura</a>
+      </div>
+    </nav>
+
+    <div class="hero">
+      <div class="hero-icon">
+        <svg width="72" height="72" viewBox="0 0 256 256">
+          <defs><linearGradient id="hg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0ea5e9"/><stop offset="100%" stop-color="#7c3aed"/></linearGradient></defs>
+          <rect width="256" height="256" rx="56" fill="url(#hg)"/>
+          <rect x="8" y="8" width="240" height="240" rx="50" fill="none" stroke="#ffffff20" stroke-width="2"/>
+          <g transform="translate(128,128)">
+            <polygon points="-44,-66 44,-66 0,66" fill="#ffffff" opacity="0.95"/>
+            <polygon points="-22,-33 22,-33 0,33" fill="#0ea5e9"/>
+          </g>
+          <circle cx="192" cy="64" r="28" fill="#fbbf24" opacity="0.9"/>
+          <text x="192" y="73" fill="#020617" font-size="26" font-weight="900" font-family="Arial" text-anchor="middle">i</text>
+        </svg>
+      </div>
+      <div class="hero-badge">🚀 Addon Stremio rivoluzionario</div>
+      <h1>Le tue statistiche <span>Trakt</span> nella home di Stremio</h1>
+      <p>Ogni giorno, 21 card dinamiche mostrano i tuoi dati di visione: totali, streak, binge, generi, attori, registi, anime, ricordi e molto altro. Nessun altro addon fa questo.</p>
+      <div class="hero-actions">
+        <a href="/configure" class="btn btn-primary" style="text-decoration:none;padding:10px 24px">Inizia Ora</a>
+        <a href="#features" class="btn btn-ghost" style="text-decoration:none;padding:10px 24px">Scopri di più</a>
+      </div>
+
+      <div class="setup-box" id="setupBox" style="display:none;margin-top:32px">
+        <form id="createForm" class="slug">
+          <div class="slug-in"><span class="slug-px">insight.to/</span><input type="text" id="slugInput" placeholder="mario123" required autocomplete="off" spellcheck="false"></div>
+          <button class="btn btn-primary" type="submit" id="createBtn">Crea</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="features" id="features">
+      <div class="fcard"><div class="fcard-icon">📊</div><h4>Totali</h4><p>Ore, film, episodi, anime, titoli unici — tutto ciò che hai guardato</p></div>
+      <div class="fcard"><div class="fcard-icon">🔥</div><h4>Streak</h4><p>Giorni consecutivi di visione, la tua costanza</p></div>
+      <div class="fcard"><div class="fcard-icon">🎯</div><h4>Binge</h4><p>Maratone di episodi, le tue sessioni più intense</p></div>
+      <div class="fcard"><div class="fcard-icon">🎬</div><h4>Generi</h4><p>I generi che dominano il tuo profilo</p></div>
+      <div class="fcard"><div class="fcard-icon">⭐</div><h4>Rewatch</h4><p>I titoli che guardi e riguardi senza stancarti</p></div>
+      <div class="fcard"><div class="fcard-icon">🎭</div><h4>Attori &amp; Registi</h4><p>I tuoi artisti preferiti, quantificati</p></div>
+      <div class="fcard"><div class="fcard-icon">🗓️</div><h4>Ricordi</h4><p>Cosa guardavi esattamente un anno fa</p></div>
+      <div class="fcard"><div class="fcard-icon">🌙</div><h4>Fasce Orarie</h4><p>Sei un nottambulo o un mattiniero?</p></div>
+      <div class="fcard"><div class="fcard-icon">🏆</div><h4>Classifica</h4><p>Come ti posizioni rispetto agli altri utenti</p></div>
+      <div class="fcard"><div class="fcard-icon">📈</div><h4>Trend</h4><p>Confronto mensile e annuale delle tue visioni</p></div>
+    </div>
+
+    <div class="footer">
+      Adaptive Insights &middot; <a href="https://trakt.tv" style="color:rgba(255,255,255,.3)">Trakt</a> &middot; <a href="https://stremio.com" style="color:rgba(255,255,255,.3)">Stremio</a>
+    </div>
+  </div>
+
+  <div id="app" style="display:none">
+    <nav class="nav">
+      <div class="nav-brand">
+        <svg width="32" height="32" viewBox="0 0 256 256">
+          <defs><linearGradient id="lg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0ea5e9"/><stop offset="100%" stop-color="#7c3aed"/></linearGradient></defs>
+          <rect width="256" height="256" rx="48" fill="url(#lg2)"/>
+          <g transform="translate(128,128)"><polygon points="-40,-60 40,-60 0,60" fill="#ffffff" opacity="0.95"/><polygon points="-20,-30 20,-30 0,30" fill="#0ea5e9"/></g>
+        </svg>
         <span>Insight</span>
+        <a href="/" style="color:var(--m);font-size:11px;margin-left:4px;text-decoration:none">&larr; Home</a>
       </div>
       <div class="nav-tabs">
         <button class="nav-tab active" data-section="setup"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>Setup</button>
@@ -36,28 +152,21 @@
       </div>
     </nav>
 
-    <!-- WORKSPACE -->
     <div class="workspace">
       <div class="workspace-grid">
-
-        <!-- COL 1: Setup + Cards (controls) -->
         <div class="panel" style="grid-column:1">
           <div class="panel-header"><h3>Configurator</h3></div>
           <div class="panel-body" id="panelBody">
-
-            <!-- SECTION: Setup -->
             <div class="p-section" id="section-setup">
               <div class="p-section-title">Setup</div>
               <div class="step">
                 <p>Crea o apri la tua configurazione personale</p>
-                <form id="createForm" class="slug">
-                  <div class="slug-in"><span class="slug-px">insight.to/</span><input type="text" id="slugInput" placeholder="mario123" required autocomplete="off" spellcheck="false"></div>
-                  <button class="btn btn-primary" type="submit" id="createBtn">Crea</button>
+                <form id="createForm2" class="slug">
+                  <div class="slug-in"><span class="slug-px">insight.to/</span><input type="text" id="slugInput2" placeholder="mario123" required autocomplete="off" spellcheck="false"></div>
+                  <button class="btn btn-primary" type="submit" id="createBtn2">Crea</button>
                 </form>
               </div>
             </div>
-
-            <!-- SECTION: Trakt -->
             <div class="p-section hide" id="section-trakt">
               <div class="p-section-title">Trakt</div>
               <div class="step">
@@ -71,11 +180,8 @@
                 </div>
               </div>
             </div>
-
-            <!-- SECTION: Cards -->
             <div class="p-section hide" id="section-cards">
               <div class="p-section-title">Cards</div>
-
               <div style="margin-bottom:10px">
                 <div class="seg">
                   <button class="seg-btn active" data-tab="all">Tutte</button>
@@ -84,7 +190,6 @@
                   <button class="seg-btn" data-tab="time">Tempo</button>
                 </div>
               </div>
-
               <form id="prefsForm">
                 <div class="chip-grid" id="chipGrid">
                   <label class="chip active" data-cat="stats" data-val="totals"><span class="chip-dot" style="background:#22c55e"></span><input type="checkbox" name="c" value="totals" checked hidden><span>Totali</span></label>
@@ -109,8 +214,8 @@
                   <label class="chip" data-cat="time" data-val="mese"><span class="chip-dot" style="background:#a3e635"></span><input type="checkbox" name="c" value="mese" hidden><span>Mese top</span></label>
                   <label class="chip" data-cat="stats" data-val="split"><span class="chip-dot" style="background:#2dd4bf"></span><input type="checkbox" name="c" value="split" hidden><span>Film/Serie</span></label>
                   <label class="chip" data-cat="time" data-val="notturno"><span class="chip-dot" style="background:#6366f1"></span><input type="checkbox" name="c" value="notturno" hidden><span>Fascia oraria</span></label>
+                  <label class="chip" data-cat="content" data-val="events"><span class="chip-dot" style="background:#0ea5e9"></span><input type="checkbox" name="c" value="events" hidden><span>Attività</span></label>
                 </div>
-
                 <div class="inp-wrap" style="margin-bottom:10px">
                   <select class="sel" id="focusMode" style="flex:1">
                     <option value="adaptive">Modalità focus: Adaptive</option>
@@ -121,8 +226,6 @@
                 </div>
               </form>
             </div>
-
-            <!-- Sync -->
             <div class="p-section hide" id="section-sync">
               <button id="syncBtn" class="btn btn-primary" style="width:100%">
                 <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M4 10a6 6 0 0112 0M16 10l-3-3M4 10l3-3" stroke="#000" stroke-width="2" stroke-linecap="round"/></svg>
@@ -130,11 +233,8 @@
               </button>
               <div id="syncStatus" class="ssync"></div>
             </div>
-
           </div>
         </div>
-
-        <!-- COL 2: Preview -->
         <div class="panel" style="grid-column:2">
           <div class="panel-header">
             <h3>Preview</h3>
@@ -148,13 +248,9 @@
             </div>
           </div>
         </div>
-
-        <!-- COL 3: Install + Status -->
         <div class="panel" style="grid-column:3">
           <div class="panel-header"><h3>Install</h3></div>
           <div class="panel-body">
-
-            <!-- Token -->
             <div class="p-section hide" id="section-token">
               <div class="p-section-title">Token</div>
               <div class="tbox">
@@ -163,8 +259,6 @@
                 <button id="udidCopyBtn" class="btn btn-ghost btn-icon" title="Copia"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><rect x="4" y="4" width="12" height="14" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 2h6a2 2 0 012 2v10" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></button>
               </div>
             </div>
-
-            <!-- Manifest -->
             <div class="p-section">
               <div class="p-section-title">Manifest URL</div>
               <div class="mbox">
@@ -173,8 +267,6 @@
               </div>
               <p class="hint" id="syncInfo"></p>
             </div>
-
-            <!-- Status -->
             <div class="p-section" id="section-status">
               <div class="p-section-title">Stato</div>
               <div class="sinfo">
@@ -185,10 +277,8 @@
               </div>
               <div class="sissues" id="sIssues"></div>
             </div>
-
           </div>
         </div>
-
       </div>
     </div>
   </div>

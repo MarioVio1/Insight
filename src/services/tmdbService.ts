@@ -76,3 +76,26 @@ export async function fetchImageBuffer(url: string): Promise<Buffer> {
   const { data } = await axios.get(url, { responseType: 'arraybuffer' });
   return Buffer.from(data);
 }
+
+export async function searchTmdbPerson(query: string): Promise<{ name: string; profile_path: string | null; id: number } | null> {
+  if (!process.env.TMDB_API_KEY && !process.env.TMDB_BEARER_TOKEN) return null;
+  const params: Record<string, string> = { query };
+  if (process.env.TMDB_API_KEY) params.api_key = process.env.TMDB_API_KEY;
+  try {
+    const { data } = await axios.get(`${TMDB_BASE}/search/person`, { params, headers: authHeaders() });
+    if (data?.results?.[0]) {
+      return {
+        name: data.results[0].name,
+        profile_path: data.results[0].profile_path || null,
+        id: data.results[0].id
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export function tmdbPersonImage(profilePath: string | null): string | null {
+  return profilePath ? `https://image.tmdb.org/t/p/w185${profilePath}` : null;
+}

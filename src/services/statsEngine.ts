@@ -1,5 +1,6 @@
 import { supabase } from './supabase.js';
 import { fetchCredits, fetchTmdbDetails } from './tmdbService.js';
+import { isAnimeByKitsu } from './kitsuService.js';
 
 const DAY_MS = 86400000;
 const WEEK_MS = 7 * DAY_MS;
@@ -442,9 +443,24 @@ export async function enrichEventsWithTmdbAnime(events: any[]): Promise<any[]> {
     );
     for (let j = 0; j < results.length; j++) {
       const r = results[j];
+      const item = chunk[j];
       if (r.status === 'fulfilled' && r.value) {
         const isAnime = r.value.originalLanguage === 'ja' && r.value.genres.includes(ANIME_GENRE_ID);
-        if (isAnime) animeSet.add(chunk[j].tmdb_id);
+        if (isAnime) {
+          animeSet.add(item.tmdb_id);
+        } else if (r.value.originalLanguage === 'ja') {
+          // TMDB says Japanese but not Animation genre — double-check with Kitsu
+          try {
+            const kitsuHit = await isAnimeByKitsu(item.tmdb_id, item.type);
+            if (kitsuHit) animeSet.add(item.tmdb_id);
+          } catch {}
+        }
+      } else if (r.status === 'rejected') {
+        // TMDB failed — try Kitsu as fallback
+        try {
+          const kitsuHit = await isAnimeByKitsu(item.tmdb_id, item.type);
+          if (kitsuHit) animeSet.add(item.tmdb_id);
+        } catch {}
       }
     }
   }

@@ -19,25 +19,26 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
 app.get('/health', (_req, res) => res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() }));
-app.get('/logo.png', (_req, res) => {
-  res.setHeader('Content-Type', 'image/svg+xml');
-  res.setHeader('Cache-Control', 'public, max-age=86400');
-  res.send(`<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0ea5e9"/>
-      <stop offset="100%" stop-color="#7c3aed"/>
-    </linearGradient>
-  </defs>
+app.get('/logo.png', async (_req, res) => {
+  const logo = `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0ea5e9"/><stop offset="100%" stop-color="#7c3aed"/></linearGradient></defs>
   <rect width="256" height="256" rx="48" fill="url(#g)"/>
   <rect x="8" y="8" width="240" height="240" rx="44" fill="none" stroke="#ffffff30" stroke-width="2"/>
-  <g transform="translate(128,128)">
-    <polygon points="-40,-60 40,-60 0,60" fill="#ffffff" opacity="0.95"/>
-    <polygon points="-20,-30 20,-30 0,30" fill="#0ea5e9"/>
-  </g>
+  <g transform="translate(128,128)"><polygon points="-40,-60 40,-60 0,60" fill="#ffffff" opacity="0.95"/><polygon points="-20,-30 20,-30 0,30" fill="#0ea5e9"/></g>
   <circle cx="188" cy="68" r="24" fill="#fbbf24" opacity="0.9"/>
   <text x="188" y="76" fill="#020617" font-size="22" font-weight="900" font-family="Arial" text-anchor="middle">i</text>
-</svg>`);
+</svg>`;
+  try {
+    const sharp = (await import('sharp')).default;
+    const png = await sharp(Buffer.from(logo)).resize(256, 256).png().toBuffer();
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.send(png);
+  } catch {
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.send(logo);
+  }
 });
 app.get('/poster/:configId/:cardId.png', posterHandler);
 app.get('/manifest.json', (_req, res) => {
