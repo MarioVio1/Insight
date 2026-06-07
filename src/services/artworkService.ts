@@ -1,5 +1,3 @@
-import sharp from 'sharp';
-
 export function generateSvgPoster(opts: { title: string; subtitle: string; accent?: string; theme?: string; statValue?: string; statLabel?: string }) {
   const accent = opts.accent || '#0ea5e9';
   const theme = opts.theme || '#0f172a';
@@ -54,17 +52,6 @@ export function generateSvgPoster(opts: { title: string; subtitle: string; accen
     <text x="48" y="845" fill="#475569" font-size="13" font-family="${ff}" letter-spacing="1">TRACKT STATS · ${new Date().toLocaleDateString('it-IT')}</text>
   </svg>`;
   return svg;
-}
-
-export async function generatePngPoster(opts: { title: string; subtitle: string; accent?: string; theme?: string; statValue?: string; statLabel?: string }): Promise<{ data: Buffer; type: 'png' | 'svg' }> {
-  const svg = generateSvgPoster(opts);
-  try {
-    const data = await sharp(Buffer.from(svg)).png({ force: true }).toBuffer();
-    return { data, type: 'png' };
-  } catch {
-    // Se sharp fallisce (es. font mancanti), ritorna SVG
-    return { data: Buffer.from(svg), type: 'svg' };
-  }
 }
 
 export function svgToDataUri(svg: string) {

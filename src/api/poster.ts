@@ -1,12 +1,23 @@
 import { Request, Response } from 'express';
 import { supabase } from '../services/supabase.js';
-import { generatePngPoster } from '../services/artworkService.js';
+import { generateSvgPoster } from '../services/artworkService.js';
+
+const cache = new Map<string, { svg: string; age: number }>();
+const CACHE_TTL = 60_000; // 1 minuto
 
 export async function posterHandler(req: Request, res: Response) {
   try {
     const { configId, cardId } = req.params;
     if (!configId || !cardId) {
       return res.status(400).send('Missing params');
+    }
+
+    const cacheKey = `${configId}_${cardId}`;
+    const cached = cache.get(cacheKey);
+    if (cached && Date.now() - cached.age < CACHE_TTL) {
+      res.setHeader('Content-Type', 'image/svg+xml');
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      return res.send(cached.svg);
     }
 
     const { data: rowData } = await supabase
@@ -48,7 +59,7 @@ export async function posterHandler(req: Request, res: Response) {
     else if (cardId.includes('anime')) cardAccent = '#f43f5e';
     else if (cardId.includes('ranking')) cardAccent = '#fbbf24';
 
-    const result = await generatePngPoster({
+    const svg = generateSvgPoster({
       title: cardTitle,
       subtitle: cardDesc.slice(0, 60),
       accent: cardAccent,
@@ -56,12 +67,14 @@ export async function posterHandler(req: Request, res: Response) {
       statLabel
     });
 
-    res.setHeader('Content-Type', result.type === 'png' ? 'image/png' : 'image/svg+xml');
+    cache.set(cacheKey, { svg, age: Date.now() });
+
+    res.setHeader('Content-Type', 'image/svg+xml');
     res.setHeader('Cache-Control', 'public, max-age=3600');
-    res.send(result.data);
+    res.send(svg);
   } catch (error) {
-    const fallback = await generatePngPoster({ title: 'Insight', subtitle: 'Statistiche personali' });
-    res.setHeader('Content-Type', 'image/png');
-    res.send(fallback.data);
+    const svg = generateSvgPoster({ title: 'Insight', subtitle: 'Statistiche personali' });
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.send(svg);
   }
 }
