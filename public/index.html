@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Adaptive Insights — Statistiche Trakt in Stremio</title>
   <link rel="stylesheet" href="/style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%230ea5e9'/%3E%3Cstop offset='100%25' stop-color='%237c3aed'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='256' height='256' rx='48' fill='url(%23g)'/%3E%3Cg transform='translate(128,128)'%3E%3Cpolygon points='-40,-60 40,-60 0,60' fill='%23ffffff' opacity='0.95'/%3E%3Cpolygon points='-20,-30 20,-30 0,30' fill='%230ea5e9'/%3E%3C/g%3E%3Ccircle cx='188' cy='68' r='24' fill='%23fbbf24' opacity='0.9'/%3E%3Ctext x='188' y='76' fill='%23020617' font-size='22' font-weight='900' font-family='Arial' text-anchor='middle'%3Ei%3C/text%3E%3C/svg%3E">
   <style>
     .landing {
@@ -19,19 +19,19 @@
     .hero-badge {
       display: inline-flex; align-items: center; gap: 6px;
       padding: 4px 12px; border-radius: 20px;
-      background: rgba(249,115,22,.1); border: 1px solid rgba(249,115,22,.2);
-      color: #fb923c; font-size: 11px; font-weight: 600; text-transform: uppercase;
+      background: rgba(14,165,233,.1); border: 1px solid rgba(14,165,233,.2);
+      color: #38bdf8; font-size: 11px; font-weight: 600; text-transform: uppercase;
       letter-spacing: .5px; margin-bottom: 16px;
     }
     .hero-icon {
       width: 72px; height: 72px; margin-bottom: 20px;
-      filter: drop-shadow(0 4px 20px rgba(249,115,22,.3));
+      filter: drop-shadow(0 4px 20px rgba(14,165,233,.3));
     }
     .hero h1 {
       font-size: clamp(28px,5vw,52px); font-weight: 800; letter-spacing: -1px;
       line-height: 1.1; margin-bottom: 12px;
     }
-    .hero h1 span { background: linear-gradient(135deg,#0ea5e9,#a855f7,#f97316); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero h1 span { background: linear-gradient(135deg,#0ea5e9,#6366f1,#38bdf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     .hero p {
       font-size: clamp(14px,2vw,17px); color: rgba(255,255,255,.6);
       max-width: 520px; line-height: 1.6; margin-bottom: 24px;
@@ -199,7 +199,7 @@
               <form id="prefsForm">
                 <div class="chip-grid" id="chipGrid">
                   <label class="chip active" data-cat="stats" data-val="totals"><span class="chip-dot" style="background:#22c55e"></span><input type="checkbox" name="c" value="totals" checked hidden><span>Totali</span></label>
-                  <label class="chip active" data-cat="stats" data-val="streak"><span class="chip-dot" style="background:#f97316"></span><input type="checkbox" name="c" value="streak" checked hidden><span>Streak</span></label>
+                  <label class="chip active" data-cat="stats" data-val="streak"><span class="chip-dot" style="background:#0ea5e9"></span><input type="checkbox" name="c" value="streak" checked hidden><span>Streak</span></label>
                   <label class="chip active" data-cat="time" data-val="peak"><span class="chip-dot" style="background:#a855f7"></span><input type="checkbox" name="c" value="peak" checked hidden><span>Orario top</span></label>
                   <label class="chip active" data-cat="time" data-val="weekly"><span class="chip-dot" style="background:#38bdf8"></span><input type="checkbox" name="c" value="weekly" checked hidden><span>Giorno top</span></label>
                   <label class="chip active" data-cat="content" data-val="genre"><span class="chip-dot" style="background:#a855f7"></span><input type="checkbox" name="c" value="genre" checked hidden><span>Generi</span></label>
