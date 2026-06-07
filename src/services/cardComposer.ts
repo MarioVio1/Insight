@@ -30,16 +30,15 @@ async function cardMeta(
   opts?: { accent?: string; statValue?: string; statLabel?: string; imageUrl?: string; rating?: number }
 ) {
   const accent = opts?.accent || '#0ea5e9';
-  const svg = generateSvgPoster({
+  const posterSvg = generateSvgPoster({
     title: name,
     subtitle: description.slice(0, 50),
     accent,
     statValue: opts?.statValue,
-    statLabel: opts?.statLabel,
-    imageUrl: opts?.imageUrl
+    statLabel: opts?.statLabel
   });
 
-  const posterUri = svgToDataUri(svg);
+  const posterUri = svgToDataUri(posterSvg);
   const meta: any = {
     id,
     type: 'movie',
