@@ -1,4 +1,5 @@
 import { supabase } from './supabase.js';
+import { randomUUID } from 'crypto';
 
 const slugCache = new Map<string, { uuid: string; age: number }>();
 const CACHE_TTL = 60_000;
@@ -22,6 +23,31 @@ export async function resolveConfigId(slugOrId: string): Promise<string | null> 
     return data.id;
   }
   return null;
+}
+
+/**
+ * Genera o recupera un UDID fisso per una configurazione
+ * Il UDID rimane sempre lo stesso per il singolo utente
+ */
+export async function getOrCreateUdid(configId: string): Promise<string> {
+  const { data } = await supabase
+    .from('addon_configs')
+    .select('udid')
+    .eq('id', configId)
+    .maybeSingle();
+
+  if (data?.udid) {
+    return data.udid;
+  }
+
+  // Genera nuovo UDID e salvalo
+  const newUdid = randomUUID();
+  await supabase
+    .from('addon_configs')
+    .update({ udid: newUdid })
+    .eq('id', configId);
+
+  return newUdid;
 }
 
 const REQUIRED_TABLES = ['config_preferences', 'insight_snapshots', 'adaptive_rows', 'adaptive_meta', 'trakt_events'];
