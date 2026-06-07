@@ -3,288 +3,195 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Adaptive Insights Configurator</title>
+  <title>Insight Configurator</title>
   <link rel="stylesheet" href="/style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="bg-orbs">
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
-    <div class="orb orb-3"></div>
+  <div class="ambient">
+    <div class="ambient-glow ag-1"></div>
+    <div class="ambient-glow ag-2"></div>
+    <div class="ambient-glow ag-3"></div>
   </div>
 
-  <main class="wrap">
-    <header class="hero">
-      <div class="logo-wrap">
-        <svg width="56" height="56" viewBox="0 0 256 256">
-          <defs>
-            <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stop-color="#0ea5e9"/>
-              <stop offset="100%" stop-color="#7c3aed"/>
-            </linearGradient>
-          </defs>
+  <div id="app">
+    <!-- NAV -->
+    <nav class="nav">
+      <div class="nav-brand">
+        <svg width="32" height="32" viewBox="0 0 256 256">
+          <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0ea5e9"/><stop offset="100%" stop-color="#7c3aed"/></linearGradient></defs>
           <rect width="256" height="256" rx="48" fill="url(#lg)"/>
-          <rect x="8" y="8" width="240" height="240" rx="44" fill="none" stroke="#ffffff30" stroke-width="2"/>
-          <g transform="translate(128,128)">
-            <polygon points="-40,-60 40,-60 0,60" fill="#ffffff" opacity="0.95"/>
-            <polygon points="-20,-30 20,-30 0,30" fill="#0ea5e9"/>
-          </g>
-          <circle cx="188" cy="68" r="24" fill="#fbbf24" opacity="0.9"/>
-          <text x="188" y="76" fill="#020617" font-size="22" font-weight="900" font-family="Arial" text-anchor="middle">i</text>
+          <g transform="translate(128,128)"><polygon points="-40,-60 40,-60 0,60" fill="#ffffff" opacity="0.95"/><polygon points="-20,-30 20,-30 0,30" fill="#0ea5e9"/></g>
         </svg>
+        <span>Insight</span>
       </div>
-      <h1>Adaptive Insights</h1>
-      <p class="subtitle">Statistiche personali Trakt direttamente nella home di Stremio</p>
-    </header>
-
-    <div class="card" id="mainCard">
-      <div id="status" class="status-bar">
-        <span class="spinner"></span>
-        <span id="statusText">Caricamento...</span>
+      <div class="nav-tabs">
+        <button class="nav-tab active" data-section="setup"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>Setup</button>
+        <button class="nav-tab" data-section="cards">Cards</button>
+        <button class="nav-tab" data-section="preview">Preview</button>
+        <button class="nav-tab" data-section="install">Install</button>
       </div>
-
-      <!-- Step 1: Creazione slug -->
-      <div id="stepCreate" class="step" data-step="1">
-        <div class="step-badge">1</div>
-        <div class="step-body">
-          <h3>Crea o apri la tua configurazione</h3>
-          <p>Scegli un nome unico (es. il tuo username). Se esiste già, verrà riaperta.</p>
-          <form id="createForm" class="slug-form">
-            <div class="slug-input-wrap">
-              <span class="slug-prefix">insight.to/</span>
-              <input type="text" id="slugInput" placeholder="mario123" required
-                autocomplete="off" spellcheck="false">
-            </div>
-            <button id="createBtn" class="btn primary" type="submit">
-              <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
-              Crea / Apri
-            </button>
-          </form>
-          <p class="hint">Il nome sarà usato nel tuo URL personale: <code>/configure/&lt;nome&gt;</code></p>
-        </div>
+      <div class="nav-actions">
+        <span id="accountBadge" class="hide tag tag-success"><span id="uname"></span></span>
       </div>
+    </nav>
 
-      <!-- Step 2: Trakt Auth -->
-      <div id="stepAuth" class="step" style="display:none" data-step="2">
-        <div class="step-badge">
-          <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M5 10l3 3 7-7" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>
-        </div>
-        <div class="step-body">
-          <div class="step-header">
-            <h3>Collega Trakt</h3>
-            <span id="connectedBadge" class="badge badge-success" style="display:none">
-              <svg width="14" height="14" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="#22c55e"/><path d="M5 8l2 2 4-4" stroke="#fff" stroke-width="1.5" fill="none"/></svg>
-              <span id="usernameDisplay"></span>
-            </span>
-          </div>
-          <p>Autorizza l'accesso alla tua cronologia di Trakt.tv.</p>
-          <a id="loginBtn" class="btn secondary" href="#">
-            <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm-1 5l4 3-4 3V7z" fill="#fff"/></svg>
-            Collega Trakt
-          </a>
-        </div>
-      </div>
+    <!-- WORKSPACE -->
+    <div class="workspace">
+      <div class="workspace-grid">
 
-      <!-- Step 3: Card preferences -->
-      <div id="stepPrefs" class="step" style="display:none" data-step="3">
-        <div class="step-badge">3</div>
-        <div class="step-body">
-          <h3>Scegli le tue card</h3>
-          <p>Seleziona i tipi di statistiche da mostrare nella home di Stremio.</p>
+        <!-- COL 1: Setup + Cards (controls) -->
+        <div class="panel" style="grid-column:1">
+          <div class="panel-header"><h3>Configurator</h3></div>
+          <div class="panel-body" id="panelBody">
 
-          <div class="tabs">
-            <button class="tab active" data-tab="all">Tutte</button>
-            <button class="tab" data-tab="stats">Statistiche</button>
-            <button class="tab" data-tab="content">Contenuti</button>
-            <button class="tab" data-tab="time">Tempo</button>
-          </div>
-
-          <form id="prefsForm">
-            <div class="card-grid">
-              <label class="card-chip checked" data-category="stats" data-value="totals">
-                <input type="checkbox" name="cardType" value="totals" checked hidden>
-                <span class="chip-icon" style="background:#22c55e20;color:#22c55e">📊</span>
-                <span class="chip-label">Totali</span>
-              </label>
-              <label class="card-chip checked" data-category="stats" data-value="streak">
-                <input type="checkbox" name="cardType" value="streak" checked hidden>
-                <span class="chip-icon" style="background:#f9731620;color:#f97316">🔥</span>
-                <span class="chip-label">Streak</span>
-              </label>
-              <label class="card-chip checked" data-category="time" data-value="peak">
-                <input type="checkbox" name="cardType" value="peak" checked hidden>
-                <span class="chip-icon" style="background:#a855f720;color:#a855f7">🕐</span>
-                <span class="chip-label">Orario top</span>
-              </label>
-              <label class="card-chip checked" data-category="time" data-value="weekly">
-                <input type="checkbox" name="cardType" value="weekly" checked hidden>
-                <span class="chip-icon" style="background:#38bdf820;color:#38bdf8">📅</span>
-                <span class="chip-label">Giorno top</span>
-              </label>
-              <label class="card-chip checked" data-category="content" data-value="genre">
-                <input type="checkbox" name="cardType" value="genre" checked hidden>
-                <span class="chip-icon" style="background:#a855f720;color:#a855f7">🎭</span>
-                <span class="chip-label">Generi</span>
-              </label>
-              <label class="card-chip checked" data-category="content" data-value="binge">
-                <input type="checkbox" name="cardType" value="binge" checked hidden>
-                <span class="chip-icon" style="background:#ef444420;color:#ef4444">🍿</span>
-                <span class="chip-label">Binge</span>
-              </label>
-              <label class="card-chip" data-category="content" data-value="dropped">
-                <input type="checkbox" name="cardType" value="dropped" hidden>
-                <span class="chip-icon" style="background:#6b728020;color:#6b7280">⏸️</span>
-                <span class="chip-label">In pausa</span>
-              </label>
-              <label class="card-chip" data-category="stats" data-value="monthly">
-                <input type="checkbox" name="cardType" value="monthly" hidden>
-                <span class="chip-icon" style="background:#14b8a620;color:#14b8a6">📈</span>
-                <span class="chip-label">Mensile</span>
-              </label>
-              <label class="card-chip" data-category="time" data-value="recurring">
-                <input type="checkbox" name="cardType" value="recurring" hidden>
-                <span class="chip-icon" style="background:#f59e0b20;color:#f59e0b">🔄</span>
-                <span class="chip-label">Ricorrenze</span>
-              </label>
-              <label class="card-chip" data-category="content" data-value="rewatch">
-                <input type="checkbox" name="cardType" value="rewatch" hidden>
-                <span class="chip-icon" style="background:#ef444420;color:#ef4444">❤️</span>
-                <span class="chip-label">Rewatch</span>
-              </label>
-              <label class="card-chip" data-category="time" data-value="seasonal">
-                <input type="checkbox" name="cardType" value="seasonal" hidden>
-                <span class="chip-icon" style="background:#0ea5e920;color:#0ea5e9">🎄</span>
-                <span class="chip-label">Stagionale</span>
-              </label>
-              <label class="card-chip" data-category="content" data-value="actor">
-                <input type="checkbox" name="cardType" value="actor" hidden>
-                <span class="chip-icon" style="background:#ec489920;color:#ec4899">🎭</span>
-                <span class="chip-label">Attori</span>
-              </label>
-              <label class="card-chip" data-category="content" data-value="director">
-                <input type="checkbox" name="cardType" value="director" hidden>
-                <span class="chip-icon" style="background:#8b5cf620;color:#8b5cf6">🎬</span>
-                <span class="chip-label">Registi</span>
-              </label>
-              <label class="card-chip" data-category="content" data-value="anime">
-                <input type="checkbox" name="cardType" value="anime" hidden>
-                <span class="chip-icon" style="background:#f43f5e20;color:#f43f5e">🇯🇵</span>
-                <span class="chip-label">Anime</span>
-              </label>
-              <label class="card-chip" data-category="stats" data-value="ranking">
-                <input type="checkbox" name="cardType" value="ranking" hidden>
-                <span class="chip-icon" style="background:#fbbf2420;color:#fbbf24">🏆</span>
-                <span class="chip-label">Classifica</span>
-              </label>
-              <label class="card-chip" data-category="time" data-value="memories">
-                <input type="checkbox" name="cardType" value="memories" hidden>
-                <span class="chip-icon" style="background:#d946ef20;color:#d946ef">💭</span>
-                <span class="chip-label">Ricordi</span>
-              </label>
-              <label class="card-chip" data-category="stats" data-value="giorni">
-                <input type="checkbox" name="cardType" value="giorni" hidden>
-                <span class="chip-icon" style="background:#06b6d420;color:#06b6d4">📆</span>
-                <span class="chip-label">Giorni</span>
-              </label>
-              <label class="card-chip" data-category="stats" data-value="migliore">
-                <input type="checkbox" name="cardType" value="migliore" hidden>
-                <span class="chip-icon" style="background:#fbbf2420;color:#fbbf24">⭐</span>
-                <span class="chip-label">Miglior anno</span>
-              </label>
-              <label class="card-chip" data-category="stats" data-value="anno">
-                <input type="checkbox" name="cardType" value="anno" hidden>
-                <span class="chip-icon" style="background:#84cc1620;color:#84cc16">📅</span>
-                <span class="chip-label">Anno in corso</span>
-              </label>
-              <label class="card-chip" data-category="time" data-value="mese">
-                <input type="checkbox" name="cardType" value="mese" hidden>
-                <span class="chip-icon" style="background:#a3e63520;color:#a3e635">📆</span>
-                <span class="chip-label">Mese top</span>
-              </label>
-              <label class="card-chip" data-category="stats" data-value="split">
-                <input type="checkbox" name="cardType" value="split" hidden>
-                <span class="chip-icon" style="background:#2dd4bf20;color:#2dd4bf">📊</span>
-                <span class="chip-label">Film/Serie</span>
-              </label>
-              <label class="card-chip" data-category="time" data-value="notturno">
-                <input type="checkbox" name="cardType" value="notturno" hidden>
-                <span class="chip-icon" style="background:#6366f120;color:#6366f1">🌙</span>
-                <span class="chip-label">Fascia oraria</span>
-              </label>
-            </div>
-
-            <div class="pref-row">
-              <div class="pref-field">
-                <label for="focusMode">Modalità focus</label>
-                <select id="focusMode">
-                  <option value="adaptive">Adaptive</option>
-                  <option value="movies">Solo film</option>
-                  <option value="series">Solo serie</option>
-                </select>
+            <!-- SECTION: Setup -->
+            <div class="p-section" id="section-setup">
+              <div class="p-section-title">Setup</div>
+              <div class="step">
+                <p>Crea o apri la tua configurazione personale</p>
+                <form id="createForm" class="slug">
+                  <div class="slug-in"><span class="slug-px">insight.to/</span><input type="text" id="slugInput" placeholder="mario123" required autocomplete="off" spellcheck="false"></div>
+                  <button class="btn btn-primary" type="submit" id="createBtn">Crea</button>
+                </form>
               </div>
             </div>
 
-            <button type="submit" class="btn primary full">
-              <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M5 10l3 3 7-7" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
-              Salva preferenze
-            </button>
-          </form>
+            <!-- SECTION: Trakt -->
+            <div class="p-section hide" id="section-trakt">
+              <div class="p-section-title">Trakt</div>
+              <div class="step">
+                <p>Autorizza l'accesso alla cronologia di Trakt.tv</p>
+                <div class="inp-wrap">
+                  <a id="loginBtn" class="btn btn-primary" href="#">
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm-1 5l4 3-4 3V7z" fill="#000"/></svg>
+                    Collega
+                  </a>
+                  <span id="syncInfoMini" style="font-size:11px;color:var(--m)"></span>
+                </div>
+              </div>
+            </div>
 
-          <div class="sync-section">
-            <button id="syncBtn" class="btn accent full">
-              <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M4 10a6 6 0 0112 0M16 10l-3-3M4 10l3-3" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
-              Sincronizza con Trakt
-            </button>
-            <div id="syncStatus" class="sync-status"></div>
+            <!-- SECTION: Cards -->
+            <div class="p-section hide" id="section-cards">
+              <div class="p-section-title">Cards</div>
+
+              <div style="margin-bottom:10px">
+                <div class="seg">
+                  <button class="seg-btn active" data-tab="all">Tutte</button>
+                  <button class="seg-btn" data-tab="stats">Stats</button>
+                  <button class="seg-btn" data-tab="content">Contenuti</button>
+                  <button class="seg-btn" data-tab="time">Tempo</button>
+                </div>
+              </div>
+
+              <form id="prefsForm">
+                <div class="chip-grid" id="chipGrid">
+                  <label class="chip active" data-cat="stats" data-val="totals"><span class="chip-dot" style="background:#22c55e"></span><input type="checkbox" name="c" value="totals" checked hidden><span>Totali</span></label>
+                  <label class="chip active" data-cat="stats" data-val="streak"><span class="chip-dot" style="background:#f97316"></span><input type="checkbox" name="c" value="streak" checked hidden><span>Streak</span></label>
+                  <label class="chip active" data-cat="time" data-val="peak"><span class="chip-dot" style="background:#a855f7"></span><input type="checkbox" name="c" value="peak" checked hidden><span>Orario top</span></label>
+                  <label class="chip active" data-cat="time" data-val="weekly"><span class="chip-dot" style="background:#38bdf8"></span><input type="checkbox" name="c" value="weekly" checked hidden><span>Giorno top</span></label>
+                  <label class="chip active" data-cat="content" data-val="genre"><span class="chip-dot" style="background:#a855f7"></span><input type="checkbox" name="c" value="genre" checked hidden><span>Generi</span></label>
+                  <label class="chip active" data-cat="content" data-val="binge"><span class="chip-dot" style="background:#ef4444"></span><input type="checkbox" name="c" value="binge" checked hidden><span>Binge</span></label>
+                  <label class="chip" data-cat="content" data-val="dropped"><span class="chip-dot" style="background:#6b7280"></span><input type="checkbox" name="c" value="dropped" hidden><span>In pausa</span></label>
+                  <label class="chip" data-cat="stats" data-val="monthly"><span class="chip-dot" style="background:#14b8a6"></span><input type="checkbox" name="c" value="monthly" hidden><span>Mensile</span></label>
+                  <label class="chip" data-cat="time" data-val="recurring"><span class="chip-dot" style="background:#f59e0b"></span><input type="checkbox" name="c" value="recurring" hidden><span>Ricorrenze</span></label>
+                  <label class="chip" data-cat="content" data-val="rewatch"><span class="chip-dot" style="background:#ef4444"></span><input type="checkbox" name="c" value="rewatch" hidden><span>Rewatch</span></label>
+                  <label class="chip" data-cat="time" data-val="seasonal"><span class="chip-dot" style="background:#0ea5e9"></span><input type="checkbox" name="c" value="seasonal" hidden><span>Stagionale</span></label>
+                  <label class="chip" data-cat="content" data-val="actor"><span class="chip-dot" style="background:#ec4899"></span><input type="checkbox" name="c" value="actor" hidden><span>Attori</span></label>
+                  <label class="chip" data-cat="content" data-val="director"><span class="chip-dot" style="background:#8b5cf6"></span><input type="checkbox" name="c" value="director" hidden><span>Registi</span></label>
+                  <label class="chip" data-cat="content" data-val="anime"><span class="chip-dot" style="background:#f43f5e"></span><input type="checkbox" name="c" value="anime" hidden><span>Anime</span></label>
+                  <label class="chip" data-cat="stats" data-val="ranking"><span class="chip-dot" style="background:#fbbf24"></span><input type="checkbox" name="c" value="ranking" hidden><span>Classifica</span></label>
+                  <label class="chip" data-cat="time" data-val="memories"><span class="chip-dot" style="background:#d946ef"></span><input type="checkbox" name="c" value="memories" hidden><span>Ricordi</span></label>
+                  <label class="chip" data-cat="stats" data-val="giorni"><span class="chip-dot" style="background:#06b6d4"></span><input type="checkbox" name="c" value="giorni" hidden><span>Giorni</span></label>
+                  <label class="chip" data-cat="stats" data-val="migliore"><span class="chip-dot" style="background:#fbbf24"></span><input type="checkbox" name="c" value="migliore" hidden><span>Miglior anno</span></label>
+                  <label class="chip" data-cat="stats" data-val="anno"><span class="chip-dot" style="background:#84cc16"></span><input type="checkbox" name="c" value="anno" hidden><span>Anno in corso</span></label>
+                  <label class="chip" data-cat="time" data-val="mese"><span class="chip-dot" style="background:#a3e635"></span><input type="checkbox" name="c" value="mese" hidden><span>Mese top</span></label>
+                  <label class="chip" data-cat="stats" data-val="split"><span class="chip-dot" style="background:#2dd4bf"></span><input type="checkbox" name="c" value="split" hidden><span>Film/Serie</span></label>
+                  <label class="chip" data-cat="time" data-val="notturno"><span class="chip-dot" style="background:#6366f1"></span><input type="checkbox" name="c" value="notturno" hidden><span>Fascia oraria</span></label>
+                </div>
+
+                <div class="inp-wrap" style="margin-bottom:10px">
+                  <select class="sel" id="focusMode" style="flex:1">
+                    <option value="adaptive">Modalità focus: Adaptive</option>
+                    <option value="movies">Solo film</option>
+                    <option value="series">Solo serie</option>
+                  </select>
+                  <button type="submit" class="btn btn-primary btn-sm" id="savePrefsBtn">Salva</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Sync -->
+            <div class="p-section hide" id="section-sync">
+              <button id="syncBtn" class="btn btn-primary" style="width:100%">
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M4 10a6 6 0 0112 0M16 10l-3-3M4 10l3-3" stroke="#000" stroke-width="2" stroke-linecap="round"/></svg>
+                Sincronizza con Trakt
+              </button>
+              <div id="syncStatus" class="ssync"></div>
+            </div>
+
           </div>
         </div>
-      </div>
 
-      <!-- Step 4: Preview -->
-      <div id="stepPreview" class="step" style="display:none" data-step="4">
-        <div class="step-badge">4</div>
-        <div class="step-body">
-          <h3>Anteprima</h3>
-          <p>Ecco come appariranno le cards nella home di Stremio.</p>
-          <div id="previewGrid" class="preview-grid"></div>
-        </div>
-      </div>
-
-      <!-- UDID + Install -->
-      <div id="stepInstall" class="step" style="display:none" data-step="5">
-        <div class="step-badge">
-          <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm-1 5l4 3-4 3V7z" fill="#fff"/></svg>
-        </div>
-        <div class="step-body">
-          <div id="udidSection" class="udid-box">
-            <div class="udid-label">Codice UDID</div>
-            <div class="udid-value-wrap">
-              <code id="udidValue" class="udid-value"></code>
-              <button id="udidCopyBtn" class="btn ghost" title="Copia UDID">
-                <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><rect x="4" y="4" width="12" height="14" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 2h6a2 2 0 012 2v10" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
-              </button>
+        <!-- COL 2: Preview -->
+        <div class="panel" style="grid-column:2">
+          <div class="panel-header">
+            <h3>Preview</h3>
+            <div style="margin-left:auto;display:flex;gap:6px">
+              <button id="refreshPreviewBtn" class="btn btn-ghost btn-icon" title="Refresh"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M4 10a6 6 0 0112 0M16 10l-3-3M4 10l3-3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
             </div>
           </div>
-
-          <h3>Installa in Stremio</h3>
-          <p>Copia questo URL e incollalo in Stremio → Aggiungi Addon.</p>
-          <div class="manifest-box">
-            <code id="manifestBox"></code>
-            <button id="installBtn" class="btn primary">
-              <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M6 14l4 4 4-4M10 2v12" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              Copia
-            </button>
+          <div class="panel-body">
+            <div class="pgrid" id="previewGrid">
+              <div class="pempty"><p>Fai il sync per vedere le card</p></div>
+            </div>
           </div>
-          <p id="syncInfo" class="hint"></p>
         </div>
+
+        <!-- COL 3: Install + Status -->
+        <div class="panel" style="grid-column:3">
+          <div class="panel-header"><h3>Install</h3></div>
+          <div class="panel-body">
+
+            <!-- Token -->
+            <div class="p-section hide" id="section-token">
+              <div class="p-section-title">Token</div>
+              <div class="tbox">
+                <span class="tbox-label">Token</span>
+                <span class="tbox-val" id="udidValue"></span>
+                <button id="udidCopyBtn" class="btn btn-ghost btn-icon" title="Copia"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><rect x="4" y="4" width="12" height="14" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 2h6a2 2 0 012 2v10" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></button>
+              </div>
+            </div>
+
+            <!-- Manifest -->
+            <div class="p-section">
+              <div class="p-section-title">Manifest URL</div>
+              <div class="mbox">
+                <code id="manifestBox"></code>
+                <button id="installBtn" class="btn btn-primary btn-sm">Copia</button>
+              </div>
+              <p class="hint" id="syncInfo"></p>
+            </div>
+
+            <!-- Status -->
+            <div class="p-section" id="section-status">
+              <div class="p-section-title">Stato</div>
+              <div class="sinfo">
+                <div class="srow"><span class="sl">Tabelle:</span><span class="sdot pending" id="sTables"></span></div>
+                <div class="srow"><span class="sl">Trakt:</span><span class="sdot pending" id="sTrakt"></span></div>
+                <div class="srow"><span class="sl">Sync:</span><span id="sSync">—</span></div>
+                <div class="srow"><span class="sl">Cards:</span><span id="sCards">—</span></div>
+              </div>
+              <div class="sissues" id="sIssues"></div>
+            </div>
+
+          </div>
+        </div>
+
       </div>
     </div>
-
-    <footer class="footer">
-      <p>Adaptive Insights &mdash; <a href="https://trakt.tv" target="_blank" rel="noopener">Trakt.tv</a></p>
-    </footer>
-  </main>
+  </div>
 
   <script src="/config.js"></script>
 </body>

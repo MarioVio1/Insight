@@ -3,8 +3,7 @@ import { generateSvgPoster } from './artworkService.js';
 import { fetchTmdbDetails } from './tmdbService.js';
 
 function posterUrl(configId: string, cardId: string): string {
-  const base = process.env.BASE_URL || 'http://localhost:3000';
-  return `${base}/poster/${configId}/${cardId}.png`;
+  return `/poster/${configId}/${cardId}.png`;
 }
 
 async function cardMeta(

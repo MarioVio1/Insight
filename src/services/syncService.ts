@@ -23,7 +23,7 @@ function normalizeWatchItem(configId: string, item: any, traktType: 'movie' | 's
   const source = item.movie || item.show || item;
   const episode = item.episode || null;
   const ts = item.watched_at || new Date().toISOString();
-  const contentId = String(episode?.ids?.trakt || item.id || source.ids?.trakt || source.ids?.imdb || source.title || 'unknown');
+  const contentId = String(episode?.ids?.trakt || source.ids?.trakt || source.ids?.imdb || source.title || 'unknown');
   return {
     id: `${configId}_${traktType}_${contentId}_${ts}`,
     config_id: configId,

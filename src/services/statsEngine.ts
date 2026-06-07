@@ -1,5 +1,5 @@
 import { supabase } from './supabase.js';
-import { fetchCredits } from './tmdbService.js';
+import { fetchCredits, fetchTmdbDetails } from './tmdbService.js';
 
 const DAY_MS = 86400000;
 const WEEK_MS = 7 * DAY_MS;
@@ -280,16 +280,17 @@ export function findRecurringTitles(events: any[]) {
 }
 
 export function findRewatchTitles(events: any[]) {
-  const titleInfo: Record<string, { count: number; tmdb_id: number | null; type: string }> = {};
+  const keyInfo: Record<string, { title: string; count: number; tmdb_id: number | null; type: string }> = {};
   for (const e of events) {
-    if (!titleInfo[e.title]) {
-      titleInfo[e.title] = { count: 0, tmdb_id: e.tmdb_id || null, type: e.trakt_type };
+    const key = e.tmdb_id ? `${e.trakt_type}_${e.tmdb_id}` : (e.trakt_id || e.title);
+    if (!keyInfo[key]) {
+      keyInfo[key] = { title: e.title, count: 0, tmdb_id: e.tmdb_id || null, type: e.trakt_type };
     }
-    titleInfo[e.title].count++;
+    keyInfo[key].count++;
   }
-  return Object.entries(titleInfo)
+  return Object.entries(keyInfo)
     .filter(([_, info]) => info.count >= 2)
-    .map(([title, info]) => ({ title, count: info.count, tmdb_id: info.tmdb_id, type: info.type }))
+    .map(([_, info]) => ({ title: info.title, count: info.count, tmdb_id: info.tmdb_id, type: info.type }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 12);
 }
@@ -419,6 +420,45 @@ export async function computeRankings(configId: string, stats: { totalHours: num
   };
 }
 
+export async function enrichEventsWithTmdbAnime(events: any[]): Promise<any[]> {
+  const unique = new Map<string, { tmdb_id: string; type: string }>();
+  const ANIME_GENRE_ID = 16;
+
+  for (const e of events) {
+    if (e.tmdb_id && !unique.has(String(e.tmdb_id))) {
+      unique.set(String(e.tmdb_id), {
+        tmdb_id: String(e.tmdb_id),
+        type: e.trakt_type === 'movie' ? 'movie' : 'tv'
+      });
+    }
+  }
+
+  const animeSet = new Set<string>();
+  const batch = [...unique.values()].slice(0, 50);
+  for (let i = 0; i < batch.length; i += 5) {
+    const chunk = batch.slice(i, i + 5);
+    const results = await Promise.allSettled(
+      chunk.map(item => fetchTmdbDetails(item.tmdb_id, item.type))
+    );
+    for (let j = 0; j < results.length; j++) {
+      const r = results[j];
+      if (r.status === 'fulfilled' && r.value) {
+        const isAnime = r.value.originalLanguage === 'ja' && r.value.genres.includes(ANIME_GENRE_ID);
+        if (isAnime) animeSet.add(chunk[j].tmdb_id);
+      }
+    }
+  }
+
+  return events.map(e => {
+    if (e.tmdb_id && animeSet.has(String(e.tmdb_id))) {
+      const g = e.genres || [];
+      if (!g.includes('anime')) g.push('anime');
+      return { ...e, genres: g };
+    }
+    return e;
+  });
+}
+
 export async function computeAdaptiveInsights(configId: string) {
   const { data: events, error: evErr } = await supabase
     .from('trakt_events')
@@ -446,12 +486,13 @@ export async function computeAdaptiveInsights(configId: string) {
     return;
   }
 
-  const stats = computeTraktStats(events);
-  const recurring = findRecurringTitles(events);
-  const rewatch = findRewatchTitles(events);
+  const enriched = await enrichEventsWithTmdbAnime(events);
+  const stats = computeTraktStats(enriched);
+  const recurring = findRecurringTitles(enriched);
+  const rewatch = findRewatchTitles(enriched);
 
-  const animeEvents = events.filter(e => (e.genres || []).includes('anime'));
-  const seriesEvents = events.filter(e => e.trakt_type !== 'movie' && !(e.genres || []).includes('anime'));
+  const animeEvents = enriched.filter(e => (e.genres || []).includes('anime'));
+  const seriesEvents = enriched.filter(e => e.trakt_type !== 'movie' && !(e.genres || []).includes('anime'));
   const seriesRewatch = findRewatchTitles(seriesEvents);
   const animeRewatch = findRewatchTitles(animeEvents);
 
