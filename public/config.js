@@ -191,7 +191,7 @@ if (!isConfig) {
         const st = $('sTables'), tt = $('sTrakt'), sy = $('sSync'), sc = $('sCards'), si = $('sIssues');
         if (st) st.className = 'sdot ' + (sd.database?.all_tables_ok ? 'ok' : 'fail');
         if (tt) tt.className = 'sdot ' + (sd.config?.trakt_connected ? 'ok' : 'fail');
-        if (sy) sy.textContent = sd.config?.last_sync ? new Date(sd.config.last_sync).toLocaleDateString('it-IT') : '—';
+        if (sy) sy.textContent = sd.config?.is_syncing ? 'In corso...' : (sd.config?.last_sync ? new Date(sd.config.last_sync).toLocaleDateString('it-IT') : '—');
         if (sc) sc.textContent = sd.database?.actual_cards_in_row ?? '—';
         if (si && (sd.issues?.length || sd.suggestions?.length)) {
           si.classList.add('show'); si.innerHTML = '';
@@ -250,13 +250,60 @@ if (!isConfig) {
     if (!configId) return;
     syncBtn.disabled = true; syncBtn.textContent = 'Sincronizzazione...';
     syncStatus.textContent = ''; syncStatus.className = 'ssync';
-    const r = await fetch(`/api/config/${configId}/sync`, { method: 'POST' });
-    const d = await r.json();
+    try {
+      const r = await fetch(`/api/config/${configId}/sync`, { method: 'POST' });
+      const d = await r.json();
+      if (d.async) {
+        syncStatus.textContent = 'Sync avviata, attendi...';
+        syncStatus.className = 'ssync';
+        pollSyncStatus();
+      } else if (d.ok) {
+        syncStatus.textContent = `Sync riuscita! ${d.count} eventi.`;
+        syncStatus.className = 'ssync ok';
+        syncBtn.disabled = false;
+        syncBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M4 10a6 6 0 0112 0M16 10l-3-3M4 10l3-3" stroke="#000" stroke-width="2" stroke-linecap="round"/></svg> Sincronizza con Trakt';
+        loadConfig();
+      } else {
+        syncBtn.disabled = false;
+        syncBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M4 10a6 6 0 0112 0M16 10l-3-3M4 10l3-3" stroke="#000" stroke-width="2" stroke-linecap="round"/></svg> Sincronizza con Trakt';
+        syncStatus.textContent = d.error || 'Errore sync';
+        syncStatus.className = 'ssync err';
+      }
+    } catch(e) {
+      syncBtn.disabled = false;
+      syncBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M4 10a6 6 0 0112 0M16 10l-3-3M4 10l3-3" stroke="#000" stroke-width="2" stroke-linecap="round"/></svg> Sincronizza con Trakt';
+      syncStatus.textContent = 'Errore di connessione';
+      syncStatus.className = 'ssync err';
+    }
+  });
+
+  async function pollSyncStatus() {
+    for (let i = 0; i < 60; i++) {
+      await new Promise(r => setTimeout(r, 2000));
+      try {
+        const r = await fetch(`/api/status/${configId}`);
+        const d = await r.json();
+        if (!d.config?.is_syncing) {
+          syncBtn.disabled = false;
+          syncBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M4 10a6 6 0 0112 0M16 10l-3-3M4 10l3-3" stroke="#000" stroke-width="2" stroke-linecap="round"/></svg> Sincronizza con Trakt';
+          if (d.config?.last_sync) {
+            syncStatus.textContent = `Sync completata!`;
+            syncStatus.className = 'ssync ok';
+          } else {
+            syncStatus.textContent = 'Sync fallita - controlla i log';
+            syncStatus.className = 'ssync err';
+          }
+          loadConfig();
+          return;
+        }
+        syncStatus.textContent = `Sync in corso... (${i * 2}s)`;
+      } catch {}
+    }
     syncBtn.disabled = false;
     syncBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M4 10a6 6 0 0112 0M16 10l-3-3M4 10l3-3" stroke="#000" stroke-width="2" stroke-linecap="round"/></svg> Sincronizza con Trakt';
-    if (d.ok) { syncStatus.textContent = `Sync riuscita! ${d.count} eventi.`; syncStatus.className = 'ssync ok'; loadConfig(); }
-    else { syncStatus.textContent = d.error || 'Errore sync'; syncStatus.className = 'ssync err'; }
-  });
+    syncStatus.textContent = 'Timeout sync, ricarica la pagina';
+    syncStatus.className = 'ssync err';
+  }
 
   $('refreshPreviewBtn')?.addEventListener('click', loadPreview);
   loadConfig();

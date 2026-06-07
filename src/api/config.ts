@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { supabase } from '../services/supabase.js';
 import { syncConfig } from '../services/syncService.js';
 import { resolveConfigId, checkTablesDetailed } from '../services/db.js';
+import { logger } from '../utils/logger.js';
 
 const router = Router();
 
@@ -61,15 +62,29 @@ router.put('/config/:configId/preferences', async (req, res) => {
   return res.json({ ok: true });
 });
 
+const syncingConfigs = new Set<string>();
+
 router.post('/config/:configId/sync', async (req, res) => {
   const uuid = await resolveConfigId(req.params.configId);
   if (!uuid) return res.status(404).json({ ok: false, error: 'Not found' });
 
-  const result = await syncConfig(uuid);
-  if (result.ok) {
-    await supabase.from('addon_configs').update({ updated_at: new Date().toISOString() }).eq('id', uuid);
+  if (syncingConfigs.has(uuid)) {
+    return res.json({ ok: false, error: 'Sync già in corso' });
   }
-  return res.json(result);
+
+  syncingConfigs.add(uuid);
+  res.json({ ok: true, async: true, message: 'Sync avviata in background' });
+
+  try {
+    const result = await syncConfig(uuid);
+    if (result.ok) {
+      await supabase.from('addon_configs').update({ updated_at: new Date().toISOString() }).eq('id', uuid);
+    }
+  } catch (err) {
+    logger.error({ configId: uuid, error: String(err) }, 'Background sync failed');
+  } finally {
+    syncingConfigs.delete(uuid);
+  }
 });
 
 async function countTable(table: string, configId?: string): Promise<number> {
@@ -134,7 +149,8 @@ router.get('/status/:configId', async (req, res) => {
       trakt_connected: !!cfg.access_token_enc,
       trakt_username: cfg.trakt_username || null,
       last_sync: cfg.last_sync_at || null,
-      sync_enabled: cfg.sync_enabled
+      sync_enabled: cfg.sync_enabled,
+      is_syncing: syncingConfigs.has(uuid)
     },
     database: {
       all_tables_ok: allTablesOk,
