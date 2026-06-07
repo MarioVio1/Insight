@@ -43,7 +43,7 @@ function buildCardData(rowData: any, cardId: string): CardData {
   let imageUrl = '';
 
   if (rowData?.metas) {
-    const found = rowData.metas.find((m: any) => m.id === cardId);
+    const found = rowData.metas.find((m: any) => m.id === cardId || m.id.endsWith(`_${cardId}`));
     if (found) {
       title = found.name || title;
       subtitle = found.description || subtitle;
