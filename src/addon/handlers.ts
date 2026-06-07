@@ -20,7 +20,7 @@ async function getTmdbData(tmdbId: number | string, type: string) {
     tmdbCache.set(key, data);
     return data;
   } catch {
-    tmdbCache.set(key, { poster: null, rating: null, genres: [], age: Date.now() });
+    tmdbCache.set(key, { poster: null, rating: null, age: Date.now() });
     return null;
   }
 }
