@@ -3,7 +3,7 @@ import { generateSvgPoster } from './artworkService.js';
 
 function posterUrl(configId: string, cardId: string): string {
   const base = process.env.BASE_URL || 'http://localhost:3000';
-  return `${base}/poster/${configId}/${cardId}.svg`;
+  return `${base}/poster/${configId}/${cardId}.png`;
 }
 
 async function cardMeta(
@@ -56,18 +56,20 @@ export async function rebuildAdaptiveRow(configId: string) {
   const cards: any[] = [];
   const details: { meta_id: string; meta: any }[] = [];
 
-  // Totali - updated hours
+  // Totali
   if (enabled.includes('totals')) {
     const id = `adaptive_${configId}_totals`;
     const totalHours = s.totalHours || 0;
     const uc = s.uniqueTitles || 0;
     const totalM = s.totalMovies || 0;
     const totalE = s.totalEpisodes || 0;
+    const mh = s.movieHours || 0;
+    const eh = s.episodeHours || 0;
 
     cards.push(await cardMeta(id,
       `${Math.floor(totalHours)} ore di visione`,
-      `${totalM} film · ${totalE} episodi · ${uc} titoli unici`,
-      configId, { accent: '#22c55e', statValue: `${Math.floor(totalHours)}`, statLabel: 'ORE TOTALI' }
+      `${totalM} film (${Math.floor(mh)}h) · ${totalE} episodi (${Math.floor(eh)}h) · ${uc} titoli`,
+      configId, { accent: '#22c55e', statValue: `${Math.floor(totalHours)}h`, statLabel: 'TOTALI' }
     ));
 
     details.push({
@@ -75,8 +77,8 @@ export async function rebuildAdaptiveRow(configId: string) {
         id, type: 'series', name: 'Il tuo viaggio totale',
         description: 'Tutto quello che hai guardato su Trakt.',
         videos: [
-          video(`${id}_1`, `${totalM} film visti`, new Date().toISOString(), 'Totale film.'),
-          video(`${id}_2`, `${totalE} episodi visti`, new Date().toISOString(), 'Totale episodi.'),
+          video(`${id}_1`, `${totalM} film visti (${Math.floor(mh)} ore)`, new Date().toISOString(), 'Totale film.'),
+          video(`${id}_2`, `${totalE} episodi visti (${Math.floor(eh)} ore)`, new Date().toISOString(), 'Totale episodi.'),
           video(`${id}_3`, `${Math.floor(totalHours)} ore guardate`, new Date().toISOString(), 'Tempo totale.'),
           video(`${id}_4`, `${uc} titoli unici`, new Date().toISOString(), 'Contenuti distinti.')
         ]
@@ -137,9 +139,7 @@ export async function rebuildAdaptiveRow(configId: string) {
       meta_id: id, meta: {
         id, type: 'series', name: 'Giorni della settimana',
         description: 'Distribuzione delle tue visioni per giorno.',
-        videos: [
-          video(`${id}_1`, `${td.name}`, new Date().toISOString(), `${td.count} visioni in questo giorno.`)
-        ]
+        videos: [video(`${id}_1`, `${td.name}`, new Date().toISOString(), `${td.count} visioni in questo giorno.`)]
       }
     });
   }
@@ -176,7 +176,7 @@ export async function rebuildAdaptiveRow(configId: string) {
     cards.push(await cardMeta(id,
       `Binge: ${topBinge.episodes} episodi di ${topBinge.title}`,
       `Hai guardato ${topBinge.episodes} episodi di fila di ${topBinge.title} in un giorno.`,
-      configId, { accent: '#ef4444', statValue: `${topBinge.episodes}`, statLabel: 'EPISODI IN UN GIORNO' }
+      configId, { accent: '#ef4444', statValue: `${topBinge.episodes}`, statLabel: 'BINGE MAX' }
     ));
 
     details.push({
@@ -238,9 +238,9 @@ export async function rebuildAdaptiveRow(configId: string) {
 
   // Recurring
   if (enabled.includes('recurring')) {
-    const id = `adaptive_${configId}_recurring`;
     const recurringTitles = insight.recurring_titles || [];
     if (recurringTitles.length > 0) {
+      const id = `adaptive_${configId}_recurring`;
       cards.push(await cardMeta(id,
         `${recurringTitles.length} titoli ricorrenti`,
         `Titoli che torni a guardare ogni anno nello stesso periodo.`,
@@ -261,9 +261,9 @@ export async function rebuildAdaptiveRow(configId: string) {
 
   // Rewatch
   if (enabled.includes('rewatch')) {
-    const id = `adaptive_${configId}_rewatch`;
     const rewatchTitles = insight.rewatch_titles || [];
     if (rewatchTitles.length > 0) {
+      const id = `adaptive_${configId}_rewatch`;
       cards.push(await cardMeta(id,
         `Rivisto: ${rewatchTitles[0].title} (${rewatchTitles[0].count}x)`,
         `Titoli che hai guardato più di una volta.`,
@@ -287,7 +287,7 @@ export async function rebuildAdaptiveRow(configId: string) {
     const id = `adaptive_${configId}_seasonal`;
     const seasonalKey = insight.seasonal_key || 'standard';
     const seasonTexts: Record<string, string> = {
-      christmas: 'L\'anno scorso in questo periodo avevi già iniziato il mood natalizio.',
+      christmas: "L'anno scorso in questo periodo avevi già iniziato il mood natalizio.",
       halloween: 'C\'è odore di horror di stagione nel tuo profilo.',
       summer: 'L\'estate tende a riaccendere maratone e rewatch più leggeri.',
       standard: 'Questa card cambia con il calendario e con il tuo profilo.'
@@ -307,6 +307,100 @@ export async function rebuildAdaptiveRow(configId: string) {
         id, type: 'series', name: 'La stagione del tuo profilo',
         description: seasonTexts[seasonalKey] || seasonTexts.standard,
         videos: [video(`${id}_1`, seasonalKey, new Date().toISOString(), seasonTexts[seasonalKey] || seasonTexts.standard)]
+      }
+    });
+  }
+
+  // Attore preferito
+  if (enabled.includes('actor')) {
+    const actors = insight.top_actors || [];
+    if (actors.length > 0) {
+      const id = `adaptive_${configId}_actor`;
+      const top = actors[0];
+      cards.push(await cardMeta(id,
+        `Attore: ${top.name}`,
+        `Appare in ${top.count} dei tuoi contenuti guardati.`,
+        configId, { accent: '#ec4899', statValue: top.name, statLabel: 'ATTORE TOP' }
+      ));
+
+      details.push({
+        meta_id: id, meta: {
+          id, type: 'series', name: 'Attori preferiti',
+          description: 'Gli attori che vedi più spesso.',
+          videos: actors.map((a: any, i: number) =>
+            video(`${id}_${i}`, a.name, new Date().toISOString(), `Appare in ${a.count} contenuti.`)
+          )
+        }
+      });
+    }
+  }
+
+  // Regista preferito
+  if (enabled.includes('director')) {
+    const directors = insight.top_directors || [];
+    if (directors.length > 0) {
+      const id = `adaptive_${configId}_director`;
+      const top = directors[0];
+      cards.push(await cardMeta(id,
+        `Regista: ${top.name}`,
+        `Compare in ${top.count} dei tuoi contenuti.`,
+        configId, { accent: '#8b5cf6', statValue: top.name, statLabel: 'REGISTA TOP' }
+      ));
+
+      details.push({
+        meta_id: id, meta: {
+          id, type: 'series', name: 'Registi preferiti',
+          description: 'I registi che guardi di più.',
+          videos: directors.map((d: any, i: number) =>
+            video(`${id}_${i}`, d.name, new Date().toISOString(), `Compare in ${d.count} contenuti.`)
+          )
+        }
+      });
+    }
+  }
+
+  // Anime
+  if (enabled.includes('anime') && s.animeCount !== undefined && s.animeCount > 0) {
+    const id = `adaptive_${configId}_anime`;
+    const ah = s.animeHours || 0;
+    cards.push(await cardMeta(id,
+      `${s.animeCount} anime guardati`,
+      `${Math.floor(ah)} ore passate con gli anime.`,
+      configId, { accent: '#f43f5e', statValue: `${s.animeCount}`, statLabel: 'ANIME' }
+    ));
+
+    details.push({
+      meta_id: id, meta: {
+        id, type: 'series', name: 'Statistiche anime',
+        description: 'I tuoi anime guardati su Trakt.',
+        videos: [
+          video(`${id}_1`, `${s.animeCount} anime visti`, new Date().toISOString(), 'Totale episodi/film anime.'),
+          video(`${id}_2`, `${Math.floor(ah)} ore di anime`, new Date().toISOString(), 'Tempo speso con gli anime.')
+        ]
+      }
+    });
+  }
+
+  // Ranking confronto utenti
+  if (enabled.includes('ranking') && insight.ranking) {
+    const r = insight.ranking;
+    const id = `adaptive_${configId}_ranking`;
+    const rankText = r.hoursRank > 0 ? `#${r.hoursRank} / ${r.totalUsers}` : 'N/D';
+    cards.push(await cardMeta(id,
+      `Classifica: ${rankText}`,
+      `${r.totalUsers} utenti totali · Streak: #${r.streakRank} · Contenuti: #${r.contentRank}`,
+      configId, { accent: '#fbbf24', statValue: rankText, statLabel: 'CLASSIFICA' }
+    ));
+
+    details.push({
+      meta_id: id, meta: {
+        id, type: 'series', name: 'Confronto con altri utenti',
+        description: 'Come ti posizioni rispetto agli altri?',
+        videos: [
+          video(`${id}_1`, `Ore: #${r.hoursRank} su ${r.totalUsers}`, new Date().toISOString(), `${r.totalUsers} utenti totali.`),
+          video(`${id}_2`, `Streak: #${r.streakRank}`, new Date().toISOString(), 'Classifica streak.'),
+          video(`${id}_3`, `Contenuti: #${r.contentRank}`, new Date().toISOString(), 'Classifica contenuti.')
+        ]
       }
     });
   }

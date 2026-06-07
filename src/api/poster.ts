@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { supabase } from '../services/supabase.js';
-import { generateSvgPoster } from '../services/artworkService.js';
+import { generatePngPoster } from '../services/artworkService.js';
 
 export async function posterHandler(req: Request, res: Response) {
   try {
@@ -43,8 +43,12 @@ export async function posterHandler(req: Request, res: Response) {
     else if (cardId.includes('recurring')) cardAccent = '#f59e0b';
     else if (cardId.includes('rewatch')) cardAccent = '#ef4444';
     else if (cardId.includes('seasonal')) cardAccent = '#0ea5e9';
+    else if (cardId.includes('actor')) cardAccent = '#ec4899';
+    else if (cardId.includes('director')) cardAccent = '#8b5cf6';
+    else if (cardId.includes('anime')) cardAccent = '#f43f5e';
+    else if (cardId.includes('ranking')) cardAccent = '#fbbf24';
 
-    const svg = generateSvgPoster({
+    const png = await generatePngPoster({
       title: cardTitle,
       subtitle: cardDesc.slice(0, 60),
       accent: cardAccent,
@@ -52,12 +56,12 @@ export async function posterHandler(req: Request, res: Response) {
       statLabel
     });
 
-    res.setHeader('Content-Type', 'image/svg+xml');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.send(svg);
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(png);
   } catch (error) {
-    const fallback = generateSvgPoster({ title: 'Insight', subtitle: 'Statistiche personali' });
-    res.setHeader('Content-Type', 'image/svg+xml');
-    res.send(fallback);
+    const png = await generatePngPoster({ title: 'Insight', subtitle: 'Statistiche personali' });
+    res.setHeader('Content-Type', 'image/png');
+    res.send(png);
   }
 }

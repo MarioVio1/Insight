@@ -93,8 +93,10 @@ async function loadConfig() {
   if (data.preferences) {
     maxCards.value = data.preferences.max_cards || 10;
     focusMode.value = data.preferences.focus_mode || 'adaptive';
+    const savedTypes = data.preferences.enabled_card_types || [];
+    const allDefaults = ['totals','streak','peak','weekly','genre','binge','monthly','recurring','rewatch','seasonal','actor','director','anime','ranking'];
     document.querySelectorAll('input[name="cardType"]').forEach(el => {
-      const checked = (data.preferences.enabled_card_types || []).includes(el.value);
+      const checked = savedTypes.includes(el.value) || (savedTypes.length === 0 && allDefaults.includes(el.value));
       el.checked = checked;
       el.closest('.card-option')?.classList.toggle('checked', checked);
     });

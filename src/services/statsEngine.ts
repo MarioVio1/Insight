@@ -1,9 +1,13 @@
 import { supabase } from './supabase.js';
+import { fetchCredits } from './tmdbService.js';
 
 const DAY_MS = 86400000;
 const WEEK_MS = 7 * DAY_MS;
 const MONTH_MS = 30 * DAY_MS;
 const YEAR_MS = 365 * DAY_MS;
+
+const DEFAULT_RUNTIME_MOVIE = 90;
+const DEFAULT_RUNTIME_EPISODE = 22;
 
 export function getSeasonalContext(now = new Date()) {
   const month = now.getUTCMonth() + 1;
@@ -11,6 +15,12 @@ export function getSeasonalContext(now = new Date()) {
   if (month === 12) return { seasonKey: 'christmas', label: 'Christmas Season', accent: '#dc2626' };
   if (month >= 6 && month <= 8) return { seasonKey: 'summer', label: 'Summer Rewatch Season', accent: '#f59e0b' };
   return { seasonKey: 'standard', label: 'Current Highlights', accent: '#0ea5e9' };
+}
+
+function runtime(e: any): number {
+  if (e.runtime_minutes) return e.runtime_minutes;
+  if (e.trakt_type === 'movie') return DEFAULT_RUNTIME_MOVIE;
+  return DEFAULT_RUNTIME_EPISODE;
 }
 
 export function computeStreak(events: any[]): number {
@@ -90,60 +100,37 @@ export function findDroppedShows(events: any[]): { title: string; lastDate: stri
 }
 
 export function computeTraktStats(events: any[]) {
-  const watchedAts = events.map((e) => new Date(e.watched_at).getTime());
   const now = Date.now();
   const yearStart = now - YEAR_MS;
   const weekStart = now - WEEK_MS;
   const monthStart = now - MONTH_MS;
   const prevMonthStart = now - 2 * MONTH_MS;
 
-  const yearEvents = watchedAts.filter(ts => ts >= yearStart);
-  const weekEvents = watchedAts.filter(ts => ts >= weekStart);
-
   const movies = events.filter((e) => e.trakt_type === 'movie');
   const episodes = events.filter((e) => e.trakt_type !== 'movie');
+  const anime = events.filter((e) => (e.genres || []).includes('anime'));
 
-  const movieCount = yearEvents.length
-    ? movies.filter((e) => new Date(e.watched_at).getTime() >= yearStart).length
-    : movies.length;
-  const episodeCount = yearEvents.length
-    ? episodes.filter((e) => new Date(e.watched_at).getTime() >= yearStart).length
-    : episodes.length;
-  const totalHours = events.reduce((sum, e) => sum + (e.runtime_minutes || 0), 0) / 60;
-  const yearHours = yearEvents.length
-    ? events.filter((e) => new Date(e.watched_at).getTime() >= yearStart).reduce((sum, e) => sum + (e.runtime_minutes || 0), 0) / 60
-    : totalHours;
-
-  const titleCounts: Record<string, { count: number; title: string }> = {};
-  for (const e of events) {
-    const title = e.title || 'Unknown';
-    titleCounts[title] = titleCounts[title] || { count: 0, title };
-    titleCounts[title].count++;
-  }
-  const sortedTitles = Object.values(titleCounts).sort((a, b) => b.count - a.count);
-  const topWeeklyTitle = sortedTitles[0]?.title || null;
-  const topWeeklyCount = sortedTitles[0]?.count || 0;
+  const totalHours = events.reduce((sum, e) => sum + runtime(e), 0) / 60;
+  const yearHours = events.filter((e) => new Date(e.watched_at).getTime() >= yearStart).reduce((sum, e) => sum + runtime(e), 0) / 60;
+  const totalMovies = movies.length;
+  const totalEpisodes = episodes.length;
+  const uniqueTitles = new Set(events.map(e => e.title)).size;
+  const animeCount = anime.length;
 
   const genreCounts: Record<string, number> = {};
   for (const e of events) {
     for (const g of (e.genres || [])) {
-      genreCounts[g] = genreCounts[g] || 0;
-      genreCounts[g]++;
+      genreCounts[g] = (genreCounts[g] || 0) + 1;
     }
   }
   const topGenre = Object.keys(genreCounts).sort((a, b) => genreCounts[b] - genreCounts[a])[0] || null;
   const genreCountsArr = Object.entries(genreCounts).map(([name, count]) => ({ name, count }));
-
-  const lastWeekCount = weekEvents.length;
 
   const streak = computeStreak(events);
   const peakHour = computePeakHour(events);
   const weekdayPattern = computeWeekdayPattern(events);
   const binges = findBingeSessions(events);
   const dropped = findDroppedShows(events);
-  const totalMovies = movies.length;
-  const totalEpisodes = episodes.length;
-  const uniqueTitles = new Set(events.map(e => e.title)).size;
 
   const dayNames = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
   const topDay = weekdayPattern[0] ? { name: dayNames[weekdayPattern[0].day], count: weekdayPattern[0].count } : null;
@@ -154,14 +141,11 @@ export function computeTraktStats(events: any[]) {
     return t >= prevMonthStart && t < monthStart;
   }).length;
 
+  const weekCount = events.filter(e => new Date(e.watched_at).getTime() >= weekStart).length;
+
   return {
-    movieCount,
-    episodeCount,
     totalHours: Math.round(totalHours * 10) / 10,
     yearHours: Math.round(yearHours * 10) / 10,
-    topWeeklyTitle,
-    topWeeklyCount,
-    lastWeekCount,
     totalMovies,
     totalEpisodes,
     uniqueTitles,
@@ -174,7 +158,13 @@ export function computeTraktStats(events: any[]) {
     dropped,
     monthCount,
     lastMonthCount,
-    totalEvents: events.length
+    totalEvents: events.length,
+    movieHours: Math.round(movies.reduce((s, e) => s + runtime(e), 0) / 60 * 10) / 10,
+    episodeHours: Math.round(episodes.reduce((s, e) => s + runtime(e), 0) / 60 * 10) / 10,
+    weekCount,
+    animeCount,
+    animeHours: Math.round(anime.reduce((s, e) => s + runtime(e), 0) / 60 * 10) / 10,
+    weekCount
   };
 }
 
@@ -186,7 +176,6 @@ export function findRecurringTitles(events: any[]) {
     monthly[String(month)] = monthly[String(month)] || {};
     monthly[String(month)][e.title] = (monthly[String(month)][e.title] || 0) + 1;
   }
-  const recurring: { title: string; count: number; months: number[] }[] = [];
   const seen = new Map<string, { count: number; months: Set<number> }>();
   for (const [month, titles] of Object.entries(monthly)) {
     for (const [title, count] of Object.entries(titles)) {
@@ -196,6 +185,7 @@ export function findRecurringTitles(events: any[]) {
       entry.months.add(Number(month));
     }
   }
+  const recurring: { title: string; count: number; months: number[] }[] = [];
   for (const [title, info] of seen) {
     if (info.count >= 2 && info.months.size >= 2) {
       recurring.push({ title, count: info.count, months: [...info.months].sort() });
@@ -216,6 +206,80 @@ export function findRewatchTitles(events: any[]) {
     .slice(0, 12);
 }
 
+export async function computeTopPeople(events: any[]): Promise<{ actors: { name: string; count: number }[]; directors: { name: string; count: number }[] }> {
+  const unique = new Map<string, { tmdb_id: string; type: 'movie' | 'tv' }>();
+  for (const e of events) {
+    const tid = String(e.tmdb_id);
+    if (e.tmdb_id && !unique.has(tid)) {
+      unique.set(tid, { tmdb_id: tid, type: e.trakt_type === 'movie' ? 'movie' : 'tv' });
+    }
+  }
+  const topN = [...unique.values()].slice(0, 30);
+  const actorCount: Record<string, number> = {};
+  const directorCount: Record<string, number> = {};
+
+  const batchSize = 5;
+  for (let i = 0; i < topN.length; i += batchSize) {
+    const batch = topN.slice(i, i + batchSize);
+    const results = await Promise.allSettled(
+      batch.map(item => fetchCredits(item.tmdb_id, item.type))
+    );
+    for (const result of results) {
+      if (result.status === 'fulfilled' && result.value) {
+        for (const actor of result.value.cast.slice(0, 5)) {
+          actorCount[actor] = (actorCount[actor] || 0) + 1;
+        }
+        for (const director of result.value.crew.directors) {
+          directorCount[director] = (directorCount[director] || 0) + 1;
+        }
+      }
+    }
+  }
+
+  const actors = Object.entries(actorCount)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+  const directors = Object.entries(directorCount)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+
+  return { actors, directors };
+}
+
+export async function computeRankings(configId: string, stats: { totalHours: number; totalMovies: number; totalEpisodes: number; streak: number }) {
+  const { data: all } = await supabase
+    .from('insight_snapshots')
+    .select('config_id, summary');
+  if (!all) return null;
+
+  const entries = all
+    .filter(s => s.summary && s.summary.totalHours != null)
+    .map(s => ({
+      configId: s.config_id,
+      totalHours: s.summary.totalHours as number,
+      totalMovies: s.summary.totalMovies as number || 0,
+      totalEpisodes: s.summary.totalEpisodes as number || 0,
+      streak: s.summary.streak as number || 0
+    }));
+
+  entries.sort((a, b) => b.totalHours - a.totalHours);
+  const hoursRank = Math.max(0, entries.findIndex(e => e.configId === configId) + 1);
+  entries.sort((a, b) => b.streak - a.streak);
+  const streakRank = Math.max(0, entries.findIndex(e => e.configId === configId) + 1);
+  entries.sort((a, b) => (b.totalMovies + b.totalEpisodes) - (a.totalMovies + a.totalEpisodes));
+  const contentRank = Math.max(0, entries.findIndex(e => e.configId === configId) + 1);
+
+  return {
+    totalUsers: entries.length,
+    hoursRank,
+    streakRank,
+    contentRank,
+    topHours: entries.slice(0, 3).map(e => e.totalHours)
+  };
+}
+
 export async function computeAdaptiveInsights(configId: string) {
   const { data: events } = await supabase
     .from('trakt_events')
@@ -231,6 +295,9 @@ export async function computeAdaptiveInsights(configId: string) {
       recurring_titles: [],
       rewatch_titles: [],
       genre_counts: [],
+      top_actors: [],
+      top_directors: [],
+      ranking: null,
       generated_at: new Date().toISOString()
     }, { onConflict: 'config_id' });
     return;
@@ -241,6 +308,23 @@ export async function computeAdaptiveInsights(configId: string) {
   const rewatch = findRewatchTitles(events);
   const season = getSeasonalContext();
 
+  let topActors: { name: string; count: number }[] = [];
+  let topDirectors: { name: string; count: number }[] = [];
+  try {
+    const people = await computeTopPeople(events);
+    topActors = people.actors;
+    topDirectors = people.directors;
+  } catch (err) {
+    // TMDB non configurato o errore di rete
+  }
+
+  let ranking: any = null;
+  try {
+    ranking = await computeRankings(configId, stats);
+  } catch (err) {
+    // errore ranking
+  }
+
   await supabase.from('insight_snapshots').upsert({
     config_id: configId,
     taste_profile: 'mixed',
@@ -249,6 +333,9 @@ export async function computeAdaptiveInsights(configId: string) {
     recurring_titles: recurring,
     rewatch_titles: rewatch,
     genre_counts: stats.genre_counts,
+    top_actors: topActors,
+    top_directors: topDirectors,
+    ranking,
     generated_at: new Date().toISOString()
   }, { onConflict: 'config_id' });
 }

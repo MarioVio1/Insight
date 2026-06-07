@@ -14,6 +14,18 @@ create table if not exists addon_configs (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists config_preferences (
+  id uuid primary key default gen_random_uuid(),
+  config_id uuid not null references addon_configs(id) on delete cascade,
+  max_cards integer not null default 10,
+  enabled_card_types jsonb not null default '[\"totals\",\"streak\",\"peak\",\"weekly\",\"genre\",\"binge\",\"monthly\",\"recurring\",\"rewatch\",\"seasonal\",\"actor\",\"director\",\"anime\",\"ranking\"]'::jsonb,
+  focus_mode text not null default 'adaptive',
+  seasonal_enabled boolean not null default true,
+  festive_enabled boolean not null default true,
+  style_mode text not null default 'cinematic',
+  unique(config_id)
+);
+
 create table if not exists user_profiles (
   id uuid primary key,
   config_id uuid not null references addon_configs(id) on delete cascade,
@@ -59,13 +71,9 @@ create table if not exists stats_snapshots (
   generated_at timestamptz not null default now()
 );
 
-create table if not exists card_cache (
-  config_id uuid not null references addon_configs(id) on delete cascade,
-  catalog_id text not null,
-  metas jsonb not null default '[]'::jsonb,
-  updated_at timestamptz not null default now(),
-  primary key (config_id, catalog_id)
-);
+alter table insight_snapshots add column if not exists top_actors jsonb not null default '[]'::jsonb;
+alter table insight_snapshots add column if not exists top_directors jsonb not null default '[]'::jsonb;
+alter table insight_snapshots add column if not exists ranking jsonb null default null;
 
 create table if not exists catalog_cache (
   config_id uuid not null references addon_configs(id) on delete cascade,
