@@ -1,6 +1,5 @@
 const statusEl = document.getElementById('status');
-const spinner = statusEl?.querySelector('.spinner');
-const statusText = statusEl?.querySelector('span:last-child');
+const statusText = document.getElementById('statusText');
 const createForm = document.getElementById('createForm');
 const createBtn = document.getElementById('createBtn');
 const slugInput = document.getElementById('slugInput');
@@ -8,7 +7,6 @@ const loginBtn = document.getElementById('loginBtn');
 const installBtn = document.getElementById('installBtn');
 const manifestBox = document.getElementById('manifestBox');
 const prefsForm = document.getElementById('prefsForm');
-const maxCards = document.getElementById('maxCards');
 const focusMode = document.getElementById('focusMode');
 const stepAuth = document.getElementById('stepAuth');
 const stepPrefs = document.getElementById('stepPrefs');
@@ -19,12 +17,33 @@ const connectedBadge = document.getElementById('connectedBadge');
 const usernameDisplay = document.getElementById('usernameDisplay');
 const syncBtn = document.getElementById('syncBtn');
 const syncStatus = document.getElementById('syncStatus');
+const udidValue = document.getElementById('udidValue');
+const udidCopyBtn = document.getElementById('udidCopyBtn');
+const udidSection = document.getElementById('udidSection');
+const tabs = document.querySelectorAll('.tab');
 
 const pathParts = location.pathname.split('/').filter(Boolean);
 let configId = pathParts[1] || null;
 let manifestUrl = '';
 
-document.querySelectorAll('.card-option').forEach(el => {
+// Tab filtering
+tabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    tabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const cat = tab.dataset.tab;
+    document.querySelectorAll('.card-chip').forEach(chip => {
+      if (cat === 'all' || chip.dataset.category === cat) {
+        chip.classList.remove('hidden-chip');
+      } else {
+        chip.classList.add('hidden-chip');
+      }
+    });
+  });
+});
+
+// Chip toggle
+document.querySelectorAll('.card-chip').forEach(el => {
   el.addEventListener('click', () => {
     const cb = el.querySelector('input[type="checkbox"]');
     if (!cb) return;
@@ -32,8 +51,6 @@ document.querySelectorAll('.card-option').forEach(el => {
     el.classList.toggle('checked', cb.checked);
   });
 });
-
-
 
 function setStatus(text, done) {
   if (!statusEl) return;
@@ -53,6 +70,8 @@ function updateManifestUrl(lastSync) {
   if (syncInfo && lastSync) {
     const d = new Date(lastSync);
     syncInfo.textContent = `Ultimo sync: ${d.toLocaleDateString('it-IT')} ${d.toLocaleTimeString('it-IT')}`;
+  } else if (syncInfo) {
+    syncInfo.textContent = '';
   }
 }
 
@@ -62,13 +81,13 @@ function selectedCardTypes() {
 
 async function loadPreview() {
   if (!configId || !previewGrid) return;
-  previewGrid.innerHTML = '<p style="color:var(--muted)">Caricamento anteprima...</p>';
+  previewGrid.innerHTML = '<p style="color:var(--muted);grid-column:1/-1;text-align:center;padding:24px">Caricamento anteprima...</p>';
   stepPreview.style.display = 'flex';
   try {
     const res = await fetch(`/${configId}/catalog/movie/adaptive-insights.json`);
     const data = await res.json();
     if (!data.metas || data.metas.length === 0) {
-      previewGrid.innerHTML = '<p style="color:var(--muted)">Nessuna card disponibile. Fai il sync con Trakt.</p>';
+      previewGrid.innerHTML = '<p style="color:var(--muted);grid-column:1/-1;text-align:center;padding:24px">Nessuna card disponibile. Fai il sync con Trakt.</p>';
       return;
     }
     previewGrid.innerHTML = '';
@@ -82,7 +101,7 @@ async function loadPreview() {
       previewGrid.appendChild(card);
     }
   } catch {
-    previewGrid.innerHTML = '<p style="color:var(--muted)">Errore nel caricamento anteprima.</p>';
+    previewGrid.innerHTML = '<p style="color:var(--muted);grid-column:1/-1;text-align:center;padding:24px">Errore nel caricamento anteprima.</p>';
   }
 }
 
@@ -100,10 +119,18 @@ async function loadConfig() {
   }
   setStatus('', true);
 
+  // Show all steps
   stepAuth.style.display = 'flex';
   stepPrefs.style.display = 'flex';
   stepInstall.style.display = 'flex';
 
+  // UDID
+  if (udidSection && data.udid) {
+    udidSection.style.display = 'flex';
+    udidValue.textContent = data.udid;
+  }
+
+  // Trakt status
   if (data.trakt_username) {
     loginBtn.style.display = 'none';
     connectedBadge.style.display = 'inline-flex';
@@ -114,14 +141,15 @@ async function loadConfig() {
     connectedBadge.style.display = 'none';
   }
 
+  // Preferences
   if (data.preferences) {
     focusMode.value = data.preferences.focus_mode || 'adaptive';
     const savedTypes = data.preferences.enabled_card_types || [];
-    const allDefaults = ['totals','streak','peak','weekly','genre','binge','monthly','recurring','rewatch','seasonal','actor','director','anime','ranking','memories','giorni','migliore'];
+    const allDefaults = ['totals','streak','peak','weekly','genre','binge','monthly','recurring','rewatch','seasonal','actor','director','anime','ranking','memories','giorni','migliore','anno','mese','split','notturno'];
     document.querySelectorAll('input[name="cardType"]').forEach(el => {
       const checked = savedTypes.includes(el.value) || (savedTypes.length === 0 && allDefaults.includes(el.value));
       el.checked = checked;
-      el.closest('.card-option')?.classList.toggle('checked', checked);
+      el.closest('.card-chip')?.classList.toggle('checked', checked);
     });
   }
 
@@ -132,12 +160,27 @@ async function loadConfig() {
   }
 }
 
+// UDID copy
+if (udidCopyBtn) {
+  udidCopyBtn.addEventListener('click', async () => {
+    const val = udidValue?.textContent;
+    if (!val) return;
+    try {
+      await navigator.clipboard.writeText(val);
+      udidCopyBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M5 10l3 3 7-7" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/></svg>`;
+      setTimeout(() => {
+        udidCopyBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 20 20" fill="none"><rect x="4" y="4" width="12" height="14" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 2h6a2 2 0 012 2v10" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>`;
+      }, 2000);
+    } catch {}
+  });
+}
+
 installBtn.onclick = async () => {
   await navigator.clipboard.writeText(manifestUrl);
-  installBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M6 10l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Copiato!';
+  installBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M5 10l3 3 7-7" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg> Copiato!';
   installBtn.style.background = '#22c55e';
   setTimeout(() => {
-    installBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M6 14l4 4 4-4M10 2v12" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Copia URL';
+    installBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M6 14l4 4 4-4M10 2v12" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Copia';
     installBtn.style.background = '';
   }, 2000);
 };
@@ -163,7 +206,7 @@ createForm.onsubmit = async (e) => {
   });
   const data = await res.json();
   createBtn.disabled = false;
-  createBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg> Crea / Apri';
+  createBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg> Crea / Apri';
   if (!res.ok) {
     setStatus(data.error || 'Errore creazione', false);
     return;
@@ -191,15 +234,15 @@ prefsForm.addEventListener('submit', async (e) => {
   const data = await res.json();
   submitBtn.disabled = false;
   if (res.ok) {
-    submitBtn.textContent = '✓ Salvato!';
+    submitBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M5 10l3 3 7-7" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg> Salvato!';
     submitBtn.style.background = '#22c55e';
     setTimeout(() => {
-      submitBtn.textContent = 'Salva preferenze';
+      submitBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M5 10l3 3 7-7" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg> Salva preferenze';
       submitBtn.style.background = '';
     }, 2000);
   } else {
     submitBtn.textContent = 'Errore, riprova';
-    setTimeout(() => { submitBtn.textContent = 'Salva preferenze'; }, 2000);
+    setTimeout(() => { submitBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M5 10l3 3 7-7" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg> Salva preferenze'; }, 2000);
   }
 });
 
@@ -212,7 +255,7 @@ syncBtn.addEventListener('click', async () => {
   const res = await fetch(`/api/config/${configId}/sync`, { method: 'POST' });
   const data = await res.json();
   syncBtn.disabled = false;
-  syncBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10a6 6 0 0112 0M16 10l-3-3M4 10l3-3" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg> Sincronizza ora con Trakt';
+  syncBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M4 10a6 6 0 0112 0M16 10l-3-3M4 10l3-3" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg> Sincronizza con Trakt';
   if (data.ok) {
     syncStatus.textContent = `Sync riuscita! ${data.count} eventi importati.`;
     syncStatus.className = 'sync-status success';

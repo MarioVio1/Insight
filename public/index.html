@@ -8,222 +8,284 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="bg-glow"></div>
+  <div class="bg-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
   <main class="wrap">
     <header class="hero">
-      <div class="logo">
-        <svg width="48" height="48" viewBox="0 0 48 48"><rect width="48" height="48" rx="12" fill="#0ea5e9"/><text x="24" y="31" fill="#fff" font-size="24" font-weight="bold" font-family="Arial" text-anchor="middle">i</text></svg>
+      <div class="logo-wrap">
+        <svg width="56" height="56" viewBox="0 0 256 256">
+          <defs>
+            <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#0ea5e9"/>
+              <stop offset="100%" stop-color="#7c3aed"/>
+            </linearGradient>
+          </defs>
+          <rect width="256" height="256" rx="48" fill="url(#lg)"/>
+          <rect x="8" y="8" width="240" height="240" rx="44" fill="none" stroke="#ffffff30" stroke-width="2"/>
+          <g transform="translate(128,128)">
+            <polygon points="-40,-60 40,-60 0,60" fill="#ffffff" opacity="0.95"/>
+            <polygon points="-20,-30 20,-30 0,30" fill="#0ea5e9"/>
+          </g>
+          <circle cx="188" cy="68" r="24" fill="#fbbf24" opacity="0.9"/>
+          <text x="188" y="76" fill="#020617" font-size="22" font-weight="900" font-family="Arial" text-anchor="middle">i</text>
+        </svg>
       </div>
       <h1>Adaptive Insights</h1>
       <p class="subtitle">Statistiche personali Trakt direttamente nella home di Stremio</p>
     </header>
 
-    <section class="card" id="mainCard">
-      <div id="status" class="status">
+    <div class="card" id="mainCard">
+      <div id="status" class="status-bar">
         <span class="spinner"></span>
-        <span>Caricamento...</span>
+        <span id="statusText">Caricamento...</span>
       </div>
 
-      <div id="stepCreate" class="step">
-        <div class="step-number">1</div>
-        <div class="step-content">
-          <h3>Crea la tua configurazione</h3>
-          <p>Scegli un nome unico per la tua configurazione (es. il tuo username).</p>
-          <form id="createForm" style="display:flex;gap:8px;flex-wrap:wrap">
-            <input type="text" id="slugInput" placeholder="es. mario123" required
-              style="flex:1;min-width:160px;padding:12px 16px;border-radius:12px;border:1px solid var(--border);background:var(--bg-card);color:var(--fg);font-size:15px;outline:none">
-            <button id="createBtn" class="btn primary">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+      <!-- Step 1: Creazione slug -->
+      <div id="stepCreate" class="step" data-step="1">
+        <div class="step-badge">1</div>
+        <div class="step-body">
+          <h3>Crea o apri la tua configurazione</h3>
+          <p>Scegli un nome unico (es. il tuo username). Se esiste già, verrà riaperta.</p>
+          <form id="createForm" class="slug-form">
+            <div class="slug-input-wrap">
+              <span class="slug-prefix">insight.to/</span>
+              <input type="text" id="slugInput" placeholder="mario123" required
+                autocomplete="off" spellcheck="false">
+            </div>
+            <button id="createBtn" class="btn primary" type="submit">
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
               Crea / Apri
             </button>
           </form>
-          <p class="hint" style="margin-top:8px">Se il nome esiste, la configurazione verrà aperta.</p>
+          <p class="hint">Il nome sarà usato nel tuo URL personale: <code>/configure/&lt;nome&gt;</code></p>
         </div>
       </div>
 
-      <div id="stepAuth" class="step" style="display:none">
-        <div class="step-number">2</div>
-        <div class="step-content">
-          <h3>Collega Trakt</h3>
-          <p>Autorizza l'accesso alla tua cronologia.</p>
+      <!-- Step 2: Trakt Auth -->
+      <div id="stepAuth" class="step" style="display:none" data-step="2">
+        <div class="step-badge">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M5 10l3 3 7-7" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>
+        </div>
+        <div class="step-body">
+          <div class="step-header">
+            <h3>Collega Trakt</h3>
+            <span id="connectedBadge" class="badge badge-success" style="display:none">
+              <svg width="14" height="14" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="#22c55e"/><path d="M5 8l2 2 4-4" stroke="#fff" stroke-width="1.5" fill="none"/></svg>
+              <span id="usernameDisplay"></span>
+            </span>
+          </div>
+          <p>Autorizza l'accesso alla tua cronologia di Trakt.tv.</p>
           <a id="loginBtn" class="btn secondary" href="#">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm-1 5l4 3-4 3V7z" fill="#fff"/></svg>
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm-1 5l4 3-4 3V7z" fill="#fff"/></svg>
             Collega Trakt
           </a>
-          <div class="connected-badge" id="connectedBadge" style="display:none">
-            <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="#22c55e"/><path d="M5 8l2 2 4-4" stroke="#fff" stroke-width="1.5" fill="none"/></svg>
-            <span id="usernameDisplay"></span>
-          </div>
         </div>
       </div>
 
-      <div id="stepPrefs" class="step" style="display:none">
-        <div class="step-number">3</div>
-        <div class="step-content">
+      <!-- Step 3: Card preferences -->
+      <div id="stepPrefs" class="step" style="display:none" data-step="3">
+        <div class="step-badge">3</div>
+        <div class="step-body">
           <h3>Scegli le tue card</h3>
-          <p>Seleziona i tipi di statistiche da mostrare.</p>
+          <p>Seleziona i tipi di statistiche da mostrare nella home di Stremio.</p>
+
+          <div class="tabs">
+            <button class="tab active" data-tab="all">Tutte</button>
+            <button class="tab" data-tab="stats">Statistiche</button>
+            <button class="tab" data-tab="content">Contenuti</button>
+            <button class="tab" data-tab="time">Tempo</button>
+          </div>
+
           <form id="prefsForm">
             <div class="card-grid">
-              <label class="card-option checked" data-value="totals">
+              <label class="card-chip checked" data-category="stats" data-value="totals">
                 <input type="checkbox" name="cardType" value="totals" checked hidden>
-                <span class="card-option-icon" style="background:#22c55e20;color:#22c55e">📊</span>
-                <span class="card-option-label">Totali</span>
-                <span class="card-option-desc">Film, episodi e ore totali</span>
+                <span class="chip-icon" style="background:#22c55e20;color:#22c55e">📊</span>
+                <span class="chip-label">Totali</span>
               </label>
-              <label class="card-option checked" data-value="streak">
+              <label class="card-chip checked" data-category="stats" data-value="streak">
                 <input type="checkbox" name="cardType" value="streak" checked hidden>
-                <span class="card-option-icon" style="background:#f9731620;color:#f97316">🔥</span>
-                <span class="card-option-label">Streak</span>
-                <span class="card-option-desc">Giorni consecutivi</span>
+                <span class="chip-icon" style="background:#f9731620;color:#f97316">🔥</span>
+                <span class="chip-label">Streak</span>
               </label>
-              <label class="card-option checked" data-value="peak">
+              <label class="card-chip checked" data-category="time" data-value="peak">
                 <input type="checkbox" name="cardType" value="peak" checked hidden>
-                <span class="card-option-icon" style="background:#a855f720;color:#a855f7">🕐</span>
-                <span class="card-option-label">Orario preferito</span>
-                <span class="card-option-desc">Quando guardi di più</span>
+                <span class="chip-icon" style="background:#a855f720;color:#a855f7">🕐</span>
+                <span class="chip-label">Orario top</span>
               </label>
-              <label class="card-option checked" data-value="weekly">
+              <label class="card-chip checked" data-category="time" data-value="weekly">
                 <input type="checkbox" name="cardType" value="weekly" checked hidden>
-                <span class="card-option-icon" style="background:#38bdf820;color:#38bdf8">📅</span>
-                <span class="card-option-label">Giorno top</span>
-                <span class="card-option-desc">Il tuo giorno più attivo</span>
+                <span class="chip-icon" style="background:#38bdf820;color:#38bdf8">📅</span>
+                <span class="chip-label">Giorno top</span>
               </label>
-              <label class="card-option checked" data-value="genre">
+              <label class="card-chip checked" data-category="content" data-value="genre">
                 <input type="checkbox" name="cardType" value="genre" checked hidden>
-                <span class="card-option-icon" style="background:#a855f720;color:#a855f7">🎭</span>
-                <span class="card-option-label">Generi</span>
-                <span class="card-option-desc">I generi che ami</span>
+                <span class="chip-icon" style="background:#a855f720;color:#a855f7">🎭</span>
+                <span class="chip-label">Generi</span>
               </label>
-              <label class="card-option checked" data-value="binge">
+              <label class="card-chip checked" data-category="content" data-value="binge">
                 <input type="checkbox" name="cardType" value="binge" checked hidden>
-                <span class="card-option-icon" style="background:#ef444420;color:#ef4444">🍿</span>
-                <span class="card-option-label">Binge</span>
-                <span class="card-option-desc">Maratone e abbuffate</span>
+                <span class="chip-icon" style="background:#ef444420;color:#ef4444">🍿</span>
+                <span class="chip-label">Binge</span>
               </label>
-              <label class="card-option" data-value="dropped">
+              <label class="card-chip" data-category="content" data-value="dropped">
                 <input type="checkbox" name="cardType" value="dropped" hidden>
-                <span class="card-option-icon" style="background:#6b728020;color:#6b7280">⏸️</span>
-                <span class="card-option-label">In pausa</span>
-                <span class="card-option-desc">Serie abbandonate</span>
+                <span class="chip-icon" style="background:#6b728020;color:#6b7280">⏸️</span>
+                <span class="chip-label">In pausa</span>
               </label>
-              <label class="card-option" data-value="monthly">
+              <label class="card-chip" data-category="stats" data-value="monthly">
                 <input type="checkbox" name="cardType" value="monthly" hidden>
-                <span class="card-option-icon" style="background:#14b8a620;color:#14b8a6">📈</span>
-                <span class="card-option-label">Mensile</span>
-                <span class="card-option-desc">Confronto col mese scorso</span>
+                <span class="chip-icon" style="background:#14b8a620;color:#14b8a6">📈</span>
+                <span class="chip-label">Mensile</span>
               </label>
-              <label class="card-option" data-value="recurring">
+              <label class="card-chip" data-category="time" data-value="recurring">
                 <input type="checkbox" name="cardType" value="recurring" hidden>
-                <span class="card-option-icon" style="background:#f59e0b20;color:#f59e0b">🔄</span>
-                <span class="card-option-label">Ricorrenze</span>
-                <span class="card-option-desc">Titoli stagionali</span>
+                <span class="chip-icon" style="background:#f59e0b20;color:#f59e0b">🔄</span>
+                <span class="chip-label">Ricorrenze</span>
               </label>
-              <label class="card-option" data-value="rewatch">
+              <label class="card-chip" data-category="content" data-value="rewatch">
                 <input type="checkbox" name="cardType" value="rewatch" hidden>
-                <span class="card-option-icon" style="background:#ef444420;color:#ef4444">❤️</span>
-                <span class="card-option-label">Rewatch</span>
-                <span class="card-option-desc">Titoli rivisti</span>
+                <span class="chip-icon" style="background:#ef444420;color:#ef4444">❤️</span>
+                <span class="chip-label">Rewatch</span>
               </label>
-              <label class="card-option" data-value="seasonal">
+              <label class="card-chip" data-category="time" data-value="seasonal">
                 <input type="checkbox" name="cardType" value="seasonal" hidden>
-                <span class="card-option-icon" style="background:#0ea5e920;color:#0ea5e9">🎄</span>
-                <span class="card-option-label">Stagionale</span>
-                <span class="card-option-desc">Basato sul periodo</span>
+                <span class="chip-icon" style="background:#0ea5e920;color:#0ea5e9">🎄</span>
+                <span class="chip-label">Stagionale</span>
               </label>
-              <label class="card-option" data-value="actor">
+              <label class="card-chip" data-category="content" data-value="actor">
                 <input type="checkbox" name="cardType" value="actor" hidden>
-                <span class="card-option-icon" style="background:#ec489920;color:#ec4899">🎭</span>
-                <span class="card-option-label">Attori</span>
-                <span class="card-option-desc">Attore preferito</span>
+                <span class="chip-icon" style="background:#ec489920;color:#ec4899">🎭</span>
+                <span class="chip-label">Attori</span>
               </label>
-              <label class="card-option" data-value="director">
+              <label class="card-chip" data-category="content" data-value="director">
                 <input type="checkbox" name="cardType" value="director" hidden>
-                <span class="card-option-icon" style="background:#8b5cf620;color:#8b5cf6">🎬</span>
-                <span class="card-option-label">Registi</span>
-                <span class="card-option-desc">Regista preferito</span>
+                <span class="chip-icon" style="background:#8b5cf620;color:#8b5cf6">🎬</span>
+                <span class="chip-label">Registi</span>
               </label>
-              <label class="card-option" data-value="anime">
+              <label class="card-chip" data-category="content" data-value="anime">
                 <input type="checkbox" name="cardType" value="anime" hidden>
-                <span class="card-option-icon" style="background:#f43f5e20;color:#f43f5e">🇯🇵</span>
-                <span class="card-option-label">Anime</span>
-                <span class="card-option-desc">Statistiche anime</span>
+                <span class="chip-icon" style="background:#f43f5e20;color:#f43f5e">🇯🇵</span>
+                <span class="chip-label">Anime</span>
               </label>
-              <label class="card-option" data-value="ranking">
+              <label class="card-chip" data-category="stats" data-value="ranking">
                 <input type="checkbox" name="cardType" value="ranking" hidden>
-                <span class="card-option-icon" style="background:#fbbf2420;color:#fbbf24">🏆</span>
-                <span class="card-option-label">Classifica</span>
-                <span class="card-option-desc">Confronto utenti</span>
+                <span class="chip-icon" style="background:#fbbf2420;color:#fbbf24">🏆</span>
+                <span class="chip-label">Classifica</span>
               </label>
-              <label class="card-option" data-value="memories">
+              <label class="card-chip" data-category="time" data-value="memories">
                 <input type="checkbox" name="cardType" value="memories" hidden>
-                <span class="card-option-icon" style="background:#d946ef20;color:#d946ef">💭</span>
-                <span class="card-option-label">Ricordi</span>
-                <span class="card-option-desc">Cosa guardavi negli anni scorsi</span>
+                <span class="chip-icon" style="background:#d946ef20;color:#d946ef">💭</span>
+                <span class="chip-label">Ricordi</span>
               </label>
-              <label class="card-option" data-value="giorni">
+              <label class="card-chip" data-category="stats" data-value="giorni">
                 <input type="checkbox" name="cardType" value="giorni" hidden>
-                <span class="card-option-icon" style="background:#06b6d420;color:#06b6d4">📆</span>
-                <span class="card-option-label">Giorni</span>
-                <span class="card-option-desc">Giorni unici di visione</span>
+                <span class="chip-icon" style="background:#06b6d420;color:#06b6d4">📆</span>
+                <span class="chip-label">Giorni</span>
               </label>
-              <label class="card-option" data-value="migliore">
+              <label class="card-chip" data-category="stats" data-value="migliore">
                 <input type="checkbox" name="cardType" value="migliore" hidden>
-                <span class="card-option-icon" style="background:#fbbf2420;color:#fbbf24">⭐</span>
-                <span class="card-option-label">Miglior anno</span>
-                <span class="card-option-desc">L'anno con più ore</span>
+                <span class="chip-icon" style="background:#fbbf2420;color:#fbbf24">⭐</span>
+                <span class="chip-label">Miglior anno</span>
+              </label>
+              <label class="card-chip" data-category="stats" data-value="anno">
+                <input type="checkbox" name="cardType" value="anno" hidden>
+                <span class="chip-icon" style="background:#84cc1620;color:#84cc16">📅</span>
+                <span class="chip-label">Anno in corso</span>
+              </label>
+              <label class="card-chip" data-category="time" data-value="mese">
+                <input type="checkbox" name="cardType" value="mese" hidden>
+                <span class="chip-icon" style="background:#a3e63520;color:#a3e635">📆</span>
+                <span class="chip-label">Mese top</span>
+              </label>
+              <label class="card-chip" data-category="stats" data-value="split">
+                <input type="checkbox" name="cardType" value="split" hidden>
+                <span class="chip-icon" style="background:#2dd4bf20;color:#2dd4bf">📊</span>
+                <span class="chip-label">Film/Serie</span>
+              </label>
+              <label class="card-chip" data-category="time" data-value="notturno">
+                <input type="checkbox" name="cardType" value="notturno" hidden>
+                <span class="chip-icon" style="background:#6366f120;color:#6366f1">🌙</span>
+                <span class="chip-label">Fascia oraria</span>
               </label>
             </div>
-            <div class="pref-field">
-              <label for="focusMode">Focus</label>
-              <select id="focusMode">
-                <option value="adaptive">Adaptive</option>
-                <option value="movies">Film</option>
-                <option value="series">Serie</option>
-              </select>
+
+            <div class="pref-row">
+              <div class="pref-field">
+                <label for="focusMode">Modalità focus</label>
+                <select id="focusMode">
+                  <option value="adaptive">Adaptive</option>
+                  <option value="movies">Solo film</option>
+                  <option value="series">Solo serie</option>
+                </select>
+              </div>
             </div>
-            <button type="submit" class="btn primary full">Salva preferenze</button>
+
+            <button type="submit" class="btn primary full">
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M5 10l3 3 7-7" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+              Salva preferenze
+            </button>
           </form>
+
           <div class="sync-section">
-            <button id="syncBtn" class="btn secondary full">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10a6 6 0 0112 0M16 10l-3-3M4 10l3-3" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
-              Sincronizza ora con Trakt
+            <button id="syncBtn" class="btn accent full">
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M4 10a6 6 0 0112 0M16 10l-3-3M4 10l3-3" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+              Sincronizza con Trakt
             </button>
             <div id="syncStatus" class="sync-status"></div>
           </div>
         </div>
       </div>
 
-      <div id="stepPreview" class="step" style="display:none">
-        <div class="step-number">3</div>
-        <div class="step-content">
-          <h3>Anteprima Cards</h3>
+      <!-- Step 4: Preview -->
+      <div id="stepPreview" class="step" style="display:none" data-step="4">
+        <div class="step-badge">4</div>
+        <div class="step-body">
+          <h3>Anteprima</h3>
           <p>Ecco come appariranno le cards nella home di Stremio.</p>
           <div id="previewGrid" class="preview-grid"></div>
         </div>
       </div>
 
-      <div id="stepInstall" class="step" style="display:none">
-        <div class="step-number">4</div>
-        <div class="step-content">
+      <!-- UDID + Install -->
+      <div id="stepInstall" class="step" style="display:none" data-step="5">
+        <div class="step-badge">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm-1 5l4 3-4 3V7z" fill="#fff"/></svg>
+        </div>
+        <div class="step-body">
+          <div id="udidSection" class="udid-box">
+            <div class="udid-label">Codice UDID</div>
+            <div class="udid-value-wrap">
+              <code id="udidValue" class="udid-value"></code>
+              <button id="udidCopyBtn" class="btn ghost" title="Copia UDID">
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><rect x="4" y="4" width="12" height="14" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 2h6a2 2 0 012 2v10" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+              </button>
+            </div>
+          </div>
+
           <h3>Installa in Stremio</h3>
-          <p>Aggiungi il manifest URL a Stremio.</p>
+          <p>Copia questo URL e incollalo in Stremio → Aggiungi Addon.</p>
           <div class="manifest-box">
             <code id="manifestBox"></code>
             <button id="installBtn" class="btn primary">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M6 14l4 4 4-4M10 2v12" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              Copia URL
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M6 14l4 4 4-4M10 2v12" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Copia
             </button>
           </div>
-          <p class="hint">Apri Stremio → Aggiungi Addon → Inserisci URL</p>
-          <p id="syncInfo" class="hint" style="margin-top:4px"></p>
+          <p id="syncInfo" class="hint"></p>
         </div>
       </div>
-    </section>
+    </div>
 
     <footer class="footer">
-      <p>Adaptive Insights &mdash; Connesso a Trakt.tv</p>
+      <p>Adaptive Insights &mdash; <a href="https://trakt.tv" target="_blank" rel="noopener">Trakt.tv</a></p>
     </footer>
   </main>
+
   <script src="/config.js"></script>
 </body>
 </html>

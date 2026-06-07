@@ -21,7 +21,23 @@ app.use(express.static(path.join(__dirname, '../public')));
 app.get('/health', (_req, res) => res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() }));
 app.get('/logo.png', (_req, res) => {
   res.setHeader('Content-Type', 'image/svg+xml');
-  res.send(`<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><rect width="128" height="128" rx="24" fill="#0ea5e9"/><text x="64" y="80" fill="#fff" font-size="64" font-weight="bold" font-family="Arial" text-anchor="middle">i</text></svg>`);
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.send(`<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0ea5e9"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="48" fill="url(#g)"/>
+  <rect x="8" y="8" width="240" height="240" rx="44" fill="none" stroke="#ffffff30" stroke-width="2"/>
+  <g transform="translate(128,128)">
+    <polygon points="-40,-60 40,-60 0,60" fill="#ffffff" opacity="0.95"/>
+    <polygon points="-20,-30 20,-30 0,30" fill="#0ea5e9"/>
+  </g>
+  <circle cx="188" cy="68" r="24" fill="#fbbf24" opacity="0.9"/>
+  <text x="188" y="76" fill="#020617" font-size="22" font-weight="900" font-family="Arial" text-anchor="middle">i</text>
+</svg>`);
 });
 app.get('/poster/:configId/:cardId.png', posterHandler);
 app.get('/manifest.json', (_req, res) => {
@@ -33,7 +49,7 @@ app.get('/:configId/manifest.json', async (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   const uuid = await resolveConfigId(req.params.configId);
   if (!uuid) return res.status(404).json({ error: 'Config not found' });
-  res.json(getManifest(uuid));
+  res.json(getManifest(uuid, req.params.configId));
 });
 
 app.get('/:configId/catalog/:type/:id/:extra?.json', async (req, res) => {
@@ -52,7 +68,8 @@ app.get('/:configId/meta/:type/:id.json', async (req, res) => {
   catch (error) { logger.error({ error }, 'Meta error'); res.status(500).json({ meta: null }); }
 });
 
-app.get('/configure/:configId?', (_req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
+app.get('/configure/:configId?', (req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
+app.get('/:configId/configure', (req, res) => res.redirect(`/configure/${req.params.configId}`));
 app.use(routes);
 
 const PORT = parseInt(process.env.PORT || '3000', 10);

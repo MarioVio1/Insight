@@ -65,6 +65,10 @@ export async function posterHandler(req: Request, res: Response) {
     else if (cardId.includes('memories')) cardAccent = '#d946ef';
     else if (cardId.includes('giorni')) cardAccent = '#06b6d4';
     else if (cardId.includes('migliore')) cardAccent = '#fbbf24';
+    else if (cardId.includes('anno')) cardAccent = '#84cc16';
+    else if (cardId.includes('mese')) cardAccent = '#a3e635';
+    else if (cardId.includes('split')) cardAccent = '#2dd4bf';
+    else if (cardId.includes('notturno')) cardAccent = '#6366f1';
 
     const svg = generateSvgPoster({
       title: cardTitle,

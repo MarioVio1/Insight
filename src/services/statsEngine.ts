@@ -139,8 +139,11 @@ export function computeTraktStats(events: any[]) {
   const streak = computeStreak(events);
   const peakHour = computePeakHour(events);
   const weekdayPattern = computeWeekdayPattern(events);
-  const binges = findBingeSessions(events);
-  const dropped = findDroppedShows(events);
+  const binges = findBingeSessions(series);
+  const dropped = findDroppedShows(series);
+  const animeEpOnly = anime.filter(e => e.trakt_type !== 'movie');
+  const animeBinges = findBingeSessions(animeEpOnly);
+  const animeDropped = findDroppedShows(animeEpOnly);
 
   const dayNames = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
   const topDay = weekdayPattern[0] ? { name: dayNames[weekdayPattern[0].day], count: weekdayPattern[0].count } : null;
@@ -194,7 +197,21 @@ export function computeTraktStats(events: any[]) {
     totalHoursByYear[y] = Math.round(totalHoursByYear[y] * 10) / 10;
   }
 
+  const timeOfDay = { morning: 0, afternoon: 0, evening: 0, night: 0 };
+  for (const e of events) {
+    if (!e.watched_at) continue;
+    const h = new Date(e.watched_at).getHours();
+    if (h >= 6 && h < 12) timeOfDay.morning++;
+    else if (h >= 12 && h < 18) timeOfDay.afternoon++;
+    else if (h >= 18) timeOfDay.evening++;
+    else timeOfDay.night++;
+  }
+
   const seasonalTitles = findSeasonalTitles(events);
+
+  const totalWatched = totalMovies + totalEpisodes;
+  const moviePct = totalWatched > 0 ? Math.round(totalMovies / totalWatched * 100) : 50;
+  const showPct = totalWatched > 0 ? 100 - moviePct : 50;
 
   return {
     totalHours: Math.round(totalHours * 10) / 10,
@@ -227,7 +244,12 @@ export function computeTraktStats(events: any[]) {
     bestYear,
     bestMonth,
     totalHoursByYear,
-    seasonalTitles
+    seasonalTitles,
+    timeOfDay,
+    moviePct,
+    showPct,
+    animeBinges,
+    animeDropped
   };
 }
 
@@ -398,17 +420,21 @@ export async function computeRankings(configId: string, stats: { totalHours: num
 }
 
 export async function computeAdaptiveInsights(configId: string) {
-  const { data: events } = await supabase
+  const { data: events, error: evErr } = await supabase
     .from('trakt_events')
     .select('*')
     .eq('config_id', configId);
+
+  if (evErr && String(evErr).includes('does not exist')) {
+    throw new Error('Tabella "trakt_events" non esiste. Esegui supabase/init.sql.');
+  }
 
   if (!events || events.length === 0) {
     await safeUpsert(configId, {
       config_id: configId,
       taste_profile: 'mixed',
       seasonal_key: 'standard',
-      summary: { memories: [] },
+      summary: { memories: [], seriesRewatch: [], animeRewatch: [], animeBinges: [], animeDropped: [] },
       recurring_titles: [],
       rewatch_titles: [],
       genre_counts: [],
@@ -423,6 +449,12 @@ export async function computeAdaptiveInsights(configId: string) {
   const stats = computeTraktStats(events);
   const recurring = findRecurringTitles(events);
   const rewatch = findRewatchTitles(events);
+
+  const animeEvents = events.filter(e => (e.genres || []).includes('anime'));
+  const seriesEvents = events.filter(e => e.trakt_type !== 'movie' && !(e.genres || []).includes('anime'));
+  const seriesRewatch = findRewatchTitles(seriesEvents);
+  const animeRewatch = findRewatchTitles(animeEvents);
+
   const season = getSeasonalContext();
   const memories = findMemories(events);
 
@@ -447,7 +479,7 @@ export async function computeAdaptiveInsights(configId: string) {
     config_id: configId,
     taste_profile: 'mixed',
     seasonal_key: season.seasonKey,
-    summary: { ...stats, memories },
+    summary: { ...stats, memories, seriesRewatch, animeRewatch },
     recurring_titles: recurring,
     rewatch_titles: rewatch,
     genre_counts: stats.genre_counts,
@@ -464,10 +496,9 @@ async function safeUpsert(configId: string, payload: Record<string, any>) {
   if (!error) return;
   const msg = String(error);
   if (msg.includes('does not exist')) {
-    const { top_actors, top_directors, ranking, ...basic } = payload as any;
-    const { error: e2 } = await supabase.from('insight_snapshots').upsert(basic, { onConflict: 'config_id' });
-    if (e2) console.error('safeUpsert retry error:', String(e2).slice(0, 200));
-  } else {
-    console.error('safeUpsert error:', msg.slice(0, 200));
+    console.error(`ERRORE: Tabella "insight_snapshots" non esiste! Esegui supabase/init.sql.`, msg.slice(0, 200));
+    throw new Error('Database tables missing. Run supabase/init.sql in Supabase SQL Editor.');
   }
+  console.error('safeUpsert error:', msg.slice(0, 200));
+  throw new Error('insight_snapshots upsert failed: ' + msg.slice(0, 200));
 }

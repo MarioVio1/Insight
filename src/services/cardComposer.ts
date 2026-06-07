@@ -1,6 +1,6 @@
 import { supabase } from './supabase.js';
 import { generateSvgPoster } from './artworkService.js';
-import { fetchTmdbPoster } from './tmdbService.js';
+import { fetchTmdbDetails } from './tmdbService.js';
 
 function posterUrl(configId: string, cardId: string): string {
   const base = process.env.BASE_URL || 'http://localhost:3000';
@@ -12,7 +12,7 @@ async function cardMeta(
   name: string,
   description: string,
   configId: string,
-  opts?: { accent?: string; statValue?: string; statLabel?: string; imageUrl?: string }
+  opts?: { accent?: string; statValue?: string; statLabel?: string; imageUrl?: string; rating?: number }
 ) {
   const accent = opts?.accent || '#0ea5e9';
   const svg = generateSvgPoster({
@@ -24,7 +24,7 @@ async function cardMeta(
     imageUrl: opts?.imageUrl
   });
 
-  return {
+  const meta: any = {
     id,
     type: 'movie',
     name,
@@ -37,6 +37,10 @@ async function cardMeta(
     statLabel: opts?.statLabel || null,
     imageUrl: opts?.imageUrl || null
   };
+
+  if (opts?.rating != null) meta.rating = opts.rating;
+
+  return meta;
 }
 
 function video(id: string, title: string, released: string, overview: string) {
@@ -45,18 +49,27 @@ function video(id: string, title: string, released: string, overview: string) {
 
 export async function rebuildAdaptiveRow(configId: string) {
   const cfgRes = await supabase.from('addon_configs').select('*').eq('id', configId).single();
+  if (cfgRes.error && String(cfgRes.error).includes('does not exist')) {
+    throw new Error('Tabella "addon_configs" non esiste.');
+  }
+
   const insightRes = await supabase.from('insight_snapshots').select('*').eq('config_id', configId).maybeSingle();
+  if (insightRes.error && String(insightRes.error).includes('does not exist')) {
+    throw new Error('Tabella "insight_snapshots" non esiste. Esegui supabase/init.sql.');
+  }
+
   const prefsRes = await supabase.from('config_preferences').select('*').eq('config_id', configId).maybeSingle();
 
   const cfg = cfgRes.data;
   const insight = insightRes.data;
   const prefs = prefsRes.data;
 
-  if (!cfg || !insight) return;
+  if (!cfg) { console.error('Config not found for', configId); return; }
+  if (!insight) { console.error('Insight not found for', configId, '- run sync first'); return; }
 
   const s = insight.summary || {};
   const saved = prefs?.enabled_card_types || [];
-  const allEnabled = ['totals','streak','peak','weekly','genre','binge','dropped','monthly','recurring','rewatch','seasonal','actor','director','anime','ranking','memories','giorni','migliore'];
+  const allEnabled = ['totals','streak','peak','weekly','genre','binge','dropped','monthly','recurring','rewatch','seasonal','actor','director','anime','ranking','memories','giorni','migliore','anno','mese','split','notturno'];
   const enabled = saved.length > 0 ? [...new Set([...saved, ...allEnabled])] : allEnabled;
   const cards: any[] = [];
   const details: { meta_id: string; meta: any }[] = [];
@@ -181,14 +194,15 @@ export async function rebuildAdaptiveRow(configId: string) {
     const topBinge = s.binges[0];
 
     let imageUrl = '';
+    let rating: number | null = null;
     if (topBinge.tmdb_id) {
-      try { imageUrl = await fetchTmdbPoster(topBinge.tmdb_id, 'tv') || ''; } catch {}
+      try { const d = await fetchTmdbDetails(topBinge.tmdb_id, 'tv'); imageUrl = d.poster || ''; rating = d.rating; } catch {}
     }
 
     cards.push(await cardMeta(id,
       `Binge: ${topBinge.episodes} episodi di ${topBinge.title}`,
       `Hai guardato ${topBinge.episodes} episodi di fila di ${topBinge.title} in un giorno.`,
-      configId, { accent: '#ef4444', statValue: `${topBinge.episodes}`, statLabel: 'BINGE MAX', imageUrl }
+      configId, { accent: '#ef4444', statValue: `${topBinge.episodes}`, statLabel: 'BINGE MAX', imageUrl, rating: rating || undefined }
     ));
 
     details.push({
@@ -207,14 +221,15 @@ export async function rebuildAdaptiveRow(configId: string) {
     const id = `adaptive_${configId}_dropped`;
 
     let imageUrl = '';
+    let rating: number | null = null;
     if (s.dropped[0].tmdb_id) {
-      try { imageUrl = await fetchTmdbPoster(s.dropped[0].tmdb_id, 'tv') || ''; } catch {}
+      try { const d = await fetchTmdbDetails(s.dropped[0].tmdb_id, 'tv'); imageUrl = d.poster || ''; rating = d.rating; } catch {}
     }
 
     cards.push(await cardMeta(id,
       `${s.dropped.length} serie in pausa`,
       `Serie che non guardi da mesi. Forse è ora di riprenderle?`,
-      configId, { accent: '#6b7280', statValue: `${s.dropped.length}`, statLabel: 'IN PAUSA', imageUrl }
+      configId, { accent: '#6b7280', statValue: `${s.dropped.length}`, statLabel: 'IN PAUSA', imageUrl, rating: rating || undefined }
     ));
 
     details.push({
@@ -277,25 +292,28 @@ export async function rebuildAdaptiveRow(configId: string) {
     }
   }
 
-  // Rewatch
+  // Rewatch (solo serie TV, gli anime sono nella card anime)
   if (enabled.includes('rewatch')) {
-    const rewatchTitles = insight.rewatch_titles || [];
+    const rewatchTitles = s.seriesRewatch || insight.rewatch_titles || [];
     if (rewatchTitles.length > 0) {
       const id = `adaptive_${configId}_rewatch`;
       const topRewatch = rewatchTitles[0];
 
       let imageUrl = '';
+      let rating: number | null = null;
       if (topRewatch.tmdb_id) {
         try {
           const mediaType = topRewatch.type === 'movie' ? 'movie' : 'tv';
-          imageUrl = await fetchTmdbPoster(topRewatch.tmdb_id, mediaType) || '';
+          const d = await fetchTmdbDetails(topRewatch.tmdb_id, mediaType);
+          imageUrl = d.poster || '';
+          rating = d.rating;
         } catch {}
       }
 
       cards.push(await cardMeta(id,
         `Rivisto: ${topRewatch.title} (${topRewatch.count}x)`,
         `Titoli che hai guardato più di una volta.`,
-        configId, { accent: '#ef4444', statValue: `${topRewatch.count}x`, statLabel: 'REWATCH', imageUrl }
+        configId, { accent: '#ef4444', statValue: `${topRewatch.count}x`, statLabel: 'REWATCH', imageUrl, rating: rating || undefined }
       ));
 
       details.push({
@@ -402,21 +420,29 @@ export async function rebuildAdaptiveRow(configId: string) {
     const ah = s.animeHours || 0;
     const am = s.animeMovies || 0;
     const ae = s.animeEpisodes || 0;
+    const ab = s.animeBinges || [];
+    const ad = s.animeDropped || [];
+    const ar = s.animeRewatch || [];
     cards.push(await cardMeta(id,
       `${s.animeCount} anime guardati`,
       `${am} film · ${ae} episodi · ${Math.floor(ah)} ore`,
       configId, { accent: '#f43f5e', statValue: `${s.animeCount}`, statLabel: 'ANIME' }
     ));
 
+    const av: any[] = [
+      video(`${id}_1`, `${am} film anime visti`, new Date().toISOString(), 'Film anime.'),
+      video(`${id}_2`, `${ae} episodi anime visti`, new Date().toISOString(), 'Episodi anime.'),
+      video(`${id}_3`, `${Math.floor(ah)} ore di anime`, new Date().toISOString(), 'Tempo speso con gli anime.')
+    ];
+    if (ab.length > 0) av.push(video(`${id}_4`, `Binge anime max: ${ab[0].title} (${ab[0].episodes}ep)`, new Date().toISOString(), 'Maggior numero di episodi anime in un giorno.'));
+    if (ad.length > 0) av.push(video(`${id}_5`, `${ad.length} anime in pausa`, new Date().toISOString(), 'Anime che non guardi da mesi.'));
+    if (ar.length > 0) av.push(video(`${id}_6`, `${ar[0].title} rivisto ${ar[0].count}x`, new Date().toISOString(), 'Anime più rivisto.'));
+
     details.push({
       meta_id: id, meta: {
         id, type: 'series', name: 'Statistiche anime',
         description: 'I tuoi anime guardati su Trakt.',
-        videos: [
-          video(`${id}_1`, `${am} film anime visti`, new Date().toISOString(), 'Film anime.'),
-          video(`${id}_2`, `${ae} episodi anime visti`, new Date().toISOString(), 'Episodi anime.'),
-          video(`${id}_3`, `${Math.floor(ah)} ore di anime`, new Date().toISOString(), 'Tempo speso con gli anime.')
-        ]
+        videos: av
       }
     });
   }
@@ -454,17 +480,20 @@ export async function rebuildAdaptiveRow(configId: string) {
       const yearsAgo = new Date().getFullYear() - memory.year;
 
       let imageUrl = '';
+      let rating: number | null = null;
       if (memory.tmdb_id) {
         try {
           const mediaType = memory.type === 'movie' ? 'movie' : 'tv';
-          imageUrl = await fetchTmdbPoster(memory.tmdb_id, mediaType) || '';
+          const d = await fetchTmdbDetails(memory.tmdb_id, mediaType);
+          imageUrl = d.poster || '';
+          rating = d.rating;
         } catch {}
       }
 
       cards.push(await cardMeta(id,
         `Ricordi: ${yearsAgo} anni fa guardavi ${memory.title}`,
         `Il ${memory.year} in questo periodo guardavi ${memory.title}.`,
-        configId, { accent: '#d946ef', statValue: `${memory.year}`, statLabel: 'RICORDI', imageUrl }
+        configId, { accent: '#d946ef', statValue: `${memory.year}`, statLabel: 'RICORDI', imageUrl, rating: rating || undefined }
       ));
 
       details.push({
@@ -516,6 +545,115 @@ export async function rebuildAdaptiveRow(configId: string) {
         )
       }
     });
+  }
+
+  // Anno in corso
+  if (enabled.includes('anno') && s.yearHours !== undefined && s.yearHours > 0) {
+    const id = `adaptive_${configId}_anno`;
+    const prevYear = String(new Date().getFullYear() - 1);
+    const prevHours = s.yearlyTotals?.[prevYear]?.hours || 0;
+    const comparison = prevHours > 0 ? `vs ${Math.floor(prevHours)}h l'anno scorso` : 'Nessun dato anno precedente';
+
+    cards.push(await cardMeta(id,
+      `${Math.floor(s.yearHours)} ore quest'anno`,
+      comparison,
+      configId, { accent: '#84cc16', statValue: `${Math.floor(s.yearHours)}h`, statLabel: `ANNO ${new Date().getFullYear()}` }
+    ));
+
+    details.push({
+      meta_id: id, meta: {
+        id, type: 'series', name: `Progresso ${new Date().getFullYear()}`,
+        description: 'Quanto hai guardato quest\'anno.',
+        videos: Object.entries(s.yearlyTotals || {}).sort((a: any, b: any) => Number(a[0]) - Number(b[0])).map(([year, data]: [string, any], i: number) =>
+          video(`${id}_${i}`, year, new Date().toISOString(), `${Math.floor(data.hours)} ore, ${data.movies} film, ${data.episodes} episodi.`)
+        )
+      }
+    });
+  }
+
+  // Mese preferito
+  if (enabled.includes('mese') && s.bestMonth) {
+    const id = `adaptive_${configId}_mese`;
+    const monthNames = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
+    const monthIdx = monthNames.indexOf(s.bestMonth);
+
+    cards.push(await cardMeta(id,
+      `Il tuo mese: ${s.bestMonth}`,
+      monthIdx >= 0 ? `È il mese in cui hai guardato di più in assoluto.` : 'Nessun dato sufficiente.',
+      configId, { accent: '#a3e635', statValue: s.bestMonth, statLabel: 'MESE TOP' }
+    ));
+
+    details.push({
+      meta_id: id, meta: {
+        id, type: 'series', name: 'I tuoi mesi',
+        description: 'Distribuzione delle visioni per mese.',
+        videos: monthNames.map((name, i) =>
+          video(`${id}_${i}`, name, new Date().toISOString(), `${i === monthIdx ? '⬅ MESE CON PIÙ VISIONI' : ''}`)
+        )
+      }
+    });
+  }
+
+  // Split film/serie
+  if (enabled.includes('split')) {
+    const id = `adaptive_${configId}_split`;
+    const totalWatched = s.totalMovies + s.seriesEpisodes;
+    const mp = s.moviePct ?? 50;
+    const sp = s.showPct ?? 50;
+
+    if (totalWatched > 0) {
+      cards.push(await cardMeta(id,
+        `${mp}% film · ${sp}% serie`,
+        `${s.totalMovies} film, ${s.seriesEpisodes} episodi (${totalWatched} titoli)`,
+        configId, { accent: '#2dd4bf', statValue: `${mp}/${sp}`, statLabel: 'FILM/SERIE' }
+      ));
+
+      details.push({
+        meta_id: id, meta: {
+          id, type: 'series', name: 'Film vs Serie',
+          description: 'Come si dividono le tue visioni.',
+          videos: [
+            video(`${id}_1`, `${mp}% film (${s.totalMovies})`, new Date().toISOString(), 'Film visti.'),
+            video(`${id}_2`, `${sp}% serie (${s.seriesEpisodes} episodi)`, new Date().toISOString(), 'Episodi visti.')
+          ]
+        }
+      });
+    }
+  }
+
+  // Notturno (time of day)
+  if (enabled.includes('notturno') && s.timeOfDay) {
+    const id = `adaptive_${configId}_notturno`;
+    const td = s.timeOfDay as { morning: number; afternoon: number; evening: number; night: number };
+    const totalTd = td.morning + td.afternoon + td.evening + td.night;
+
+    if (totalTd > 0) {
+      const labels = [
+        { key: 'notte', value: td.night, label: 'Notte (0-6)', color: '#6366f1' },
+        { key: 'mattino', value: td.morning, label: 'Mattino (6-12)', color: '#fbbf24' },
+        { key: 'pomeriggio', value: td.afternoon, label: 'Pomeriggio (12-18)', color: '#f97316' },
+        { key: 'sera', value: td.evening, label: 'Sera (18-24)', color: '#8b5cf6' }
+      ].sort((a, b) => b.value - a.value);
+      const top = labels[0];
+      const topPct = Math.round(top.value / totalTd * 100);
+      const itLabels: Record<string, string> = { notte: 'nottambulo', mattino: 'mattiniero', pomeriggio: 'pomeridiano', sera: 'serale' };
+
+      cards.push(await cardMeta(id,
+        `Sei ${itLabels[top.key]}: ${topPct}% di ${top.label.toLowerCase()}`,
+        `${top.label}: ${top.value} · ${labels[1].label}: ${labels[1].value} · ${labels[2].label}: ${labels[2].value} · ${labels[3].label}: ${labels[3].value}`,
+        configId, { accent: top.color, statValue: `${topPct}%`, statLabel: top.label.toUpperCase() }
+      ));
+
+      details.push({
+        meta_id: id, meta: {
+          id, type: 'series', name: 'Le tue fasce orarie',
+          description: 'Quando guardi durante il giorno.',
+          videos: labels.map((l, i) =>
+            video(`${id}_${i}`, l.label, new Date().toISOString(), `${l.value} visioni (${Math.round(l.value / totalTd * 100)}% del totale).`)
+          )
+        }
+      });
+    }
   }
 
   await supabase.from('adaptive_rows').upsert({

@@ -37,6 +37,22 @@ export async function fetchTmdbPoster(tmdbId: number | string | null, type: stri
   }
 }
 
+export async function fetchTmdbDetails(tmdbId: number | string | null, type: string): Promise<{ poster: string | null; rating: number | null }> {
+  if (!tmdbId) return { poster: null, rating: null };
+  if (!process.env.TMDB_API_KEY && !process.env.TMDB_BEARER_TOKEN) return { poster: null, rating: null };
+  const params: Record<string, string> = {};
+  if (process.env.TMDB_API_KEY) params.api_key = process.env.TMDB_API_KEY;
+  try {
+    const mediaType = type === 'movie' ? 'movie' : 'tv';
+    const { data } = await axios.get(`${TMDB_BASE}/${mediaType}/${tmdbId}`, { params, headers: authHeaders() });
+    const poster = data?.poster_path ? `https://image.tmdb.org/t/p/w500${data.poster_path}` : null;
+    const rating = data?.vote_average ? Math.round(data.vote_average * 10) / 10 : null;
+    return { poster, rating };
+  } catch {
+    return { poster: null, rating: null };
+  }
+}
+
 export async function fetchCredits(tmdbId: string, type: 'movie' | 'tv') {
   if (!process.env.TMDB_API_KEY && !process.env.TMDB_BEARER_TOKEN) return null;
   const params: Record<string, string> = {};

@@ -1,25 +1,27 @@
-export function getManifest(configId?: string) {
+export function getManifest(uuid?: string, slug?: string) {
   const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+  const idStr = slug || uuid;
 
   return {
-    id: configId ? `community.stremio.adaptive.insights.${configId}` : 'community.stremio.adaptive.insights',
+    id: idStr ? `community.stremio.adaptive.insights.${idStr}` : 'community.stremio.adaptive.insights',
     version: '3.2.0',
-    name: 'Adaptive Insights',
-    description: 'Statistiche personali vive, stagionali e apribili come episodi.',
+    name: `Adaptive Insights${slug ? ` (${slug})` : ''}`,
+    description: 'Statistiche personali Trakt direttamente nella home di Stremio.',
     logo: `${baseUrl}/logo.png`,
     resources: ['catalog', 'meta'],
     types: ['movie'],
     behaviorHints: {
       configurable: true,
-      configurationRequired: !configId
+      configurationRequired: !uuid,
+      configurationUrl: slug ? `/configure/${slug}` : '/configure/'
     },
     idPrefixes: ['adaptive_'],
-    catalogs: configId
+    catalogs: uuid
       ? [
           {
             type: 'movie',
             id: 'adaptive-insights',
-            name: '✨ Your Adaptive Insights',
+            name: '✨ Adaptive Insights',
             behaviorHints: {
               defaultVideoId: null
             }

@@ -24,15 +24,40 @@ export async function resolveConfigId(slugOrId: string): Promise<string | null> 
   return null;
 }
 
+const REQUIRED_TABLES = ['config_preferences', 'insight_snapshots', 'adaptive_rows', 'adaptive_meta', 'trakt_events'];
+const TABLE_NAMES_IT: Record<string, string> = {
+  config_preferences: 'config_preferences (preferenze utente)',
+  insight_snapshots: 'insight_snapshots (statistiche calcolate)',
+  adaptive_rows: 'adaptive_rows (righe catalogo Stremio)',
+  adaptive_meta: 'adaptive_meta (dettaglio card Stremio)',
+  trakt_events: 'trakt_events (cronologia Trakt)'
+};
+
 export async function checkTables(): Promise<boolean> {
-  try {
-    const { error } = await supabase.from('config_preferences').select('id').limit(1);
-    if (error && error.message?.includes('does not exist')) {
-      console.error('ERRORE: Tabelle Supabase non create. Esegui supabase/init.sql nel SQL Editor di Supabase.');
-      return false;
+  let allOk = true;
+  for (const table of REQUIRED_TABLES) {
+    try {
+      const { error } = await supabase.from(table).select('*').limit(1);
+      if (error && error.message?.includes('does not exist')) {
+        console.error(`ERRORE: Tabella "${table}" non trovata. Esegui supabase/init.sql nel SQL Editor di Supabase.`);
+        allOk = false;
+      }
+    } catch {
+      allOk = false;
     }
-    return true;
-  } catch {
-    return false;
   }
+  return allOk;
+}
+
+export async function checkTablesDetailed(): Promise<{ table: string; exists: boolean }[]> {
+  const results: { table: string; exists: boolean }[] = [];
+  for (const table of REQUIRED_TABLES) {
+    try {
+      const { error } = await supabase.from(table).select('*').limit(1);
+      results.push({ table: TABLE_NAMES_IT[table] || table, exists: !(error && error.message?.includes('does not exist')) });
+    } catch {
+      results.push({ table: TABLE_NAMES_IT[table] || table, exists: false });
+    }
+  }
+  return results;
 }
