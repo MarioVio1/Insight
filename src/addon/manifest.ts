@@ -20,8 +20,8 @@ export function getManifest(uuid?: string, slug?: string) {
     catalogs: [
       {
         type: 'movie',
-        id: 'adaptive-insights',
-        name: isConfigured ? 'Adaptive Insights' : 'Adaptive Insights (configura)',
+        id: 'insight-stats',
+        name: isConfigured ? 'Insight' : 'Insight (configura)',
         extra: [],
         behaviorHints: {
           defaultVideoId: null
