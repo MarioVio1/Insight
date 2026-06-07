@@ -1,7 +1,7 @@
 import { supabase } from '../services/supabase.js';
 import { fetchTmdbDetails, searchTmdbPerson, tmdbPersonImage } from '../services/tmdbService.js';
 
-const tmdbCache = new Map<string, { poster: string | null; rating: number | null; genres: string[]; age: number }>();
+const tmdbCache = new Map<string, { poster: string | null; rating: number | null; age: number }>();
 const TMDB_CACHE_TTL = 86_400_000;
 const personCache = new Map<string, { image: string | null; age: number }>();
 const PERSON_CACHE_TTL = 86_400_000;
@@ -15,7 +15,6 @@ async function getTmdbData(tmdbId: number | string, type: string) {
     const data = {
       poster: d.poster,
       rating: d.rating,
-      genres: (d as any).genres || [],
       age: Date.now()
     };
     tmdbCache.set(key, data);
