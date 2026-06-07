@@ -214,6 +214,55 @@ export function computeTraktStats(events: any[]) {
   const moviePct = totalWatched > 0 ? Math.round(totalMovies / totalWatched * 100) : 50;
   const showPct = totalWatched > 0 ? 100 - moviePct : 50;
 
+  const weekEvents = events.filter(e => new Date(e.watched_at).getTime() >= weekStart);
+  const prevWeekStart = weekStart - WEEK_MS;
+  const prevWeekCount = events.filter(e => {
+    const t = new Date(e.watched_at).getTime();
+    return t >= prevWeekStart && t < weekStart;
+  }).length;
+
+  const weekdayEvts = events.filter(e => {
+    if (!e.watched_at) return false;
+    const day = new Date(e.watched_at).getDay();
+    return day >= 1 && day <= 5;
+  });
+  const weekendEvts = events.filter(e => {
+    if (!e.watched_at) return false;
+    const day = new Date(e.watched_at).getDay();
+    return day === 0 || day === 6;
+  });
+  const weekdayPct = totalWatched > 0 ? Math.round(weekdayEvts.length / totalWatched * 100) : 50;
+  const weekendPct = 100 - weekdayPct;
+
+  const uniqueWeeks = new Set<string>();
+  for (const e of events) {
+    if (!e.watched_at) continue;
+    const d = new Date(e.watched_at);
+    const weekKey = `${d.getFullYear()}-W${String(Math.ceil((d.getTime() - new Date(d.getFullYear(), 0, 1).getTime()) / 604800000)).padStart(2, '0')}`;
+    uniqueWeeks.add(weekKey);
+  }
+  const totalWeeks = uniqueWeeks.size || 1;
+  const avgPerWeek = Math.round(totalWatched / totalWeeks * 10) / 10;
+
+  const yearAgo = now - YEAR_MS;
+  const twoYearsAgo = yearAgo - YEAR_MS;
+  const lastYearCount = events.filter(e => {
+    const t = new Date(e.watched_at).getTime();
+    return t >= yearAgo && t < now;
+  }).length;
+  const prevYearCount = events.filter(e => {
+    const t = new Date(e.watched_at).getTime();
+    return t >= twoYearsAgo && t < yearAgo;
+  }).length;
+  const yoyChange = prevYearCount > 0 ? Math.round((lastYearCount - prevYearCount) / prevYearCount * 100) : 0;
+
+  const primeTime = events.filter(e => {
+    if (!e.watched_at) return false;
+    const h = new Date(e.watched_at).getHours();
+    return h >= 20 || h < 2;
+  }).length;
+  const primeTimePct = totalWatched > 0 ? Math.round(primeTime / totalWatched * 100) : 0;
+
   return {
     totalHours: Math.round(totalHours * 10) / 10,
     yearHours: Math.round(yearHours * 10) / 10,
@@ -250,7 +299,16 @@ export function computeTraktStats(events: any[]) {
     moviePct,
     showPct,
     animeBinges,
-    animeDropped
+    animeDropped,
+    weekCount,
+    prevWeekCount,
+    weekdayPct,
+    weekendPct,
+    avgPerWeek,
+    lastYearCount,
+    prevYearCount,
+    yoyChange,
+    primeTimePct
   };
 }
 

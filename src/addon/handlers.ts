@@ -67,8 +67,8 @@ export async function metaHandler(configId: string, metaId: string) {
 
   const cardType = (metaId.split('_').pop() || '').toLowerCase();
   const videos = meta.videos || [];
-  if (videos.length === 0) return { meta };
 
+  // Enrich existing videos with TMDB poster thumbnails
   const enrichedVideos = [];
   for (const v of videos) {
     let thumbnail = v.thumbnail || null;
@@ -77,7 +77,6 @@ export async function metaHandler(configId: string, metaId: string) {
       thumbnail = await getTmdbPoster(v.tmdb_id, v.trakt_type || 'movie');
     }
 
-    // For actor/director cards, fetch person profile images
     if (!thumbnail && (cardType === 'actor' || cardType === 'director')) {
       thumbnail = await getPersonImage(v.title);
     }
@@ -90,6 +89,34 @@ export async function metaHandler(configId: string, metaId: string) {
       thumbnail: thumbnail || undefined,
       ...(v.tmdb_id ? { tmdb_id: v.tmdb_id } : {})
     });
+  }
+
+  // For stat-only cards (no tmdb_id in any video), append recent content
+  const hasRealContent = enrichedVideos.some(v => v.tmdb_id);
+  if (!hasRealContent && enrichedVideos.length > 0) {
+    try {
+      const { data: recent } = await supabase
+        .from('trakt_events')
+        .select('title, watched_at, trakt_type, tmdb_id')
+        .eq('config_id', configId)
+        .order('watched_at', { ascending: false })
+        .limit(10);
+
+      if (recent && recent.length > 0) {
+        for (let i = 0; i < recent.length; i++) {
+          const evt = recent[i];
+          const poster = evt.tmdb_id ? await getTmdbPoster(evt.tmdb_id, evt.trakt_type === 'movie' ? 'movie' : 'tv') : null;
+          enrichedVideos.push({
+            id: `${metaId}_recent_${i}`,
+            title: evt.title,
+            released: evt.watched_at,
+            overview: `Contenuto recente`,
+            thumbnail: poster || undefined,
+            tmdb_id: evt.tmdb_id
+          });
+        }
+      }
+    } catch {}
   }
 
   meta.videos = enrichedVideos;

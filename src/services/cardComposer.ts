@@ -89,7 +89,7 @@ export async function rebuildAdaptiveRow(configId: string) {
 
   const s = insight.summary || {};
   const saved = prefs?.enabled_card_types || [];
-  const allEnabled = ['totals','streak','peak','weekly','genre','binge','dropped','monthly','recurring','rewatch','seasonal','actor','director','anime','ranking','memories','giorni','migliore','anno','mese','split','notturno','events'];
+  const allEnabled = ['totals','streak','peak','weekly','genre','binge','dropped','monthly','recurring','rewatch','seasonal','actor','director','anime','ranking','memories','giorni','migliore','anno','mese','split','notturno','events','pace','weekend','annuale','primetime'];
   const enabled = saved.length > 0 ? [...new Set([...saved, ...allEnabled])] : allEnabled;
   const cards: any[] = [];
   const details: { meta_id: string; meta: any }[] = [];
@@ -726,6 +726,86 @@ export async function rebuildAdaptiveRow(configId: string) {
         id, type: 'series', name: 'Attività recente',
         description: 'Tutto ciò che hai guardato negli ultimi 7 giorni.',
         videos: evtVids.length > 0 ? evtVids : [video(`${id}_1`, 'Nessuna attività recente', new Date().toISOString(), '')]
+      }
+    });
+  }
+
+  // Ritmo settimanale
+  if (enabled.includes('pace') && s.avgPerWeek !== undefined) {
+    const id = `adaptive_${configId}_pace`;
+    cards.push(await cardMeta(id,
+      `${s.avgPerWeek} contenuti a settimana`,
+      `${s.totalEvents || 0} totali in ${Math.max(1, Math.round((s.totalEvents || 0) / s.avgPerWeek))} settimane attive.`,
+      configId, { accent: '#f59e0b', statValue: `${s.avgPerWeek}`, statLabel: 'MEDIA/SETT' }
+    ));
+    details.push({
+      meta_id: id, meta: {
+        id, type: 'series', name: 'Il tuo ritmo',
+        description: 'Quanto guardi in media ogni settimana.',
+        videos: [video(`${id}_1`, `${s.avgPerWeek} a settimana`, new Date().toISOString(), `Media contenuti per settimana attiva.`)]
+      }
+    });
+  }
+
+  // Weekend vs Feriale
+  if (enabled.includes('weekend') && s.weekdayPct !== undefined) {
+    const id = `adaptive_${configId}_weekend`;
+    const isWeekendDominant = s.weekendPct > s.weekdayPct;
+    const label = isWeekendDominant ? 'WEEKEND' : 'FERIALI';
+    const pct = isWeekendDominant ? s.weekendPct : s.weekdayPct;
+    const accent = isWeekendDominant ? '#8b5cf6' : '#38bdf8';
+    cards.push(await cardMeta(id,
+      `${isWeekendDominant ? '🏖️ Sei del weekend' : '💼 Sei da feriale'}: ${pct}%`,
+      `${s.weekdayPct}% feriali · ${s.weekendPct}% weekend`,
+      configId, { accent, statValue: `${pct}%`, statLabel: label }
+    ));
+    details.push({
+      meta_id: id, meta: {
+        id, type: 'series', name: 'Feriale vs Weekend',
+        description: 'Quando guardi di più?',
+        videos: [
+          video(`${id}_1`, `Feriale: ${s.weekdayPct}%`, new Date().toISOString(), 'Lunedì-Venerdì.'),
+          video(`${id}_2`, `Weekend: ${s.weekendPct}%`, new Date().toISOString(), 'Sabato-Domenica.')
+        ]
+      }
+    });
+  }
+
+  // Confronto annuale (YoY)
+  if (enabled.includes('annuale') && s.yoyChange !== undefined) {
+    const id = `adaptive_${configId}_annuale`;
+    const sign = s.yoyChange >= 0 ? '+' : '';
+    const trend = s.yoyChange > 0 ? '📈' : s.yoyChange < 0 ? '📉' : '➡️';
+    cards.push(await cardMeta(id,
+      `${trend} ${sign}${s.yoyChange}% anno su anno`,
+      `${s.lastYearCount || 0} contenuti ultimo anno vs ${s.prevYearCount || 0} l\'anno prima.`,
+      configId, { accent: '#84cc16', statValue: `${sign}${s.yoyChange}%`, statLabel: 'ANNUALE' }
+    ));
+    details.push({
+      meta_id: id, meta: {
+        id, type: 'series', name: 'Confronto annuale',
+        description: 'Come cambiano le tue visioni anno dopo anno.',
+        videos: [
+          video(`${id}_1`, `Ultimo anno: ${s.lastYearCount || 0}`, new Date().toISOString(), 'Contenuti degli ultimi 12 mesi.'),
+          video(`${id}_2`, `Anno prima: ${s.prevYearCount || 0}`, new Date().toISOString(), 'Contenuti dei 12 mesi precedenti.')
+        ]
+      }
+    });
+  }
+
+  // Prime time
+  if (enabled.includes('primetime') && s.primeTimePct !== undefined) {
+    const id = `adaptive_${configId}_primetime`;
+    cards.push(await cardMeta(id,
+      `${s.primeTimePct}% delle tue visioni in prima serata`,
+      `Guardi soprattutto tra le 20:00 e le 2:00.`,
+      configId, { accent: '#6366f1', statValue: `${s.primeTimePct}%`, statLabel: 'PRIME TIME' }
+    ));
+    details.push({
+      meta_id: id, meta: {
+        id, type: 'series', name: 'Prima serata',
+        description: 'Le tue abitudini in fascia serale.',
+        videos: [video(`${id}_1`, `${s.primeTimePct}% in prima serata`, new Date().toISOString(), 'Visioni tra le 20:00 e le 2:00.')]
       }
     });
   }

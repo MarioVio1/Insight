@@ -75,6 +75,10 @@ function buildCardData(rowData: any, cardId: string): CardData {
   else if (cardId.includes('mese')) accent = '#a3e635';
   else if (cardId.includes('split')) accent = '#2dd4bf';
   else if (cardId.includes('notturno')) accent = '#6366f1';
+  else if (cardId.includes('pace')) accent = '#f59e0b';
+  else if (cardId.includes('weekend')) accent = '#8b5cf6';
+  else if (cardId.includes('annuale')) accent = '#84cc16';
+  else if (cardId.includes('primetime')) accent = '#6366f1';
 
   return { title, subtitle, accent, statValue, statLabel: statLabel.slice(0, 30), imageUrl };
 }
