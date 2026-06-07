@@ -50,8 +50,8 @@ export function generateSvgPoster(opts: { title: string; subtitle: string; accen
     ${hasStat ? `
     <text x="48" y="460" fill="#ffffff" font-size="72" font-weight="900" font-family="${ff}" filter="url(#shadow)">${statValue}</text>
     ${statLabel ? `<text x="48" y="500" fill="${accent}" font-size="20" font-weight="600" font-family="${ff}" letter-spacing="1" filter="url(#shadow)">${statLabel}</text>` : ''}` : ''}
-    <text x="48" y="${titleY}" fill="#ffffff" font-size="32" font-weight="800" font-family="${ff}" textLength="504" lengthAdjust="spacingAndGlyphs" filter="url(#shadow)">${title}</text>
-    <text x="48" y="${subtitleY}" fill="#94a3b8" font-size="18" font-weight="400" font-family="${ff}" textLength="504" lengthAdjust="spacingAndGlyphs" filter="url(#shadow)">${subtitle}</text>
+    <text x="48" y="${titleY}" fill="#ffffff" font-size="32" font-weight="800" font-family="${ff}" filter="url(#shadow)">${title}</text>
+    <text x="48" y="${subtitleY}" fill="#94a3b8" font-size="18" font-weight="400" font-family="${ff}" filter="url(#shadow)">${subtitle}</text>
     <rect x="48" y="810" width="504" height="2" rx="1" fill="${accent}" opacity="0.25"/>
     <text x="48" y="845" fill="#475569" font-size="13" font-family="${ff}" letter-spacing="1" filter="url(#shadow)">TRACKT STATS &middot; ${new Date().toLocaleDateString('it-IT')}</text>
   </svg>`;

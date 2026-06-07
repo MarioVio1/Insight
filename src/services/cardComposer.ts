@@ -1,5 +1,5 @@
 import { supabase } from './supabase.js';
-import { generateSvgPoster } from './artworkService.js';
+import { generateSvgPoster, svgToDataUri } from './artworkService.js';
 import { fetchTmdbDetails } from './tmdbService.js';
 
 async function getEvents(configId: string, daysBack?: number): Promise<any[]> {
@@ -23,15 +23,10 @@ function eventToVideo(event: any, index: number, prefix: string) {
   };
 }
 
-function posterUrl(configId: string, cardId: string): string {
-  return `/poster/${configId}/${cardId}.png`;
-}
-
 async function cardMeta(
   id: string,
   name: string,
   description: string,
-  configId: string,
   opts?: { accent?: string; statValue?: string; statLabel?: string; imageUrl?: string; rating?: number }
 ) {
   const accent = opts?.accent || '#0ea5e9';
@@ -44,12 +39,13 @@ async function cardMeta(
     imageUrl: opts?.imageUrl
   });
 
+  const posterUri = svgToDataUri(svg);
   const meta: any = {
     id,
     type: 'movie',
     name,
-    poster: posterUrl(configId, id),
-    background: posterUrl(configId, id),
+    poster: posterUri,
+    background: posterUri,
     description,
     posterShape: 'poster',
     genres: ['Insights'],
@@ -108,7 +104,7 @@ export async function rebuildAdaptiveRow(configId: string) {
     cards.push(await cardMeta(id,
       `${Math.floor(totalHours)} ore di visione`,
       `${totalM} film · ${seriesE} episodi · ${animeC} anime · ${uc} titoli`,
-      configId, { accent: '#22c55e', statValue: `${Math.floor(totalHours)}h`, statLabel: 'TOTALI' }
+      { accent: '#22c55e', statValue: `${Math.floor(totalHours)}h`, statLabel: 'TOTALI' }
     ));
 
     details.push({
@@ -133,7 +129,7 @@ export async function rebuildAdaptiveRow(configId: string) {
     cards.push(await cardMeta(id,
       streak === 1 ? 'Ieri hai guardato qualcosa' : `${streak} giorni di streak!`,
       streak > 0 ? `Sono ${streak} giorni consecutivi che guardi almeno un contenuto.` : 'Nessuna streak attiva.',
-      configId, { accent: '#f97316', statValue: `${streak}`, statLabel: 'GIORNI' }
+      { accent: '#f97316', statValue: `${streak}`, statLabel: 'GIORNI' }
     ));
 
     details.push({
@@ -153,7 +149,7 @@ export async function rebuildAdaptiveRow(configId: string) {
     cards.push(await cardMeta(id,
       `Il tuo orario di punta: ${hourStr}`,
       `Alle ${hourStr} hai registrato ${ph.count} visioni, più di ogni altra ora.`,
-      configId, { accent: '#a855f7', statValue: hourStr, statLabel: 'ORA PREFERITA' }
+      { accent: '#a855f7', statValue: hourStr, statLabel: 'ORA PREFERITA' }
     ));
 
     details.push({
@@ -172,7 +168,7 @@ export async function rebuildAdaptiveRow(configId: string) {
     cards.push(await cardMeta(id,
       `Il tuo giorno: ${td.name}`,
       `Di ${td.name} hai totalizzato ${td.count} visioni, il giorno più attivo della settimana.`,
-      configId, { accent: '#38bdf8', statValue: td.name, statLabel: 'GIORNO TOP' }
+      { accent: '#38bdf8', statValue: td.name, statLabel: 'GIORNO TOP' }
     ));
 
     details.push({
@@ -194,7 +190,7 @@ export async function rebuildAdaptiveRow(configId: string) {
     cards.push(await cardMeta(id,
       `Il tuo genere: ${tg}`,
       `${tg} domina con ${genreCounts.find((g: any) => g.name === tg)?.count || 0} visioni.`,
-      configId, { accent: '#a855f7', statValue: tg, statLabel: 'GENERE TOP' }
+      { accent: '#a855f7', statValue: tg, statLabel: 'GENERE TOP' }
     ));
 
     const genreEvents = tg && tg.length > 0 ? (await getEvents(configId)).filter((e: any) => (e.genres || []).includes(tg)).slice(0, 30) : [];
@@ -227,7 +223,7 @@ export async function rebuildAdaptiveRow(configId: string) {
     cards.push(await cardMeta(id,
       `Binge: ${topBinge.episodes} episodi di ${topBinge.title}`,
       `Hai guardato ${topBinge.episodes} episodi di fila di ${topBinge.title} in un giorno.`,
-      configId, { accent: '#ef4444', statValue: `${topBinge.episodes}`, statLabel: 'BINGE MAX', imageUrl, rating: rating || undefined }
+      { accent: '#ef4444', statValue: `${topBinge.episodes}`, statLabel: 'BINGE MAX', imageUrl, rating: rating || undefined }
     ));
 
     details.push({
@@ -259,7 +255,7 @@ export async function rebuildAdaptiveRow(configId: string) {
     cards.push(await cardMeta(id,
       `${s.dropped.length} serie in pausa`,
       `Serie che non guardi da mesi. Forse è ora di riprenderle?`,
-      configId, { accent: '#6b7280', statValue: `${s.dropped.length}`, statLabel: 'IN PAUSA', imageUrl, rating: rating || undefined }
+      { accent: '#6b7280', statValue: `${s.dropped.length}`, statLabel: 'IN PAUSA', imageUrl, rating: rating || undefined }
     ));
 
       details.push({
@@ -289,7 +285,7 @@ export async function rebuildAdaptiveRow(configId: string) {
     cards.push(await cardMeta(id,
       `${curr} contenuti questo mese`,
       diffText,
-      configId, { accent: '#14b8a6', statValue: `${curr}`, statLabel: 'QUESTO MESE' }
+      { accent: '#14b8a6', statValue: `${curr}`, statLabel: 'QUESTO MESE' }
     ));
 
     const recentEvents = await getEvents(configId, 30);
@@ -315,7 +311,7 @@ export async function rebuildAdaptiveRow(configId: string) {
       cards.push(await cardMeta(id,
         `${recurringTitles.length} titoli ricorrenti`,
         `Titoli che torni a guardare ogni anno nello stesso periodo.`,
-        configId, { accent: '#f59e0b', statValue: `${recurringTitles.length}`, statLabel: 'RICORRENTI' }
+        { accent: '#f59e0b', statValue: `${recurringTitles.length}`, statLabel: 'RICORRENTI' }
       ));
 
       details.push({
@@ -351,7 +347,7 @@ export async function rebuildAdaptiveRow(configId: string) {
       cards.push(await cardMeta(id,
         `Rivisto: ${topRewatch.title} (${topRewatch.count}x)`,
         `Titoli che hai guardato più di una volta.`,
-        configId, { accent: '#ef4444', statValue: `${topRewatch.count}x`, statLabel: 'REWATCH', imageUrl, rating: rating || undefined }
+        { accent: '#ef4444', statValue: `${topRewatch.count}x`, statLabel: 'REWATCH', imageUrl, rating: rating || undefined }
       ));
 
       details.push({
@@ -393,7 +389,7 @@ export async function rebuildAdaptiveRow(configId: string) {
     cards.push(await cardMeta(id,
       `Stagione: ${seasonalKey}`,
       desc,
-      configId, { accent: seasonAccents[seasonalKey] || seasonAccents.standard, statValue: seasonalKey.toUpperCase(), statLabel: 'STAGIONE' }
+      { accent: seasonAccents[seasonalKey] || seasonAccents.standard, statValue: seasonalKey.toUpperCase(), statLabel: 'STAGIONE' }
     ));
 
     details.push({
@@ -418,7 +414,7 @@ export async function rebuildAdaptiveRow(configId: string) {
       cards.push(await cardMeta(id,
         `Attore: ${top.name}`,
         `Appare in ${top.count} dei tuoi contenuti guardati.`,
-        configId, { accent: '#ec4899', statValue: top.name, statLabel: 'ATTORE TOP' }
+        { accent: '#ec4899', statValue: top.name, statLabel: 'ATTORE TOP' }
       ));
 
       details.push({
@@ -442,7 +438,7 @@ export async function rebuildAdaptiveRow(configId: string) {
       cards.push(await cardMeta(id,
         `Regista: ${top.name}`,
         `Compare in ${top.count} dei tuoi contenuti.`,
-        configId, { accent: '#8b5cf6', statValue: top.name, statLabel: 'REGISTA TOP' }
+        { accent: '#8b5cf6', statValue: top.name, statLabel: 'REGISTA TOP' }
       ));
 
       details.push({
@@ -469,7 +465,7 @@ export async function rebuildAdaptiveRow(configId: string) {
     cards.push(await cardMeta(id,
       `${s.animeCount} anime guardati`,
       `${am} film · ${ae} episodi · ${Math.floor(ah)} ore`,
-      configId, { accent: '#f43f5e', statValue: `${s.animeCount}`, statLabel: 'ANIME' }
+      { accent: '#f43f5e', statValue: `${s.animeCount}`, statLabel: 'ANIME' }
     ));
 
     const av: any[] = [
@@ -503,7 +499,7 @@ export async function rebuildAdaptiveRow(configId: string) {
     cards.push(await cardMeta(id,
       `Classifica: ${rankText}`,
       `${r.totalUsers} utenti totali · Streak: #${r.streakRank} · Contenuti: #${r.contentRank}`,
-      configId, { accent: '#fbbf24', statValue: rankText, statLabel: 'CLASSIFICA' }
+      { accent: '#fbbf24', statValue: rankText, statLabel: 'CLASSIFICA' }
     ));
 
     details.push({
@@ -541,7 +537,7 @@ export async function rebuildAdaptiveRow(configId: string) {
       cards.push(await cardMeta(id,
         `Ricordi: ${yearsAgo} anni fa guardavi ${memory.title}`,
         `Il ${memory.year} in questo periodo guardavi ${memory.title}.`,
-        configId, { accent: '#d946ef', statValue: `${memory.year}`, statLabel: 'RICORDI', imageUrl, rating: rating || undefined }
+        { accent: '#d946ef', statValue: `${memory.year}`, statLabel: 'RICORDI', imageUrl, rating: rating || undefined }
       ));
 
       details.push({
@@ -567,7 +563,7 @@ export async function rebuildAdaptiveRow(configId: string) {
     cards.push(await cardMeta(id,
       `${s.totalDays} giorni di visione`,
       `In media ${s.avgPerDay || 0} contenuti al giorno.`,
-      configId, { accent: '#06b6d4', statValue: `${s.totalDays}`, statLabel: 'GIORNI' }
+      { accent: '#06b6d4', statValue: `${s.totalDays}`, statLabel: 'GIORNI' }
     ));
 
     details.push({
@@ -586,7 +582,7 @@ export async function rebuildAdaptiveRow(configId: string) {
     cards.push(await cardMeta(id,
       `Miglior anno: ${s.bestYear}`,
       `${Math.floor(yearData.hours || 0)} ore, ${yearData.movies || 0} film, ${yearData.episodes || 0} episodi.`,
-      configId, { accent: '#fbbf24', statValue: `${s.bestYear}`, statLabel: 'MIGLIOR ANNO' }
+      { accent: '#fbbf24', statValue: `${s.bestYear}`, statLabel: 'MIGLIOR ANNO' }
     ));
 
     details.push({
@@ -610,7 +606,7 @@ export async function rebuildAdaptiveRow(configId: string) {
     cards.push(await cardMeta(id,
       `${Math.floor(s.yearHours)} ore quest'anno`,
       comparison,
-      configId, { accent: '#84cc16', statValue: `${Math.floor(s.yearHours)}h`, statLabel: `ANNO ${new Date().getFullYear()}` }
+      { accent: '#84cc16', statValue: `${Math.floor(s.yearHours)}h`, statLabel: `ANNO ${new Date().getFullYear()}` }
     ));
 
     details.push({
@@ -633,7 +629,7 @@ export async function rebuildAdaptiveRow(configId: string) {
     cards.push(await cardMeta(id,
       `Il tuo mese: ${s.bestMonth}`,
       monthIdx >= 0 ? `È il mese in cui hai guardato di più in assoluto.` : 'Nessun dato sufficiente.',
-      configId, { accent: '#a3e635', statValue: s.bestMonth, statLabel: 'MESE TOP' }
+      { accent: '#a3e635', statValue: s.bestMonth, statLabel: 'MESE TOP' }
     ));
 
     details.push({
@@ -658,7 +654,7 @@ export async function rebuildAdaptiveRow(configId: string) {
       cards.push(await cardMeta(id,
         `${mp}% film · ${sp}% serie`,
         `${s.totalMovies} film, ${s.seriesEpisodes} episodi (${totalWatched} titoli)`,
-        configId, { accent: '#2dd4bf', statValue: `${mp}/${sp}`, statLabel: 'FILM/SERIE' }
+        { accent: '#2dd4bf', statValue: `${mp}/${sp}`, statLabel: 'FILM/SERIE' }
       ));
 
       details.push({
@@ -694,7 +690,7 @@ export async function rebuildAdaptiveRow(configId: string) {
       cards.push(await cardMeta(id,
         `Sei ${itLabels[top.key]}: ${topPct}% di ${top.label.toLowerCase()}`,
         `${top.label}: ${top.value} · ${labels[1].label}: ${labels[1].value} · ${labels[2].label}: ${labels[2].value} · ${labels[3].label}: ${labels[3].value}`,
-        configId, { accent: top.color, statValue: `${topPct}%`, statLabel: top.label.toUpperCase() }
+        { accent: top.color, statValue: `${topPct}%`, statLabel: top.label.toUpperCase() }
       ));
 
       details.push({
@@ -718,7 +714,7 @@ export async function rebuildAdaptiveRow(configId: string) {
     cards.push(await cardMeta(id,
       `${recentEvts.length} attività recenti (7gg)`,
       `Film, episodi e anime degli ultimi 7 giorni.`,
-      configId, { accent: '#0ea5e9', statValue: `${recentEvts.length}`, statLabel: 'SETTIMANA' }
+      { accent: '#0ea5e9', statValue: `${recentEvts.length}`, statLabel: 'SETTIMANA' }
     ));
 
     details.push({
@@ -736,7 +732,7 @@ export async function rebuildAdaptiveRow(configId: string) {
     cards.push(await cardMeta(id,
       `${s.avgPerWeek} contenuti a settimana`,
       `${s.totalEvents || 0} totali in ${Math.max(1, Math.round((s.totalEvents || 0) / s.avgPerWeek))} settimane attive.`,
-      configId, { accent: '#f59e0b', statValue: `${s.avgPerWeek}`, statLabel: 'MEDIA/SETT' }
+      { accent: '#f59e0b', statValue: `${s.avgPerWeek}`, statLabel: 'MEDIA/SETT' }
     ));
     details.push({
       meta_id: id, meta: {
@@ -757,7 +753,7 @@ export async function rebuildAdaptiveRow(configId: string) {
     cards.push(await cardMeta(id,
       `${isWeekendDominant ? '🏖️ Sei del weekend' : '💼 Sei da feriale'}: ${pct}%`,
       `${s.weekdayPct}% feriali · ${s.weekendPct}% weekend`,
-      configId, { accent, statValue: `${pct}%`, statLabel: label }
+      { accent, statValue: `${pct}%`, statLabel: label }
     ));
     details.push({
       meta_id: id, meta: {
@@ -779,7 +775,7 @@ export async function rebuildAdaptiveRow(configId: string) {
     cards.push(await cardMeta(id,
       `${trend} ${sign}${s.yoyChange}% anno su anno`,
       `${s.lastYearCount || 0} contenuti ultimo anno vs ${s.prevYearCount || 0} l\'anno prima.`,
-      configId, { accent: '#84cc16', statValue: `${sign}${s.yoyChange}%`, statLabel: 'ANNUALE' }
+      { accent: '#84cc16', statValue: `${sign}${s.yoyChange}%`, statLabel: 'ANNUALE' }
     ));
     details.push({
       meta_id: id, meta: {
@@ -799,7 +795,7 @@ export async function rebuildAdaptiveRow(configId: string) {
     cards.push(await cardMeta(id,
       `Anni ${s.topDecade}: ${s.decadeEvents} contenuti`,
       `Il decennio in cui hai guardato più roba.`,
-      configId, { accent: '#06b6d4', statValue: s.topDecade, statLabel: 'DECENNIO' }
+      { accent: '#06b6d4', statValue: s.topDecade, statLabel: 'DECENNIO' }
     ));
     details.push({
       meta_id: id, meta: {
@@ -821,7 +817,7 @@ export async function rebuildAdaptiveRow(configId: string) {
           ? `Pausa di ${Math.floor(days / 30)} mesi`
           : `Pausa max: ${days} giorni`,
       `Il periodo più lungo senza guardare nulla.`,
-      configId, { accent: '#6b7280', statValue: days >= 30 ? `${Math.floor(days / 30)}m` : `${days}g`, statLabel: 'PAUSA MAX' }
+      { accent: '#6b7280', statValue: days >= 30 ? `${Math.floor(days / 30)}m` : `${days}g`, statLabel: 'PAUSA MAX' }
     ));
     details.push({
       meta_id: id, meta: {
@@ -838,7 +834,7 @@ export async function rebuildAdaptiveRow(configId: string) {
     cards.push(await cardMeta(id,
       `${s.primeTimePct}% delle tue visioni in prima serata`,
       `Guardi soprattutto tra le 20:00 e le 2:00.`,
-      configId, { accent: '#6366f1', statValue: `${s.primeTimePct}%`, statLabel: 'PRIME TIME' }
+      { accent: '#6366f1', statValue: `${s.primeTimePct}%`, statLabel: 'PRIME TIME' }
     ));
     details.push({
       meta_id: id, meta: {
