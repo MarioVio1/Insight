@@ -6,7 +6,7 @@ export function generateSvgPoster(opts: { title: string; subtitle: string; accen
   const statValue = opts.statValue ? escapeXml(opts.statValue) : '';
   const statLabel = opts.statLabel ? escapeXml(opts.statLabel) : '';
   const imageUrl = opts.imageUrl || '';
-  const ff = 'system-ui, -apple-system, sans-serif';
+  const ff = 'sans-serif';
   const hasStat = !!statValue;
   const titleY = hasStat ? 640 : 500;
   const subtitleY = hasStat ? 690 : 550;
@@ -89,7 +89,7 @@ export function generateOverlaySvg(opts: {
   statLabel: string;
 }) {
   const { title, subtitle, accent, statValue, statLabel } = opts;
-  const ff = 'system-ui, -apple-system, sans-serif';
+  const ff = 'sans-serif';
   const hasStat = !!statValue;
   const titleY = hasStat ? 640 : 500;
   const subtitleY = hasStat ? 690 : 550;
