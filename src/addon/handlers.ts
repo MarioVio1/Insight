@@ -1,21 +1,27 @@
 import { supabase } from '../services/supabase.js';
 import { fetchTmdbDetails, searchTmdbPerson, tmdbPersonImage } from '../services/tmdbService.js';
 
-const posterCache = new Map<string, { poster: string | null; age: number }>();
-const POSTER_CACHE_TTL = 86_400_000;
+const tmdbCache = new Map<string, { poster: string | null; rating: number | null; genres: string[]; age: number }>();
+const TMDB_CACHE_TTL = 86_400_000;
 const personCache = new Map<string, { image: string | null; age: number }>();
 const PERSON_CACHE_TTL = 86_400_000;
 
-async function getTmdbPoster(tmdbId: number | string, type: string): Promise<string | null> {
+async function getTmdbData(tmdbId: number | string, type: string) {
   const key = `${type}_${tmdbId}`;
-  const cached = posterCache.get(key);
-  if (cached && Date.now() - cached.age < POSTER_CACHE_TTL) return cached.poster;
+  const cached = tmdbCache.get(key);
+  if (cached && Date.now() - cached.age < TMDB_CACHE_TTL) return cached;
   try {
     const d = await fetchTmdbDetails(tmdbId, type);
-    posterCache.set(key, { poster: d.poster, age: Date.now() });
-    return d.poster;
+    const data = {
+      poster: d.poster,
+      rating: d.rating,
+      genres: (d as any).genres || [],
+      age: Date.now()
+    };
+    tmdbCache.set(key, data);
+    return data;
   } catch {
-    posterCache.set(key, { poster: null, age: Date.now() });
+    tmdbCache.set(key, { poster: null, rating: null, genres: [], age: Date.now() });
     return null;
   }
 }
@@ -68,13 +74,19 @@ export async function metaHandler(configId: string, metaId: string) {
   const cardType = (metaId.split('_').pop() || '').toLowerCase();
   const videos = meta.videos || [];
 
-  // Enrich existing videos with TMDB poster thumbnails
   const enrichedVideos = [];
   for (const v of videos) {
     let thumbnail = v.thumbnail || null;
+    let rating: number | null = v.rating || null;
+    let overview = v.overview || '';
 
-    if (!thumbnail && v.tmdb_id) {
-      thumbnail = await getTmdbPoster(v.tmdb_id, v.trakt_type || 'movie');
+    if (v.tmdb_id) {
+      const tmdbData = await getTmdbData(v.tmdb_id, v.trakt_type || 'movie');
+      if (tmdbData) {
+        if (!thumbnail) thumbnail = tmdbData.poster;
+        if (rating === null) rating = tmdbData.rating;
+        if (!overview) overview = overview || '';
+      }
     }
 
     if (!thumbnail && (cardType === 'actor' || cardType === 'director')) {
@@ -85,13 +97,13 @@ export async function metaHandler(configId: string, metaId: string) {
       id: v.id,
       title: v.title,
       released: v.released,
-      overview: v.overview || '',
+      overview: overview || 'Nessuna descrizione',
       thumbnail: thumbnail || undefined,
+      rating: rating || undefined,
       ...(v.tmdb_id ? { tmdb_id: v.tmdb_id } : {})
     });
   }
 
-  // For stat-only cards (no tmdb_id in any video), append recent content
   const hasRealContent = enrichedVideos.some(v => v.tmdb_id);
   if (!hasRealContent && enrichedVideos.length > 0) {
     try {
@@ -105,13 +117,14 @@ export async function metaHandler(configId: string, metaId: string) {
       if (recent && recent.length > 0) {
         for (let i = 0; i < recent.length; i++) {
           const evt = recent[i];
-          const poster = evt.tmdb_id ? await getTmdbPoster(evt.tmdb_id, evt.trakt_type === 'movie' ? 'movie' : 'tv') : null;
+          const tmdbData = evt.tmdb_id ? await getTmdbData(evt.tmdb_id, evt.trakt_type === 'movie' ? 'movie' : 'tv') : null;
           enrichedVideos.push({
             id: `${metaId}_recent_${i}`,
             title: evt.title,
             released: evt.watched_at,
-            overview: `Contenuto recente`,
-            thumbnail: poster || undefined,
+            overview: 'Contenuto recente dalle tue statistiche',
+            thumbnail: tmdbData?.poster || undefined,
+            rating: tmdbData?.rating || undefined,
             tmdb_id: evt.tmdb_id
           });
         }

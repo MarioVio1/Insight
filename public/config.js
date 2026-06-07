@@ -125,30 +125,37 @@ if (!isConfig) {
       const d = await r.json();
       if (!d.meta) return;
       const meta = d.meta;
-      let html = `<div style="position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.8);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;padding:20px" onclick="this.remove()">
-        <div style="max-width:500px;width:100%;background:#0c0c0c;border-radius:20px;border:1px solid rgba(255,255,255,.08);padding:24px" onclick="event.stopPropagation()">
+      const isActorCard = metaId.includes('_actor');
+      const isDirectorCard = metaId.includes('_director');
+      const isPersonCard = isActorCard || isDirectorCard;
+      let html = `<div style="position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.85);backdrop-filter:blur(16px);display:flex;align-items:center;justify-content:center;padding:20px" onclick="this.remove()">
+        <div style="max-width:520px;width:100%;background:#0c0c0c;border-radius:20px;border:1px solid rgba(255,255,255,.08);padding:24px" onclick="event.stopPropagation()">
         <div style="display:flex;align-items:start;gap:12px;margin-bottom:16px">
           <div style="flex:1">
-            <h2 style="font-size:16px;font-weight:700;margin-bottom:4px">${meta.name}</h2>
-            <p style="font-size:12px;color:rgba(255,255,255,.5)">${meta.description || ''}</p>
+            <h2 style="font-size:18px;font-weight:700;margin-bottom:4px;color:#fff">${meta.name}</h2>
+            <p style="font-size:12px;color:rgba(255,255,255,.45);line-height:1.4">${meta.description || 'Statistiche personali basate su Trakt'}</p>
           </div>
-          <button style="background:rgba(255,255,255,.06);border:none;color:#fff;width:32px;height:32px;border-radius:10px;cursor:pointer;font-size:16px" onclick="this.closest('[style*=\\'fixed\\']').remove()">&times;</button>
+          <button style="background:rgba(255,255,255,.06);border:none;color:#fff;width:32px;height:32px;border-radius:10px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0" onclick="this.closest('[style*=\\'fixed\\']').remove()">&times;</button>
         </div>`;
       if (meta.videos && meta.videos.length) {
-        html += `<div style="display:flex;flex-direction:column;gap:6px;max-height:400px;overflow-y:auto">`;
+        html += `<div style="display:flex;flex-direction:column;gap:6px;max-height:420px;overflow-y:auto;padding-right:4px">`;
         for (const v of meta.videos) {
-          html += `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.04)">
-            ${v.thumbnail ? `<img src="${v.thumbnail}" style="width:36px;height:54px;border-radius:6px;object-fit:cover;flex-shrink:0" onerror="this.style.display='none'">` : ''}
+          const ratingStars = v.rating ? '★'.repeat(Math.round(v.rating / 2)) : '';
+          html += `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.04);transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background=''">
+            ${v.thumbnail ? `<img src="${v.thumbnail}" style="width:40px;height:60px;border-radius:6px;object-fit:cover;flex-shrink:0" onerror="this.style.display='none'">` : isPersonCard ? `<div style="width:40px;height:60px;border-radius:6px;background:linear-gradient(135deg,rgba(14,165,233,.1),rgba(99,102,241,.1));flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px">${v.title.charAt(0)}</div>` : ''}
             <div style="flex:1;min-width:0">
-              <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${v.title}</div>
-              ${v.released ? `<div style="font-size:10px;color:rgba(255,255,255,.35)">${new Date(v.released).toLocaleDateString('it-IT')}</div>` : ''}
-              ${v.overview ? `<div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${v.overview}</div>` : ''}
+              <div style="font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${v.title}</div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
+                ${v.released ? `<span style="font-size:10px;color:rgba(255,255,255,.35)">${new Date(v.released).toLocaleDateString('it-IT')}</span>` : ''}
+                ${ratingStars ? `<span style="font-size:10px;color:#fbbf24">${ratingStars}</span>` : ''}
+              </div>
+              ${v.overview && v.overview !== 'Nessuna descrizione' ? `<div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${v.overview}</div>` : ''}
             </div>
           </div>`;
         }
         html += `</div>`;
       } else {
-        html += `<p style="font-size:12px;color:rgba(255,255,255,.35);text-align:center;padding:20px">Nessun dettaglio disponibile</p>`;
+        html += `<p style="font-size:12px;color:rgba(255,255,255,.3);text-align:center;padding:30px 20px">Nessun dettaglio disponibile</p>`;
       }
       html += `</div></div>`;
       const div = document.createElement('div');
@@ -171,7 +178,7 @@ if (!isConfig) {
     if (d.preferences) {
       focusMode.value = d.preferences.focus_mode || 'adaptive';
       const sv = d.preferences.enabled_card_types || [];
-      const def = ['totals','streak','peak','weekly','genre','binge','dropped','monthly','recurring','rewatch','seasonal','actor','director','anime','ranking','memories','giorni','migliore','anno','mese','split','notturno','events','pace','weekend','annuale','primetime','decade','break'];
+      const def = ['totals','streak','peak','weekly','genre','binge','dropped','monthly','recurring','rewatch','seasonal','actor','director','anime','ranking','memories','giorni','migliore','anno','mese','split','notturno','events','pace','weekend','annuale','primetime','decade','break','avg','night','series'];
       document.querySelectorAll('input[name="c"]').forEach(el => {
         const ch = sv.includes(el.value) || (sv.length === 0 && def.includes(el.value));
         el.checked = ch; el.closest('.chip')?.classList.toggle('active', ch);

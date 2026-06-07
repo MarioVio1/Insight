@@ -98,7 +98,7 @@
       </div>
       <div class="hero-badge">🚀 Addon Stremio rivoluzionario</div>
       <h1>Le tue statistiche <span>Trakt</span> nella home di Stremio</h1>
-      <p>Ogni giorno, 29 card dinamiche mostrano i tuoi dati di visione: totali, streak, binge, generi, attori, registi, anime, ricordi e molto altro. Nessun altro addon fa questo.</p>
+      <p>Ogni giorno, 32 card dinamiche mostrano i tuoi dati di visione: totali, streak, binge, generi, attori, registi, anime, ricordi, durata media, serie seguite e molto altro. Nessun altro addon fa questo.</p>
       <div class="hero-actions">
         <a href="/configure" class="btn btn-primary" style="text-decoration:none;padding:10px 24px">Inizia Ora</a>
         <a href="#features" class="btn btn-ghost" style="text-decoration:none;padding:10px 24px">Scopri di più</a>
@@ -129,6 +129,9 @@
       <div class="fcard"><div class="fcard-icon">🔄</div><h4>Annuario</h4><p>Evoluzione anno su anno delle tue abitudini</p></div>
       <div class="fcard"><div class="fcard-icon">📅</div><h4>Decennio</h4><p>Il decennio in cui hai guardato di più</p></div>
       <div class="fcard"><div class="fcard-icon">⏸️</div><h4>Pausa max</h4><p>Il periodo più lungo senza guardare nulla</p></div>
+      <div class="fcard"><div class="fcard-icon">⏱️</div><h4>Durata media</h4><p>Quanto durano in media i contenuti che guardi</p></div>
+      <div class="fcard"><div class="fcard-icon">🌃</div><h4>Notte fonda</h4><p>Percentuale di visioni tra mezzanotte e le 6</p></div>
+      <div class="fcard"><div class="fcard-icon">📺</div><h4>Serie</h4><p>Serie uniche seguite e media episodi per show</p></div>
     </div>
 
     <div class="footer">
@@ -227,6 +230,9 @@
                   <label class="chip" data-cat="time" data-val="primetime"><span class="chip-dot" style="background:#6366f1"></span><input type="checkbox" name="c" value="primetime" hidden><span>Prime time</span></label>
                   <label class="chip" data-cat="stats" data-val="decade"><span class="chip-dot" style="background:#06b6d4"></span><input type="checkbox" name="c" value="decade" hidden><span>Decennio</span></label>
                   <label class="chip" data-cat="stats" data-val="break"><span class="chip-dot" style="background:#6b7280"></span><input type="checkbox" name="c" value="break" hidden><span>Pausa max</span></label>
+                  <label class="chip" data-cat="stats" data-val="avg"><span class="chip-dot" style="background:#0ea5e9"></span><input type="checkbox" name="c" value="avg" hidden><span>Durata media</span></label>
+                  <label class="chip" data-cat="time" data-val="night"><span class="chip-dot" style="background:#312e81"></span><input type="checkbox" name="c" value="night" hidden><span>Notte fonda</span></label>
+                  <label class="chip" data-cat="stats" data-val="series"><span class="chip-dot" style="background:#8b5cf6"></span><input type="checkbox" name="c" value="series" hidden><span>Serie</span></label>
                 </div>
                 <div class="inp-wrap" style="margin-bottom:10px">
                   <select class="sel" id="focusMode" style="flex:1">

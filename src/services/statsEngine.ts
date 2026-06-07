@@ -283,6 +283,29 @@ export function computeTraktStats(events: any[]) {
   }
   const maxBreak = Math.round(longestBreak);
 
+  // Durata media contenuti
+  const allRuntimes = events.map(e => runtime(e)).filter(r => r > 0);
+  const avgRuntime = allRuntimes.length > 0 ? Math.round(allRuntimes.reduce((a, b) => a + b, 0) / allRuntimes.length) : 0;
+
+  // Percentuale notturna (0-6)
+  const nightCount = events.filter(e => {
+    if (!e.watched_at) return false;
+    const h = new Date(e.watched_at).getHours();
+    return h >= 0 && h < 6;
+  }).length;
+  const nightPct = totalWatched > 0 ? Math.round(nightCount / totalWatched * 100) : 0;
+
+  // Serie uniche e media episodi per show
+  const showEpisodeMap: Record<string, number> = {};
+  for (const e of series) {
+    const showTitle = e.payload?.show?.title || null;
+    if (showTitle) showEpisodeMap[showTitle] = (showEpisodeMap[showTitle] || 0) + 1;
+  }
+  const uniqueShows = Object.keys(showEpisodeMap);
+  const avgEpisodesPerShow = uniqueShows.length > 0
+    ? Math.round(Object.values(showEpisodeMap).reduce((a, b) => a + b, 0) / uniqueShows.length * 10) / 10
+    : 0;
+
   return {
     totalHours: Math.round(totalHours * 10) / 10,
     yearHours: Math.round(yearHours * 10) / 10,
@@ -330,7 +353,11 @@ export function computeTraktStats(events: any[]) {
     primeTimePct,
     topDecade,
     decadeEvents,
-    maxBreak
+    maxBreak,
+    avgRuntime,
+    nightPct,
+    uniqueShows: uniqueShows.length,
+    avgEpisodesPerShow
   };
 }
 

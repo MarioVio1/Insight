@@ -845,6 +845,57 @@ export async function rebuildAdaptiveRow(configId: string) {
     });
   }
 
+  // Durata media
+  if (enabled.includes('avg') && s.avgRuntime !== undefined && s.avgRuntime > 0) {
+    const id = `adaptive_${configId}_avg`;
+    cards.push(await cardMeta(id,
+      `${s.avgRuntime} minuti di media`,
+      `La durata media dei tuoi contenuti guardati.`,
+      { accent: '#0ea5e9', statValue: `${s.avgRuntime}m`, statLabel: 'DURATA MEDIA' }
+    ));
+    details.push({
+      meta_id: id, meta: {
+        id, type: 'movie', name: 'Durata media',
+        description: 'Quanto durano in media i contenuti che guardi.',
+        videos: [video(`${id}_1`, `${s.avgRuntime} minuti medi`, new Date().toISOString(), 'Calcolato su tutti i contenuti con durata nota.')]
+      }
+    });
+  }
+
+  // Notturno profondo (0-6)
+  if (enabled.includes('night') && s.nightPct !== undefined) {
+    const id = `adaptive_${configId}_night`;
+    cards.push(await cardMeta(id,
+      `${s.nightPct}% delle visioni in piena notte`,
+      `Contenuti guardati tra mezzanotte e le 6 del mattino.`,
+      { accent: '#312e81', statValue: `${s.nightPct}%`, statLabel: 'NOTTE FONDA' }
+    ));
+    details.push({
+      meta_id: id, meta: {
+        id, type: 'movie', name: 'Notturno',
+        description: 'Le tue visioni in piena notte (0:00-6:00).',
+        videos: [video(`${id}_1`, `${s.nightPct}% notturno`, new Date().toISOString(), 'Percentuale di contenuti guardati in fascia notturna.')]
+      }
+    });
+  }
+
+  // Serie uniche seguite
+  if (enabled.includes('series') && s.uniqueShows !== undefined && s.uniqueShows > 0) {
+    const id = `adaptive_${configId}_series`;
+    cards.push(await cardMeta(id,
+      `${s.uniqueShows} serie seguite, ${s.avgEpisodesPerShow} a testa`,
+      `Il numero di serie TV uniche che hai guardato.`,
+      { accent: '#8b5cf6', statValue: `${s.uniqueShows}`, statLabel: 'SERIE' }
+    ));
+    details.push({
+      meta_id: id, meta: {
+        id, type: 'movie', name: 'Serie seguite',
+        description: 'Quante serie hai seguito e quanti episodi in media.',
+        videos: [video(`${id}_1`, `${s.uniqueShows} serie uniche`, new Date().toISOString(), `${s.avgEpisodesPerShow} episodi medi per serie.`)]
+      }
+    });
+  }
+
   await supabase.from('adaptive_rows').upsert({
     config_id: configId,
     catalog_id: 'adaptive-insights',

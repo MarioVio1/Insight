@@ -16,12 +16,19 @@ export async function searchKitsuAnime(query: string) {
 
 export async function isAnimeByKitsu(tmdbId: number | string, type: string): Promise<boolean | null> {
   try {
-    const query = type === 'movie' ? `tmdb_id:${tmdbId}` : `tmdb_id:${tmdbId}`;
-    const { data } = await axios.get(`${KITSU_API}/anime`, {
-      params: { 'filter[text]': query, 'page[limit]': 1 },
+    const externalSite = type === 'movie' ? 'anidb' : 'myanimelist';
+    const { data } = await axios.get(`${KITSU_API}/mappings`, {
+      params: {
+        'filter[external_site]': externalSite,
+        'page[limit]': 10
+      },
       headers: { Accept: 'application/vnd.api+json' }
     });
-    return data?.data?.length > 0;
+    const externalId = String(tmdbId);
+    for (const m of (data?.data || [])) {
+      if (String(m.attributes?.external_id) === externalId) return true;
+    }
+    return null;
   } catch {
     return null;
   }
