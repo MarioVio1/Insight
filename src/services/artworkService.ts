@@ -8,8 +8,6 @@ export function generateSvgPoster(opts: { title: string; subtitle: string; accen
   const imageUrl = opts.imageUrl || '';
   const ff = 'sans-serif';
   const hasStat = !!statValue;
-  const titleY = hasStat ? 640 : 500;
-  const subtitleY = hasStat ? 690 : 550;
 
   const svg = `
   <svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900">
@@ -36,6 +34,13 @@ export function generateSvgPoster(opts: { title: string; subtitle: string; accen
       <filter id="shadow">
         <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.7"/>
       </filter>
+      <filter id="glow">
+        <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+        <feMerge>
+          <feMergeNode in="coloredBlur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
     </defs>
     ${imageUrl ? `
     <image href="${imageUrl}" width="600" height="900" preserveAspectRatio="xMidYMid slice"/>
@@ -43,17 +48,28 @@ export function generateSvgPoster(opts: { title: string; subtitle: string; accen
     <rect width="600" height="900" fill="url(#bg)"/>
     <rect width="600" height="900" fill="url(#glow1)"/>
     <rect width="600" height="900" fill="url(#glow2)"/>`}
-    <rect x="20" y="20" width="560" height="860" rx="36" fill="none" stroke="#ffffff18" stroke-width="1.5"/>
-    <rect x="32" y="32" width="536" height="6" rx="3" fill="${accent}" opacity="0.7"/>
-    <text x="48" y="90" fill="${accent}" font-size="16" font-weight="700" font-family="${ff}" letter-spacing="3" filter="url(#shadow)">INSIGHT</text>
-    <line x1="48" y1="104" x2="140" y2="104" stroke="${accent}" stroke-width="2.5" opacity="0.6"/>
+    
+    <!-- Main stat section - centered and prominent -->
     ${hasStat ? `
-    <text x="48" y="460" fill="#ffffff" font-size="72" font-weight="900" font-family="${ff}" filter="url(#shadow)">${statValue}</text>
-    ${statLabel ? `<text x="48" y="500" fill="${accent}" font-size="20" font-weight="600" font-family="${ff}" letter-spacing="1" filter="url(#shadow)">${statLabel}</text>` : ''}` : ''}
-    <text x="48" y="${titleY}" fill="#ffffff" font-size="32" font-weight="800" font-family="${ff}" filter="url(#shadow)">${title}</text>
-    <text x="48" y="${subtitleY}" fill="#94a3b8" font-size="18" font-weight="400" font-family="${ff}" filter="url(#shadow)">${subtitle}</text>
-    <rect x="48" y="810" width="504" height="2" rx="1" fill="${accent}" opacity="0.25"/>
-    <text x="48" y="845" fill="#475569" font-size="13" font-family="${ff}" letter-spacing="1" filter="url(#shadow)">TRACKT STATS &middot; ${new Date().toLocaleDateString('it-IT')}</text>
+    <!-- Background box for stats -->
+    <rect x="60" y="300" width="480" height="380" rx="20" fill="#000000" opacity="0.4" filter="url(#shadow)"/>
+    <rect x="60" y="300" width="480" height="380" rx="20" fill="none" stroke="${accent}" stroke-width="2" opacity="0.6"/>
+    
+    <!-- Large stat value -->
+    <text x="300" y="520" fill="${accent}" font-size="120" font-weight="900" font-family="${ff}" text-anchor="middle" filter="url(#glow)" letter-spacing="-2">${statValue}</text>
+    
+    <!-- Stat label -->
+    ${statLabel ? `<text x="300" y="575" fill="#ffffff" font-size="24" font-weight="700" font-family="${ff}" text-anchor="middle" filter="url(#shadow)" letter-spacing="2">${statLabel}</text>` : ''}
+    ` : ''}
+    
+    <!-- Header -->
+    <rect x="20" y="20" width="560" height="60" rx="36" fill="none" stroke="#ffffff18" stroke-width="1.5"/>
+    <rect x="32" y="32" width="536" height="6" rx="3" fill="${accent}" opacity="0.7"/>
+    <text x="48" y="60" fill="${accent}" font-size="16" font-weight="700" font-family="${ff}" letter-spacing="3" filter="url(#shadow)">INSIGHT</text>
+    
+    <!-- Title and subtitle at bottom -->
+    <text x="48" y="${hasStat ? 810 : 640}" fill="#ffffff" font-size="28" font-weight="800" font-family="${ff}" filter="url(#shadow)">${title}</text>
+    <text x="48" y="${hasStat ? 850 : 690}" fill="#94a3b8" font-size="16" font-weight="400" font-family="${ff}" filter="url(#shadow)">${subtitle}</text>
   </svg>`;
   return svg;
 }
@@ -91,22 +107,41 @@ export function generateOverlaySvg(opts: {
   const { title, subtitle, accent, statValue, statLabel } = opts;
   const ff = 'sans-serif';
   const hasStat = !!statValue;
-  const titleY = hasStat ? 640 : 500;
-  const subtitleY = hasStat ? 690 : 550;
   const esc = escapeXml;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900">
-    <rect x="20" y="20" width="560" height="860" rx="36" fill="none" stroke="#ffffff18" stroke-width="1.5"/>
-    <rect x="32" y="32" width="536" height="6" rx="3" fill="${esc(accent)}" opacity="0.7"/>
-    <text x="48" y="90" fill="${esc(accent)}" font-size="16" font-weight="700" font-family="${ff}" letter-spacing="3">INSIGHT</text>
-    <line x1="48" y1="104" x2="140" y2="104" stroke="${esc(accent)}" stroke-width="2.5" opacity="0.6"/>
+    <defs>
+      <filter id="shadow">
+        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.7"/>
+      </filter>
+      <filter id="glow">
+        <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+        <feMerge>
+          <feMergeNode in="coloredBlur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+    </defs>
     ${hasStat ? `
-    <text x="48" y="460" fill="#ffffff" font-size="72" font-weight="900" font-family="${ff}">${esc(statValue)}</text>
-    ${statLabel ? `<text x="48" y="500" fill="${esc(accent)}" font-size="20" font-weight="600" font-family="${ff}" letter-spacing="1">${esc(statLabel)}</text>` : ''}` : ''}
-    <text x="48" y="${titleY}" fill="#ffffff" font-size="32" font-weight="800" font-family="${ff}">${esc(title)}</text>
-    <text x="48" y="${subtitleY}" fill="#94a3b8" font-size="18" font-weight="400" font-family="${ff}">${esc(subtitle)}</text>
-    <rect x="48" y="810" width="504" height="2" rx="1" fill="${esc(accent)}" opacity="0.25"/>
-    <text x="48" y="845" fill="#475569" font-size="13" font-family="${ff}" letter-spacing="1">TRACKT STATS · ${new Date().toLocaleDateString('it-IT')}</text>
+    <!-- Background box for stats -->
+    <rect x="60" y="300" width="480" height="380" rx="20" fill="#000000" opacity="0.4" filter="url(#shadow)"/>
+    <rect x="60" y="300" width="480" height="380" rx="20" fill="none" stroke="${esc(accent)}" stroke-width="2" opacity="0.6"/>
+    
+    <!-- Large stat value -->
+    <text x="300" y="520" fill="${esc(accent)}" font-size="120" font-weight="900" font-family="${ff}" text-anchor="middle" filter="url(#glow)" letter-spacing="-2">${esc(statValue)}</text>
+    
+    <!-- Stat label -->
+    ${statLabel ? `<text x="300" y="575" fill="#ffffff" font-size="24" font-weight="700" font-family="${ff}" text-anchor="middle" filter="url(#shadow)" letter-spacing="2">${esc(statLabel)}</text>` : ''}
+    ` : ''}
+    
+    <!-- Header -->
+    <rect x="20" y="20" width="560" height="60" rx="36" fill="none" stroke="#ffffff18" stroke-width="1.5"/>
+    <rect x="32" y="32" width="536" height="6" rx="3" fill="${esc(accent)}" opacity="0.7"/>
+    <text x="48" y="60" fill="${esc(accent)}" font-size="16" font-weight="700" font-family="${ff}" letter-spacing="3">INSIGHT</text>
+    
+    <!-- Title and subtitle at bottom -->
+    <text x="48" y="${hasStat ? 810 : 640}" fill="#ffffff" font-size="28" font-weight="800" font-family="${ff}">${esc(title)}</text>
+    <text x="48" y="${hasStat ? 850 : 690}" fill="#94a3b8" font-size="16" font-weight="400" font-family="${ff}">${esc(subtitle)}</text>
   </svg>`;
 }
 
