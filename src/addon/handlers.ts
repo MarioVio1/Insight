@@ -122,33 +122,8 @@ export async function metaHandler(configId: string, metaId: string) {
     });
   }
 
-  const hasRealContent = enrichedVideos.some(v => v.tmdb_id);
-  if (!hasRealContent && enrichedVideos.length > 0) {
-    try {
-      const { data: recent } = await supabase
-        .from('trakt_events')
-        .select('title, watched_at, trakt_type, tmdb_id')
-        .eq('config_id', configId)
-        .order('watched_at', { ascending: false })
-        .limit(10);
-
-      if (recent && recent.length > 0) {
-        for (let i = 0; i < recent.length; i++) {
-          const evt = recent[i];
-          const tmdbData = evt.tmdb_id ? await getTmdbData(evt.tmdb_id, evt.trakt_type === 'movie' ? 'movie' : 'tv') : null;
-          enrichedVideos.push({
-            id: `${metaId}_recent_${i}`,
-            title: evt.title,
-            released: evt.watched_at,
-            overview: 'Contenuto recente dalle tue statistiche',
-            thumbnail: tmdbData?.poster || undefined,
-            rating: tmdbData?.rating || undefined,
-            tmdb_id: evt.tmdb_id
-          });
-        }
-      }
-    } catch {}
-  }
+  // RIMOSSO: non aggiungere video di fallback "contenuto recente"
+  // Mantieni solo i video reali della card
 
   meta.videos = enrichedVideos;
   return { meta };
