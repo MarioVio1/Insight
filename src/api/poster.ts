@@ -48,7 +48,7 @@ export async function posterHandler(req: Request, res: Response) {
     else if (cardId.includes('anime')) cardAccent = '#f43f5e';
     else if (cardId.includes('ranking')) cardAccent = '#fbbf24';
 
-    const png = await generatePngPoster({
+    const result = await generatePngPoster({
       title: cardTitle,
       subtitle: cardDesc.slice(0, 60),
       accent: cardAccent,
@@ -56,12 +56,12 @@ export async function posterHandler(req: Request, res: Response) {
       statLabel
     });
 
-    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Content-Type', result.type === 'png' ? 'image/png' : 'image/svg+xml');
     res.setHeader('Cache-Control', 'public, max-age=3600');
-    res.send(png);
+    res.send(result.data);
   } catch (error) {
-    const png = await generatePngPoster({ title: 'Insight', subtitle: 'Statistiche personali' });
+    const fallback = await generatePngPoster({ title: 'Insight', subtitle: 'Statistiche personali' });
     res.setHeader('Content-Type', 'image/png');
-    res.send(png);
+    res.send(fallback.data);
   }
 }

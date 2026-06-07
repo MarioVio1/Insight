@@ -22,15 +22,16 @@ async function ensureFreshToken(row: any) {
 function normalizeWatchItem(configId: string, item: any, traktType: 'movie' | 'show') {
   const source = item.movie || item.show || item;
   const episode = item.episode || null;
-  const uniqueId = episode?.ids?.trakt || item.id || source.ids?.trakt || source.ids?.imdb || `${source.title}_${item.watched_at}`;
+  const ts = item.watched_at || new Date().toISOString();
+  const contentId = String(episode?.ids?.trakt || item.id || source.ids?.trakt || source.ids?.imdb || source.title || 'unknown');
   return {
-    id: `${configId}_${traktType}_${uniqueId}`,
+    id: `${configId}_${traktType}_${contentId}_${ts}`,
     config_id: configId,
-    trakt_id: String(uniqueId),
+    trakt_id: contentId,
     trakt_type: traktType,
     title: source.title || 'Untitled',
     year: source.year || null,
-    watched_at: item.watched_at || new Date().toISOString(),
+    watched_at: ts,
     runtime_minutes: episode?.runtime || (traktType === 'movie' ? source.runtime : null) || null,
     genres: source.genres || null,
     tmdb_id: episode?.ids?.tmdb || source.ids?.tmdb || null,

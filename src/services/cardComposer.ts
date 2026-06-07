@@ -52,7 +52,9 @@ export async function rebuildAdaptiveRow(configId: string) {
   if (!cfg || !insight) return;
 
   const s = insight.summary || {};
-  const enabled = prefs?.enabled_card_types || ['totals', 'weekly', 'genre', 'recurring', 'rewatch', 'seasonal', 'streak', 'binge'];
+  const saved = prefs?.enabled_card_types || [];
+  const allEnabled = ['totals','streak','peak','weekly','genre','binge','dropped','monthly','recurring','rewatch','seasonal','actor','director','anime','ranking'];
+  const enabled = saved.length > 0 ? [...new Set([...saved, ...allEnabled])] : allEnabled;
   const cards: any[] = [];
   const details: { meta_id: string; meta: any }[] = [];
 
