@@ -1,39 +1,36 @@
-import { supabase } from "./supabase.js";
-import { findArtworkForTitle, generateSvgPoster } from "./artworkService.js";
+import { supabase } from './supabase.js';
+import { generateSvgPoster } from './artworkService.js';
+
+function posterUrl(configId: string, cardId: string): string {
+  const base = process.env.BASE_URL || 'http://localhost:3000';
+  return `${base}/poster/${configId}/${cardId}.svg`;
+}
 
 async function cardMeta(
   id: string,
   name: string,
   description: string,
-  poster?: string | null,
-  background?: string | null,
-  artworkQuery?: string | null,
-  accent?: string
+  configId: string,
+  opts?: { accent?: string; statValue?: string; statLabel?: string }
 ) {
-  const art = artworkQuery
-    ? await findArtworkForTitle(artworkQuery)
-    : { poster: null, background: null, source: "none" };
-
-  const finalPoster =
-    poster ||
-    art.poster ||
-    generateSvgPoster({
-      title: name,
-      subtitle: description.slice(0, 44),
-      accent
-    });
-
-  const finalBackground = background || art.background || finalPoster;
+  const accent = opts?.accent || '#0ea5e9';
+  const svg = generateSvgPoster({
+    title: name,
+    subtitle: description.slice(0, 50),
+    accent,
+    statValue: opts?.statValue,
+    statLabel: opts?.statLabel
+  });
 
   return {
     id,
-    type: "movie",
+    type: 'movie',
     name,
-    poster: finalPoster || undefined,
-    background: finalBackground || undefined,
+    poster: posterUrl(configId, id),
+    background: posterUrl(configId, id),
     description,
-    posterShape: "poster",
-    genres: ["Insights"]
+    posterShape: 'poster',
+    genres: ['Insights']
   };
 }
 
@@ -42,23 +39,9 @@ function video(id: string, title: string, released: string, overview: string) {
 }
 
 export async function rebuildAdaptiveRow(configId: string) {
-  const cfgRes = await supabase
-    .from("addon_configs")
-    .select("*")
-    .eq("id", configId)
-    .single();
-
-  const insightRes = await supabase
-    .from("insight_snapshots")
-    .select("*")
-    .eq("config_id", configId)
-    .maybeSingle();
-
-  const prefsRes = await supabase
-    .from("config_preferences")
-    .select("*")
-    .eq("config_id", configId)
-    .maybeSingle();
+  const cfgRes = await supabase.from('addon_configs').select('*').eq('id', configId).single();
+  const insightRes = await supabase.from('insight_snapshots').select('*').eq('config_id', configId).maybeSingle();
+  const prefsRes = await supabase.from('config_preferences').select('*').eq('config_id', configId).maybeSingle();
 
   const cfg = cfgRes.data;
   const insight = insightRes.data;
@@ -66,270 +49,281 @@ export async function rebuildAdaptiveRow(configId: string) {
 
   if (!cfg || !insight) return;
 
-  const summary = insight.summary || {};
-  const enabled = prefs?.enabled_card_types || [
-    "totals",
-    "weekly",
-    "genre",
-    "recurring",
-    "rewatch",
-    "seasonal"
-  ];
+  const s = insight.summary || {};
+  const enabled = prefs?.enabled_card_types || ['totals', 'weekly', 'genre', 'recurring', 'rewatch', 'seasonal', 'streak', 'binge'];
   const cards: any[] = [];
   const details: { meta_id: string; meta: any }[] = [];
 
-  // Totali
-  if (enabled.includes("totals")) {
+  // Totali - updated hours
+  if (enabled.includes('totals')) {
     const id = `adaptive_${configId}_totals`;
-    const movieCount = summary.movieCount || 0;
-    const episodeCount = summary.episodeCount || 0;
-    const totalHours = summary.totalHours || 0;
+    const totalHours = s.totalHours || 0;
+    const uc = s.uniqueTitles || 0;
+    const totalM = s.totalMovies || 0;
+    const totalE = s.totalEpisodes || 0;
 
-    cards.push(
-      await cardMeta(
-        id,
-        `${movieCount} film nel tuo viaggio`,
-        `Finora hai accumulato ${movieCount} film, ${episodeCount} episodi e ${totalHours} ore di visione.`,
-        null,
-        null,
-        null,
-        "#22c55e"
-      )
-    );
+    cards.push(await cardMeta(id,
+      `${Math.floor(totalHours)} ore di visione`,
+      `${totalM} film · ${totalE} episodi · ${uc} titoli unici`,
+      configId, { accent: '#22c55e', statValue: `${Math.floor(totalHours)}`, statLabel: 'ORE TOTALI' }
+    ));
 
     details.push({
-      meta_id: id,
-      meta: {
-        id,
-        type: "series",
-        name: "Il tuo viaggio finora",
-        description: "Una panoramica completa del tuo profilo di visione.",
+      meta_id: id, meta: {
+        id, type: 'series', name: 'Il tuo viaggio totale',
+        description: 'Tutto quello che hai guardato su Trakt.',
         videos: [
-          video(`${id}_1`, `${movieCount} film visti`, new Date().toISOString(), "Totale film presenti nella tua cronologia."),
-          video(`${id}_2`, `${episodeCount} episodi visti`, new Date().toISOString(), "Totale episodi registrati nel tuo profilo."),
-          video(`${id}_3`, `${totalHours} ore guardate`, new Date().toISOString(), "Tempo totale stimato dai runtime disponibili.")
+          video(`${id}_1`, `${totalM} film visti`, new Date().toISOString(), 'Totale film.'),
+          video(`${id}_2`, `${totalE} episodi visti`, new Date().toISOString(), 'Totale episodi.'),
+          video(`${id}_3`, `${Math.floor(totalHours)} ore guardate`, new Date().toISOString(), 'Tempo totale.'),
+          video(`${id}_4`, `${uc} titoli unici`, new Date().toISOString(), 'Contenuti distinti.')
         ]
       }
     });
   }
 
-  // Weekly
-  if (enabled.includes("weekly")) {
-    const id = `adaptive_${configId}_weekly`;
-    const topWeeklyTitle = summary.topWeeklyTitle || null;
-    const topWeeklyCount = summary.topWeeklyCount || 0;
-    const lastWeekCount = summary.lastWeekCount || 0;
-
-    const weeklyTitle = topWeeklyTitle
-      ? `Settimana scorsa eri dentro ${topWeeklyTitle}`
-      : `${lastWeekCount} visioni negli ultimi 7 giorni`;
-
-    const weeklyDesc = topWeeklyTitle
-      ? `Negli ultimi 7 giorni questo e stato il tuo titolo dominante, con ${topWeeklyCount} passaggi registrati.`
-      : "Una card che segue il tuo ritmo piu recente.";
-
-    cards.push(await cardMeta(id, weeklyTitle, weeklyDesc, null, null, topWeeklyTitle, "#38bdf8"));
-
-    const weeklyVideos: any[] = [
-      video(`${id}_1`, `${lastWeekCount} attivita recenti`, new Date().toISOString(), "Conteggio totale degli ultimi 7 giorni.")
-    ];
-
-    if (topWeeklyTitle) {
-      weeklyVideos.push(
-        video(
-          `${id}_2`,
-          topWeeklyTitle,
-          new Date().toISOString(),
-          `Hai guardato questo contenuto ${topWeeklyCount} volte nella settimana.`
-        )
-      );
-    } else {
-      weeklyVideos.push(
-        video(
-          `${id}_2`,
-          "Nessun titolo dominante",
-          new Date().toISOString(),
-          "Questa settimana non c'e ancora un titolo dominante."
-        )
-      );
-    }
+  // Streak
+  if (enabled.includes('streak') && s.streak !== undefined) {
+    const id = `adaptive_${configId}_streak`;
+    const streak = s.streak;
+    cards.push(await cardMeta(id,
+      streak === 1 ? 'Ieri hai guardato qualcosa' : `${streak} giorni di streak!`,
+      streak > 0 ? `Sono ${streak} giorni consecutivi che guardi almeno un contenuto.` : 'Nessuna streak attiva.',
+      configId, { accent: '#f97316', statValue: `${streak}`, statLabel: 'GIORNI' }
+    ));
 
     details.push({
-      meta_id: id,
-      meta: {
-        id,
-        type: "series",
-        name: "Il tuo ritmo settimanale",
-        description: "Cosa ti ha preso davvero nell ultima settimana.",
-        videos: weeklyVideos
+      meta_id: id, meta: {
+        id, type: 'series', name: 'La tua streak',
+        description: 'Giorni consecutivi di visione.',
+        videos: [video(`${id}_1`, `${streak} giorni`, new Date().toISOString(), streak > 0 ? `Stai guardando qualcosa da ${streak} giorni di fila!` : 'Nessuna streak.')]
+      }
+    });
+  }
+
+  // Peak hour
+  if (enabled.includes('peak') && s.peakHour) {
+    const id = `adaptive_${configId}_peak`;
+    const ph = s.peakHour;
+    const hourStr = `${String(ph.hour).padStart(2, '0')}:00`;
+    cards.push(await cardMeta(id,
+      `Il tuo orario di punta: ${hourStr}`,
+      `Alle ${hourStr} hai registrato ${ph.count} visioni, più di ogni altra ora.`,
+      configId, { accent: '#a855f7', statValue: hourStr, statLabel: 'ORA PREFERITA' }
+    ));
+
+    details.push({
+      meta_id: id, meta: {
+        id, type: 'series', name: 'Il tuo orario preferito',
+        description: 'Quando guardi di più?',
+        videos: [video(`${id}_1`, `${hourStr}`, new Date().toISOString(), `${ph.count} visioni in questa fascia oraria.`)]
+      }
+    });
+  }
+
+  // Top day
+  if (enabled.includes('weekly') && s.topDay) {
+    const id = `adaptive_${configId}_day`;
+    const td = s.topDay;
+    cards.push(await cardMeta(id,
+      `Il tuo giorno: ${td.name}`,
+      `Di ${td.name} hai totalizzato ${td.count} visioni, il giorno più attivo della settimana.`,
+      configId, { accent: '#38bdf8', statValue: td.name, statLabel: 'GIORNO TOP' }
+    ));
+
+    details.push({
+      meta_id: id, meta: {
+        id, type: 'series', name: 'Giorni della settimana',
+        description: 'Distribuzione delle tue visioni per giorno.',
+        videos: [
+          video(`${id}_1`, `${td.name}`, new Date().toISOString(), `${td.count} visioni in questo giorno.`)
+        ]
       }
     });
   }
 
   // Genre
-  if (enabled.includes("genre") && summary.topGenre) {
+  if (enabled.includes('genre') && s.topGenre) {
     const id = `adaptive_${configId}_genre`;
-    const topGenre = summary.topGenre || "";
-    const genreCounts = summary.genre_counts || [];
+    const tg = s.topGenre;
+    const genreCounts = s.genre_counts || [];
+    const totalG = genreCounts.reduce((a: number, g: any) => a + g.count, 0);
 
-    cards.push(
-      await cardMeta(
-        id,
-        `Il tuo mood ora e ${topGenre}`,
-        "Questo e il genere che racconta meglio il tuo profilo in questo momento.",
-        null,
-        null,
-        null,
-        "#a855f7"
-      )
-    );
+    cards.push(await cardMeta(id,
+      `Il tuo genere: ${tg}`,
+      `${tg} domina con ${genreCounts.find((g: any) => g.name === tg)?.count || 0} visioni.`,
+      configId, { accent: '#a855f7', statValue: tg, statLabel: 'GENERE TOP' }
+    ));
 
     details.push({
-      meta_id: id,
-      meta: {
-        id,
-        type: "series",
-        name: "I generi che ti definiscono",
-        description: "Una lettura veloce del tuo gusto attuale.",
+      meta_id: id, meta: {
+        id, type: 'series', name: 'I tuoi generi',
+        description: 'Quali generi guardi di più.',
         videos: genreCounts.slice(0, 10).map((g: any, i: number) =>
-          video(`${id}_${i}`, g.name, new Date().toISOString(), `${g.count} visioni associate a questo genere.`)
+          video(`${id}_${i}`, g.name, new Date().toISOString(), `${g.count} visioni (${totalG > 0 ? Math.round(g.count / totalG * 100) : 0}% del totale).`)
         )
+      }
+    });
+  }
+
+  // Binge
+  if (enabled.includes('binge') && s.binges && s.binges.length > 0) {
+    const id = `adaptive_${configId}_binge`;
+    const topBinge = s.binges[0];
+
+    cards.push(await cardMeta(id,
+      `Binge: ${topBinge.episodes} episodi di ${topBinge.title}`,
+      `Hai guardato ${topBinge.episodes} episodi di fila di ${topBinge.title} in un giorno.`,
+      configId, { accent: '#ef4444', statValue: `${topBinge.episodes}`, statLabel: 'EPISODI IN UN GIORNO' }
+    ));
+
+    details.push({
+      meta_id: id, meta: {
+        id, type: 'series', name: 'Le tue maratone',
+        description: 'I giorni in cui hai guardato più episodi della stessa serie.',
+        videos: s.binges.slice(0, 10).map((b: any, i: number) =>
+          video(`${id}_${i}`, b.title, b.date, `${b.episodes} episodi in un giorno.`)
+        )
+      }
+    });
+  }
+
+  // Dropped
+  if (enabled.includes('dropped') && s.dropped && s.dropped.length > 0) {
+    const id = `adaptive_${configId}_dropped`;
+    cards.push(await cardMeta(id,
+      `${s.dropped.length} serie in pausa`,
+      `Serie che non guardi da mesi. Forse è ora di riprenderle?`,
+      configId, { accent: '#6b7280', statValue: `${s.dropped.length}`, statLabel: 'IN PAUSA' }
+    ));
+
+    details.push({
+      meta_id: id, meta: {
+        id, type: 'series', name: 'Serie in pausa',
+        description: 'Serie che non guardi da più di 3 mesi.',
+        videos: s.dropped.slice(0, 10).map((d: any, i: number) =>
+          video(`${id}_${i}`, d.title, d.lastDate, `${d.totalEpisodes} episodi visti, ultima volta ${new Date(d.lastDate).toLocaleDateString('it-IT')}.`)
+        )
+      }
+    });
+  }
+
+  // Monthly comparison
+  if (enabled.includes('monthly') && s.monthCount !== undefined && s.lastMonthCount !== undefined) {
+    const id = `adaptive_${configId}_monthly`;
+    const curr = s.monthCount;
+    const prev = s.lastMonthCount || 0;
+    const diff = curr - prev;
+    const diffText = diff >= 0 ? `+${diff} rispetto al mese scorso` : `${diff} rispetto al mese scorso`;
+
+    cards.push(await cardMeta(id,
+      `${curr} contenuti questo mese`,
+      diffText,
+      configId, { accent: '#14b8a6', statValue: `${curr}`, statLabel: 'QUESTO MESE' }
+    ));
+
+    details.push({
+      meta_id: id, meta: {
+        id, type: 'series', name: 'Confronto mensile',
+        description: 'Quanto guardi ogni mese.',
+        videos: [
+          video(`${id}_1`, `${curr} questo mese`, new Date().toISOString(), `Contenuti guardati negli ultimi 30 giorni.`),
+          video(`${id}_2`, `${prev} mese scorso`, new Date().toISOString(), `Contenuti guardati nei 30 giorni precedenti.`)
+        ]
       }
     });
   }
 
   // Recurring
-  if (enabled.includes("recurring")) {
+  if (enabled.includes('recurring')) {
     const id = `adaptive_${configId}_recurring`;
     const recurringTitles = insight.recurring_titles || [];
+    if (recurringTitles.length > 0) {
+      cards.push(await cardMeta(id,
+        `${recurringTitles.length} titoli ricorrenti`,
+        `Titoli che torni a guardare ogni anno nello stesso periodo.`,
+        configId, { accent: '#f59e0b', statValue: `${recurringTitles.length}`, statLabel: 'RICORRENTI' }
+      ));
 
-    cards.push(
-      await cardMeta(
-        id,
-        "Hai delle ricorrenze tutte tue",
-        "Alcuni titoli o abitudini stanno tornando nello stesso periodo dell anno.",
-        null,
-        null,
-        recurringTitles[0]?.title,
-        "#f59e0b"
-      )
-    );
-
-    details.push({
-      meta_id: id,
-      meta: {
-        id,
-        type: "series",
-        name: "Le tue ricorrenze",
-        description: "Pattern che tornano nel tempo e raccontano il tuo lato piu personale.",
-        videos: recurringTitles.slice(0, 12).map((r: any, i: number) =>
-          video(`${id}_${i}`, r.title, new Date().toISOString(), `Questo titolo compare ${r.count} volte nello stesso mese attraverso gli anni.`)
-        )
-      }
-    });
+      details.push({
+        meta_id: id, meta: {
+          id, type: 'series', name: 'Le tue ricorrenze',
+          description: 'Titoli che guardi sempre nello stesso mese.',
+          videos: recurringTitles.slice(0, 12).map((r: any, i: number) =>
+            video(`${id}_${i}`, r.title, new Date().toISOString(), `Visto ${r.count} volte nei mesi: ${r.months.join(', ')}.`)
+          )
+        }
+      });
+    }
   }
 
   // Rewatch
-  if (enabled.includes("rewatch")) {
+  if (enabled.includes('rewatch')) {
     const id = `adaptive_${configId}_rewatch`;
     const rewatchTitles = insight.rewatch_titles || [];
+    if (rewatchTitles.length > 0) {
+      cards.push(await cardMeta(id,
+        `Rivisto: ${rewatchTitles[0].title} (${rewatchTitles[0].count}x)`,
+        `Titoli che hai guardato più di una volta.`,
+        configId, { accent: '#ef4444', statValue: `${rewatchTitles[0].count}x`, statLabel: 'REWATCH' }
+      ));
 
-    cards.push(
-      await cardMeta(
-        id,
-        "I tuoi comfort rewatch",
-        "Ci sono titoli verso cui torni piu spesso del normale.",
-        null,
-        null,
-        rewatchTitles[0]?.title,
-        "#ef4444"
-      )
-    );
-
-    details.push({
-      meta_id: id,
-      meta: {
-        id,
-        type: "series",
-        name: "I tuoi titoli del cuore",
-        description: "Quelli che non guardi una volta sola.",
-        videos: rewatchTitles.slice(0, 12).map((r: any, i: number) =>
-          video(`${id}_${i}`, r.title, new Date().toISOString(), `Hai rivisto questo titolo ${r.count} volte.`)
-        )
-      }
-    });
+      details.push({
+        meta_id: id, meta: {
+          id, type: 'series', name: 'I tuoi comfort rewatch',
+          description: 'Quelli che non guardi una volta sola.',
+          videos: rewatchTitles.slice(0, 12).map((r: any, i: number) =>
+            video(`${id}_${i}`, r.title, new Date().toISOString(), `Rivisto ${r.count} volte.`)
+          )
+        }
+      });
+    }
   }
 
   // Seasonal
-  if (enabled.includes("seasonal")) {
+  if (enabled.includes('seasonal')) {
     const id = `adaptive_${configId}_seasonal`;
-    const seasonalKey = insight.seasonal_key || "standard";
-    const recurringTitles = insight.recurring_titles || [];
-    const rewatchTitles = insight.rewatch_titles || [];
+    const seasonalKey = insight.seasonal_key || 'standard';
+    const seasonTexts: Record<string, string> = {
+      christmas: 'L\'anno scorso in questo periodo avevi già iniziato il mood natalizio.',
+      halloween: 'C\'è odore di horror di stagione nel tuo profilo.',
+      summer: 'L\'estate tende a riaccendere maratone e rewatch più leggeri.',
+      standard: 'Questa card cambia con il calendario e con il tuo profilo.'
+    };
+    const seasonAccents: Record<string, string> = {
+      christmas: '#dc2626', halloween: '#f97316', summer: '#f59e0b', standard: '#0ea5e9'
+    };
 
-    let seasonText = "";
-    let seasonalAccent = "#0ea5e9";
-
-    if (seasonalKey === "christmas") {
-      seasonText = "L anno scorso in questo periodo avevi gia iniziato il tuo mood natalizio.";
-      seasonalAccent = "#dc2626";
-    } else if (seasonalKey === "halloween") {
-      seasonText = "C'e odore di horror di stagione nel tuo profilo.";
-      seasonalAccent = "#f97316";
-    } else if (seasonalKey === "summer") {
-      seasonText = "L estate tende a riaccendere maratone e rewatch piu leggeri.";
-      seasonalAccent = "#f59e0b";
-    } else {
-      seasonText = "Questa card cambia con il calendario e con il tuo profilo.";
-    }
-
-    cards.push(
-      await cardMeta(
-        id,
-        "La stagione ti sta cambiando",
-        seasonText,
-        null,
-        null,
-        recurringTitles[0]?.title || rewatchTitles[0]?.title,
-        seasonalAccent
-      )
-    );
+    cards.push(await cardMeta(id,
+      `Stagione: ${seasonalKey}`,
+      seasonTexts[seasonalKey] || seasonTexts.standard,
+      configId, { accent: seasonAccents[seasonalKey] || seasonAccents.standard, statValue: seasonalKey.toUpperCase(), statLabel: 'STAGIONE' }
+    ));
 
     details.push({
-      meta_id: id,
-      meta: {
-        id,
-        type: "series",
-        name: "La stagione del tuo profilo",
-        description: "Un insight che cambia grafica e significato in base al periodo.",
-        videos: [
-          video(`${id}_1`, seasonalKey, new Date().toISOString(), seasonText)
-        ]
+      meta_id: id, meta: {
+        id, type: 'series', name: 'La stagione del tuo profilo',
+        description: seasonTexts[seasonalKey] || seasonTexts.standard,
+        videos: [video(`${id}_1`, seasonalKey, new Date().toISOString(), seasonTexts[seasonalKey] || seasonTexts.standard)]
       }
     });
   }
 
   const finalCards = cards.slice(0, prefs?.max_cards || 10);
 
-  await supabase.from("adaptive_rows").upsert(
-    {
-      config_id: configId,
-      catalog_id: "adaptive-insights",
-      metas: finalCards,
-      updated_at: new Date().toISOString()
-    },
-    { onConflict: "config_id,catalog_id" }
-  );
+  await supabase.from('adaptive_rows').upsert({
+    config_id: configId,
+    catalog_id: 'adaptive-insights',
+    metas: finalCards,
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'config_id,catalog_id' });
 
   for (const d of details) {
-    await supabase.from("adaptive_meta").upsert(
-      {
-        config_id: configId,
-        meta_id: d.meta_id,
-        meta: d.meta,
-        updated_at: new Date().toISOString()
-      },
-      { onConflict: "config_id,meta_id" }
-    );
+    await supabase.from('adaptive_meta').upsert({
+      config_id: configId,
+      meta_id: d.meta_id,
+      meta: d.meta,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'config_id,meta_id' });
   }
 }

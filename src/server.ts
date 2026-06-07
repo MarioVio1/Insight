@@ -8,6 +8,7 @@ import { getManifest } from './addon/manifest.js';
 import { catalogHandler, metaHandler } from './addon/handlers.js';
 import { startCron } from './jobs/cron.js';
 import { logger } from './utils/logger.js';
+import { posterHandler } from './api/poster.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,6 +22,7 @@ app.get('/logo.png', (_req, res) => {
   res.setHeader('Content-Type', 'image/svg+xml');
   res.send(`<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><rect width="128" height="128" rx="24" fill="#0ea5e9"/><text x="64" y="80" fill="#fff" font-size="64" font-weight="bold" font-family="Arial" text-anchor="middle">i</text></svg>`);
 });
+app.get('/poster/:configId/:cardId.svg', posterHandler);
 app.get('/manifest.json', (_req, res) => res.json(getManifest()));
 app.get('/:configId/manifest.json', (req, res) => res.json(getManifest(req.params.configId)));
 app.get('/:configId/catalog/:type/:id/:extra?.json', async (req, res) => {

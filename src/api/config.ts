@@ -18,7 +18,7 @@ router.post('/config', async (req, res) => {
     await supabase.from('config_preferences').insert({
       config_id: id,
       max_cards: body.max_cards ?? parseInt(process.env.DEFAULT_CARD_COUNT || '10', 10),
-      enabled_card_types: body.enabled_card_types ?? ['totals','weekly','genre','recurring','rewatch','seasonal'],
+      enabled_card_types: body.enabled_card_types ?? ['totals','streak','peak','weekly','genre','binge','monthly','recurring','rewatch','seasonal'],
       focus_mode: body.focus_mode ?? 'adaptive',
       seasonal_enabled: body.seasonal_enabled ?? true,
       festive_enabled: body.festive_enabled ?? true,
