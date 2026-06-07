@@ -1,9 +1,9 @@
 const $=id=>document.getElementById(id);
 const pathParts=location.pathname.split('/').filter(Boolean);
 
-// Landing page mode (/) or configurator mode (/configure/xxx)
-const isConfig = pathParts[0] === 'configure' && pathParts[1];
-const configId = isConfig ? pathParts[1] : null;
+// Landing page mode (/) or configurator mode (/configure or /configure/xxx)
+const isConfig = pathParts[0] === 'configure';
+const configId = isConfig && pathParts[1] ? pathParts[1] : null;
 
 if (!isConfig) {
   // Landing page mode

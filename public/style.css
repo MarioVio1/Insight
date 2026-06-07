@@ -1,6 +1,7 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--b:#050505;--s:rgba(255,255,255,.04);--s2:rgba(255,255,255,.08);--t:#fff;--t2:rgba(255,255,255,.6);--m:rgba(255,255,255,.35);--o:#f97316;--og:rgba(249,115,22,.25)}
 html,body{height:100%;overflow:hidden}
+.landing{overflow-y:auto;overflow-x:hidden}
 body{font-family:'Space Grotesk','Inter',-apple-system,sans-serif;background:var(--b);color:var(--t);line-height:1.5;font-size:13px}
 
 /* Scrollbar */
@@ -190,6 +191,50 @@ body{font-family:'Space Grotesk','Inter',-apple-system,sans-serif;background:var
 .slug-in input::placeholder{color:var(--m)}
 .hint{font-size:11px;color:var(--m);margin-top:6px}
 .hint code{color:var(--o);font-size:10px}
+
+/* Mobile responsive */
+@media(max-width:768px){
+  body,html{overflow-y:auto;height:auto;min-height:100dvh}
+  #app{height:auto;min-height:100dvh;flex-direction:column}
+  .landing{min-height:100dvh}
+  .nav{padding:6px 10px;gap:4px;flex-wrap:nowrap}
+  .nav-brand span{font-size:13px;display:none}
+  .nav-brand svg{width:28px;height:28px}
+  .nav-tabs{overflow-x:auto;overflow-y:hidden;gap:2px;flex:none;scrollbar-width:none}
+  .nav-tabs::-webkit-scrollbar{display:none}
+  .nav-tab{padding:5px 10px;font-size:11px;flex-shrink:0}
+  .nav-actions{gap:4px}
+  .workspace-grid{padding:10px;gap:10px;overflow-y:visible}
+  .panel{border-radius:16px;margin-bottom:0}
+  .panel-header{padding:12px 14px 10px}
+  .panel-header h3{font-size:12px}
+  .panel-body{padding:12px 14px}
+  .pgrid{grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px}
+  .pcard .plabel{font-size:9px;padding:4px 6px}
+  .chip{padding:4px 8px;font-size:10px}
+  .chip-grid{gap:3px}
+  .seg-btn{padding:4px 8px;font-size:10px}
+  .hero{padding:40px 16px 24px}
+  .hero h1{font-size:24px}
+  .hero p{font-size:13px}
+  .hero-icon{width:56px;height:56px;margin-bottom:14px}
+  .hero-badge{font-size:10px;padding:3px 10px}
+  .features{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));padding:12px;gap:8px}
+  .fcard{padding:12px}
+  .fcard h4{font-size:11px}
+  .fcard p{font-size:10px}
+  .slug{flex-direction:column;gap:6px}
+  .tbox{flex-wrap:wrap;gap:6px;padding:6px 10px}
+  .mbox{padding:4px 4px 4px 10px;flex-wrap:wrap}
+  .mbox code{font-size:10px}
+  .sinfo{gap:4px 10px}
+  .srow{font-size:11px}
+  .step p{font-size:11px}
+  .inp-wrap{flex-wrap:wrap}
+  .inp-wrap .btn{width:100%}
+  .seg{overflow-x:auto;scrollbar-width:none}
+  .seg::-webkit-scrollbar{display:none}
+}
 
 /* Hidden */
 .hide{display:none!important}

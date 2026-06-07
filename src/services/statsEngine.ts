@@ -281,7 +281,6 @@ export function computeTraktStats(events: any[]) {
     totalEvents: events.length,
     movieHours: Math.round(movies.reduce((s, e) => s + runtime(e), 0) / 60 * 10) / 10,
     episodeHours: Math.round(episodes.reduce((s, e) => s + runtime(e), 0) / 60 * 10) / 10,
-    weekCount,
     animeCount,
     animeHours: Math.round(anime.reduce((s, e) => s + runtime(e), 0) / 60 * 10) / 10,
     seriesEpisodes,
