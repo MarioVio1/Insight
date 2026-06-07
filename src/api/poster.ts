@@ -126,20 +126,29 @@ async function renderPng(data: CardData): Promise<Buffer | null> {
 
 const cache = new Map<string, { buffer: Buffer; age: number }>();
 
+function setCors(res: Response) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', '*');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+}
+
 export async function posterHandler(req: Request, res: Response) {
+  setCors(res);
   try {
     const { configId, cardId } = req.params;
-    if (!configId || !cardId) return res.status(400).send('Missing params');
+    if (!configId || !cardId) { res.status(400).send('Missing params'); return; }
 
     const uuid = await resolveConfigId(configId);
-    if (!uuid) return res.status(404).send('Config not found');
+    if (!uuid) { res.status(404).send('Config not found'); return; }
 
     const cacheKey = `${uuid}_${cardId}`;
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.age < CACHE_TTL) {
       res.setHeader('Content-Type', 'image/png');
       res.setHeader('Cache-Control', 'public, max-age=3600');
-      return res.send(cached.buffer);
+      res.send(cached.buffer);
+      return;
     }
 
     const { data: rowData } = await supabase
@@ -150,15 +159,6 @@ export async function posterHandler(req: Request, res: Response) {
       .maybeSingle();
 
     const cardData = buildCardData(rowData, cardId);
-
-    const pngBuf = await renderPng(cardData);
-    if (pngBuf) {
-      cache.set(cacheKey, { buffer: pngBuf, age: Date.now() });
-      res.setHeader('Content-Type', 'image/png');
-      res.setHeader('Cache-Control', 'public, max-age=3600');
-      return res.send(pngBuf);
-    }
-
     const svg = generateSvgPoster({
       title: cardData.title,
       subtitle: cardData.subtitle.slice(0, 60),
@@ -167,6 +167,16 @@ export async function posterHandler(req: Request, res: Response) {
       statLabel: cardData.statLabel,
       imageUrl: cardData.imageUrl
     });
+
+    const pngBuf = await renderPng(cardData);
+    if (pngBuf) {
+      cache.set(cacheKey, { buffer: pngBuf, age: Date.now() });
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      res.send(pngBuf);
+      return;
+    }
+
     res.setHeader('Content-Type', 'image/svg+xml');
     res.setHeader('Cache-Control', 'public, max-age=3600');
     res.send(svg);
