@@ -9,6 +9,7 @@ import { catalogHandler, metaHandler } from './addon/handlers.js';
 import { startCron } from './jobs/cron.js';
 import { logger } from './utils/logger.js';
 import { posterHandler } from './api/poster.js';
+import { ensureTables } from './services/db.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -44,4 +45,8 @@ app.get('/:configId/meta/:type/:id.json', async (req, res) => {
 app.get('/configure/:configId?', (_req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
 app.use(routes);
 const PORT = parseInt(process.env.PORT || '3000', 10);
-app.listen(PORT, '0.0.0.0', () => { logger.info({ port: PORT }, 'Server started'); startCron(); });
+app.listen(PORT, '0.0.0.0', async () => {
+  logger.info({ port: PORT }, 'Server started');
+  await ensureTables();
+  startCron();
+});
