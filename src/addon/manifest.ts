@@ -4,7 +4,7 @@ export function getManifest(configId?: string) {
   return {
     id: configId ? `community.stremio.adaptive.insights.${configId}` : 'community.stremio.adaptive.insights',
     version: '3.2.0',
-    name: 'Adaptive Insights TEST 999 ',
+    name: 'Adaptive Insights',
     description: 'Statistiche personali vive, stagionali e apribili come episodi.',
     logo: `${baseUrl}/logo.png`,
     resources: ['catalog', 'meta'],

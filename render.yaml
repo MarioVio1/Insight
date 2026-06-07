@@ -1,11 +1,10 @@
-
 services:
   - type: web
     name: insightboard
     env: node
     build:
-      command: npm install
-    start: node src/server.js
+      command: npm install && npm run build
+    start: npm start
     envVars:
       - key: NODE_ENV
         value: production
@@ -21,10 +20,7 @@ services:
         sync: false
       - key: TRAKT_REDIRECT_URI
         sync: false
-      - key: TRAKT_USER_AGENT
-        sync: false
-        value: InsightBoard/1.1.0 (Render)
       - key: BASE_URL
         sync: false
-      - key: TMDB_API_KEY
+      - key: ENCRYPTION_KEY
         sync: false

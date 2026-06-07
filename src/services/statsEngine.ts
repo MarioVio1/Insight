@@ -19,7 +19,7 @@ export function getSeasonalContext(now = new Date()) {
 }
 
 export function computeTraktStats(events: any[]) {
-  const watchedAts = events.map((e) => new Date(e.watch).getTime());
+  const watchedAts = events.map((e) => new Date(e.watched_at).getTime());
   const now = Date.now();
   const oneYear = 365 * 24 * 60 * 60 * 1000;
   const week = 7 * 24 * 60 * 60 * 1000;
@@ -30,14 +30,14 @@ export function computeTraktStats(events: any[]) {
   const yearEvents = watchedAts.filter(ts => ts >= yearStart);
   const weekEvents = watchedAts.filter(ts => ts >= weekStart);
 
-  const movies = events.filter((e) => e.type === 'movie');
-  const episodes = events.filter((e) => e.type === 'episode');
+  const movies = events.filter((e) => e.trakt_type === 'movie');
+  const episodes = events.filter((e) => e.trakt_type === 'episode' || e.trakt_type === 'show');
 
-  const movieCount = yearEvents.length ? movies.filter((e) => new Date(e.watch).getTime() >= yearStart).length : movies.length;
-  const episodeCount = yearEvents.length ? episodes.filter((e) => new Date(e.watch).getTime() >= yearStart).length : episodes.length;
+  const movieCount = yearEvents.length ? movies.filter((e) => new Date(e.watched_at).getTime() >= yearStart).length : movies.length;
+  const episodeCount = yearEvents.length ? episodes.filter((e) => new Date(e.watched_at).getTime() >= yearStart).length : episodes.length;
   const totalHours = yearEvents.length
-    ? events.filter((e) => new Date(e.watch).getTime() >= yearStart).reduce((sum, e) => sum + (e.runtime || 0), 0) / 60
-    : events.reduce((sum, e) => sum + (e.runtime || 0), 0) / 60;
+    ? events.filter((e) => new Date(e.watched_at).getTime() >= yearStart).reduce((sum, e) => sum + (e.runtime_minutes || 0), 0) / 60
+    : events.reduce((sum, e) => sum + (e.runtime_minutes || 0), 0) / 60;
 
   const titleCounts: Record<string, { count: number, title: string }> = {};
   for (const e of events) {
@@ -79,15 +79,13 @@ export function findRecurringTitles(events: any[]) {
   const monthly: Record<string, Record<string, number>> = {};
 
   for (const e of events) {
-    const date = new Date(e.watch);
-    const month = date.getUTCMonth() + 1; // 1-12
-    const year = date.getUTCFullYear();
-    const key = `${month}`;
+    const date = new Date(e.watched_at);
+    const month = date.getUTCMonth() + 1;
     const title = e.title || 'Unknown';
 
-    monthly[key] = monthly[key] || {};
-    monthly[key][title] = monthly[key][title] || 0;
-    monthly[key][title]++;
+    monthly[String(month)] = monthly[String(month)] || {};
+    monthly[String(month)][title] = monthly[String(month)][title] || 0;
+    monthly[String(month)][title]++;
   }
 
   const titleYearCounts: Record<string, Record<number, number>> = {};

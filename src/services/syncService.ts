@@ -19,17 +19,19 @@ async function ensureFreshToken(row: any) {
 
 function normalizeWatchItem(configId: string, item: any, traktType: 'movie'|'show') {
   const source = item.movie || item.show || item;
+  const episode = item.episode || null;
+  const uniqueId = episode?.ids?.trakt || item.id || source.ids?.trakt || source.ids?.imdb || `${source.title}_${item.watched_at}`;
   return {
-    id: `${configId}_${traktType}_${source.ids?.trakt || source.ids?.imdb || source.title}`,
+    id: `${configId}_${traktType}_${uniqueId}`,
     config_id: configId,
-    trakt_id: String(source.ids?.trakt || source.ids?.imdb || source.title),
+    trakt_id: String(uniqueId),
     trakt_type: traktType,
     title: source.title || 'Untitled',
     year: source.year || null,
     watched_at: item.watched_at || new Date().toISOString(),
-    runtime_minutes: source.runtime || null,
+    runtime_minutes: episode?.runtime || source.runtime || null,
     genres: source.genres || null,
-    tmdb_id: source.ids?.tmdb || null,
+    tmdb_id: episode?.ids?.tmdb || source.ids?.tmdb || null,
     payload: item
   };
 }

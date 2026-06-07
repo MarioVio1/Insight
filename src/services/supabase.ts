@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import WebSocket from 'ws';
 
-const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_KEY!;
+const supabaseUrl = process.env.SUPABASE_URL || '';
+const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SECRET_KEY || '';
 
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {

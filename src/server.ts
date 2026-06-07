@@ -17,6 +17,10 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
 app.get('/health', (_req, res) => res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() }));
+app.get('/logo.png', (_req, res) => {
+  res.setHeader('Content-Type', 'image/svg+xml');
+  res.send(`<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><rect width="128" height="128" rx="24" fill="#0ea5e9"/><text x="64" y="80" fill="#fff" font-size="64" font-weight="bold" font-family="Arial" text-anchor="middle">i</text></svg>`);
+});
 app.get('/manifest.json', (_req, res) => res.json(getManifest()));
 app.get('/:configId/manifest.json', (req, res) => res.json(getManifest(req.params.configId)));
 app.get('/:configId/catalog/:type/:id/:extra?.json', async (req, res) => {
