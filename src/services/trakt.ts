@@ -40,15 +40,16 @@ export async function getHistory(accessToken: string, type: 'movies' | 'shows') 
   const path = type === 'movies' ? '/sync/history/movies' : '/sync/history/shows';
   const headers = { Authorization: `Bearer ${accessToken}` };
   const allItems: any[] = [];
+  const maxPages = parseInt(process.env.TRAKT_MAX_PAGES || '100', 10);
 
-  const twoYearsAgo = new Date(Date.now() - 730 * 86400000).toISOString();
-  const params: Record<string, any> = { page: 1, limit: 100, start_at: twoYearsAgo };
+  const params: Record<string, any> = { page: 1, limit: 100 };
 
   const first = await api.get(path, { headers, params });
   const items = first.data || [];
   allItems.push(...items);
 
-  const pageCount = Math.min(parseInt(first.headers['x-pagination-page-count'] || '1', 10), 20);
+  let pageCount = parseInt(first.headers['x-pagination-page-count'] || '1', 10);
+  if (pageCount > maxPages) pageCount = maxPages;
 
   if (pageCount > 1) {
     const pages = [];
