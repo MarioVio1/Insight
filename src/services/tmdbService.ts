@@ -1,11 +1,34 @@
 import axios from 'axios';
+import { supabase } from './supabase.js';
 
 const TMDB_BASE = 'https://api.themoviedb.org/3';
-const IMAGE_BASE = 'https://image.tmdb.org/t/p/w780';
+const IMAGE_BASE = 'https://image.tmdb.org/t/p';
+const CACHE_TTL = 7 * 24 * 60 * 60 * 1000;
 
 function authHeaders() {
   const token = process.env.TMDB_BEARER_TOKEN;
   return token ? { Authorization: `Bearer ${token}` } : undefined;
+}
+
+type TmdbCacheEntry = {
+  poster: string | null;
+  rating: number | null;
+  genres: number[];
+  originalLanguage: string | null;
+};
+
+async function getCachedDetails(tmdbId: number | string, type: string): Promise<TmdbCacheEntry | null> {
+  try {
+    const { data } = await supabase.from('tmdb_cache').select('data, updated_at').eq('tmdb_id', String(tmdbId)).eq('media_type', type).maybeSingle();
+    if (data && Date.now() - new Date(data.updated_at).getTime() < CACHE_TTL) return data.data as TmdbCacheEntry;
+  } catch {}
+  return null;
+}
+
+async function setCachedDetails(tmdbId: number | string, type: string, data: TmdbCacheEntry) {
+  try {
+    await supabase.from('tmdb_cache').upsert({ tmdb_id: String(tmdbId), media_type: type, data, updated_at: new Date().toISOString() }, { onConflict: 'tmdb_id,media_type' });
+  } catch {}
 }
 
 export async function searchTmdbMulti(query: string) {
@@ -17,7 +40,7 @@ export async function searchTmdbMulti(query: string) {
 }
 
 export function tmdbImage(path?: string | null) {
-  return path ? `${IMAGE_BASE}${path}` : null;
+  return path ? `${IMAGE_BASE}/w780${path}` : null;
 }
 
 export async function fetchTmdbPoster(tmdbId: number | string | null, type: string): Promise<string | null> {
@@ -40,16 +63,20 @@ export async function fetchTmdbPoster(tmdbId: number | string | null, type: stri
 export async function fetchTmdbDetails(tmdbId: number | string | null, type: string): Promise<{ poster: string | null; rating: number | null; genres: number[]; originalLanguage: string | null }> {
   if (!tmdbId) return { poster: null, rating: null, genres: [], originalLanguage: null };
   if (!process.env.TMDB_API_KEY && !process.env.TMDB_BEARER_TOKEN) return { poster: null, rating: null, genres: [], originalLanguage: null };
+  const cached = await getCachedDetails(tmdbId, type);
+  if (cached) return cached;
   const params: Record<string, string> = {};
   if (process.env.TMDB_API_KEY) params.api_key = process.env.TMDB_API_KEY;
   try {
     const mediaType = type === 'movie' ? 'movie' : 'tv';
     const { data } = await axios.get(`${TMDB_BASE}/${mediaType}/${tmdbId}`, { params, headers: authHeaders() });
-    const poster = data?.poster_path ? `https://image.tmdb.org/t/p/w500${data.poster_path}` : null;
+    const poster = data?.poster_path ? `${IMAGE_BASE}/w500${data.poster_path}` : null;
     const rating = data?.vote_average ? Math.round(data.vote_average * 10) / 10 : null;
     const genres: number[] = (data?.genres || []).map((g: any) => g.id);
     const originalLanguage: string | null = data?.original_language || null;
-    return { poster, rating, genres, originalLanguage };
+    const result = { poster, rating, genres, originalLanguage };
+    await setCachedDetails(tmdbId, type, result);
+    return result;
   } catch {
     return { poster: null, rating: null, genres: [], originalLanguage: null };
   }

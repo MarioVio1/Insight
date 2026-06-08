@@ -465,7 +465,7 @@ export async function computeTopPeople(events: any[]): Promise<{ actors: { name:
   const actorCount: Record<string, number> = {};
   const directorCount: Record<string, number> = {};
 
-  const batchSize = 5;
+  const batchSize = 10;
   for (let i = 0; i < topN.length; i += batchSize) {
     const batch = topN.slice(i, i + batchSize);
     const results = await Promise.allSettled(
@@ -568,7 +568,7 @@ export async function enrichEventsWithTmdbAnime(events: any[]): Promise<any[]> {
         } catch {}
       }
     }
-    if (i + 5 < batch.length) await new Promise(r => setTimeout(r, 120));
+    if (i + 5 < batch.length) await new Promise(r => setTimeout(r, 50));
   }
 
   return events.map(e => {

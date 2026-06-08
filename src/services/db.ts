@@ -50,13 +50,14 @@ export async function getOrCreateUdid(configId: string): Promise<string> {
   return newUdid;
 }
 
-const REQUIRED_TABLES = ['config_preferences', 'insight_snapshots', 'adaptive_rows', 'adaptive_meta', 'trakt_events'];
+const REQUIRED_TABLES = ['config_preferences', 'insight_snapshots', 'adaptive_rows', 'adaptive_meta', 'trakt_events', 'tmdb_cache'];
 const TABLE_NAMES_IT: Record<string, string> = {
   config_preferences: 'config_preferences (preferenze utente)',
   insight_snapshots: 'insight_snapshots (statistiche calcolate)',
   adaptive_rows: 'adaptive_rows (righe catalogo Stremio)',
   adaptive_meta: 'adaptive_meta (dettaglio card Stremio)',
-  trakt_events: 'trakt_events (cronologia Trakt)'
+  trakt_events: 'trakt_events (cronologia Trakt)',
+  tmdb_cache: 'tmdb_cache (cache TMDB)'
 };
 
 export async function checkTables(): Promise<boolean> {

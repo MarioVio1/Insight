@@ -86,3 +86,14 @@ create table if not exists user_profiles (
   accent_color text not null default '#22c55e',
   created_at timestamptz not null default now()
 );
+
+-- 9. TMDB cache
+create table if not exists tmdb_cache (
+  id serial primary key,
+  tmdb_id text not null,
+  media_type text not null,
+  data jsonb default '{}'::jsonb,
+  updated_at timestamptz not null default now(),
+  unique(tmdb_id, media_type)
+);
+create index if not exists idx_tmdb_cache_lookup on tmdb_cache(tmdb_id, media_type);

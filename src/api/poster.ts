@@ -4,7 +4,7 @@ import { resolveConfigId } from '../services/db.js';
 import { fetchImageBuffer } from '../services/tmdbService.js';
 import { INSIGHT_CATALOG_ID, LEGACY_INSIGHT_CATALOG_ID } from '../addon/manifest.js';
 
-const CACHE_TTL = 300_000;
+const CACHE_TTL = 600_000;
 const POSTER_W = 600;
 const POSTER_H = 900;
 
@@ -146,7 +146,7 @@ export async function posterHandler(req: any, res: any) {
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.age < CACHE_TTL) {
       res.setHeader('Content-Type', 'image/png');
-      res.setHeader('Cache-Control', 'public, max-age=3600');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
       res.send(cached.buffer);
       return;
     }
@@ -169,6 +169,16 @@ export async function posterHandler(req: any, res: any) {
     }
 
     const cardData = buildCardData(rowData, cardId);
+
+    const pngBuf = await renderPng(cardData);
+    if (pngBuf) {
+      cache.set(cacheKey, { buffer: pngBuf, age: Date.now() });
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      res.send(pngBuf);
+      return;
+    }
+
     const svg = generateSvgPoster({
       title: cardData.title,
       subtitle: cardData.subtitle.slice(0, 60),
@@ -177,18 +187,8 @@ export async function posterHandler(req: any, res: any) {
       statLabel: cardData.statLabel,
       imageUrl: cardData.imageUrl
     });
-
-    const pngBuf = await renderPng(cardData);
-    if (pngBuf) {
-      cache.set(cacheKey, { buffer: pngBuf, age: Date.now() });
-      res.setHeader('Content-Type', 'image/png');
-      res.setHeader('Cache-Control', 'public, max-age=3600');
-      res.send(pngBuf);
-      return;
-    }
-
     res.setHeader('Content-Type', 'image/svg+xml');
-    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
     res.send(svg);
   } catch {
     const svg = generateSvgPoster({ title: 'Insight', subtitle: 'Statistiche personali' });

@@ -1,15 +1,22 @@
+const FONT_FAMILY = "'Noto Sans', 'Noto Sans CJK JP', 'DejaVu Sans', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif";
+const SUBTITLE_MAX = 80;
+
+function truncate(str: string, maxLen: number): string {
+  if (str.length <= maxLen) return str;
+  return str.slice(0, maxLen - 1) + '…';
+}
+
 export function generateSvgPoster(opts: { title: string; subtitle: string; accent?: string; theme?: string; statValue?: string; statLabel?: string; imageUrl?: string }) {
   const accent = opts.accent || '#0ea5e9';
   const theme = opts.theme || '#0f172a';
   const title = escapeXml(opts.title || '');
-  // Pulisci subtitle: rimuovi "0.XXXX" pattern
   let subtitle = escapeXml(opts.subtitle || '');
-  subtitle = subtitle.replace(/\b0\.\d+\s+/g, ''); // Rimuove "0.74 " → mantiene solo il resto
-  
+  subtitle = subtitle.replace(/\b0\.\d+\s+/g, '');
+  subtitle = truncate(subtitle, SUBTITLE_MAX);
   const statValue = opts.statValue ? escapeXml(opts.statValue) : '';
   const statLabel = opts.statLabel ? escapeXml(opts.statLabel) : '';
   const imageUrl = opts.imageUrl || '';
-  const ff = 'sans-serif';
+  const ff = FONT_FAMILY;
   const hasStat = !!statValue;
 
   const svg = `
@@ -108,7 +115,7 @@ export function generateOverlaySvg(opts: {
   statLabel: string;
 }) {
   const { title, subtitle, accent, statValue, statLabel } = opts;
-  const ff = 'sans-serif';
+  const ff = FONT_FAMILY;
   const hasStat = !!statValue;
   const esc = escapeXml;
 
@@ -143,8 +150,8 @@ export function generateOverlaySvg(opts: {
     <text x="48" y="60" fill="${esc(accent)}" font-size="16" font-weight="700" font-family="${ff}" letter-spacing="3">INSIGHT</text>
     
     <!-- Title and subtitle at bottom -->
-    <text x="48" y="${hasStat ? 810 : 640}" fill="#ffffff" font-size="28" font-weight="800" font-family="${ff}">${esc(title)}</text>
-    <text x="48" y="${hasStat ? 850 : 690}" fill="#94a3b8" font-size="16" font-weight="400" font-family="${ff}">${esc(subtitle)}</text>
+    <text x="48" y="${hasStat ? 810 : 640}" fill="#ffffff" font-size="28" font-weight="800" font-family="${ff}">${esc(truncate(title, 40))}</text>
+    <text x="48" y="${hasStat ? 850 : 690}" fill="#94a3b8" font-size="16" font-weight="400" font-family="${ff}">${esc(truncate(subtitle, SUBTITLE_MAX))}</text>
   </svg>`;
 }
 
