@@ -1,9 +1,43 @@
 const FONT_FAMILY = "'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
-const SUBTITLE_MAX = 90;
+const SUBTITLE_MAX = 100;
 
 function truncate(str: string, maxLen: number): string {
   if (str.length <= maxLen) return str;
   return str.slice(0, maxLen - 1) + '…';
+}
+
+function wrapText(text: string, maxCharsPerLine: number): string[] {
+  const words = text.split(' ');
+  if (words.length <= 1) return [text];
+  const lines: string[] = [];
+  let current = '';
+  for (const word of words) {
+    if ((current + ' ' + word).trim().length <= maxCharsPerLine) {
+      current = (current + ' ' + word).trim();
+    } else {
+      if (current) lines.push(current);
+      current = word;
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
+}
+
+function buildStatSvg(statValue: string, statLabel: string, accent: string, ff: string): string {
+  const words = statValue.split(' ');
+  if (words.length <= 1) {
+    const fs = statValue.length > 8 ? 56 : statValue.length > 5 ? 68 : 80;
+    return `<text x="40" y="310" fill="${accent}" font-size="${fs}" font-weight="900" font-family="${ff}" filter="url(#s)" letter-spacing="-2">${statValue}</text>
+<text x="40" y="345" fill="rgba(255,255,255,.5)" font-size="13" font-weight="500" font-family="${ff}">${statLabel}</text>`;
+  }
+  const maxChars = Math.max(10, Math.min(18, Math.floor(520 / (words.length > 3 ? 22 : 26))));
+  const lines = wrapText(statValue, maxChars);
+  const lineH = lines.length > 3 ? 38 : 44;
+  const fs = lines.length > 3 ? 28 : lines.length > 2 ? 34 : 40;
+  const startY = 280;
+  const tspans = lines.map((line, i) => `<tspan x="40" dy="${i === 0 ? 0 : lineH}">${line}</tspan>`).join('');
+  return `<text x="40" y="${startY}" fill="${accent}" font-size="${fs}" font-weight="900" font-family="${ff}" filter="url(#s)" letter-spacing="-1">${tspans}</text>
+<text x="40" y="${startY + lines.length * lineH + 16}" fill="rgba(255,255,255,.5)" font-size="13" font-weight="500" font-family="${ff}">${statLabel}</text>`;
 }
 
 export function generateSvgPoster(opts: { title: string; subtitle: string; accent?: string; theme?: string; statValue?: string; statLabel?: string; imageUrl?: string }) {
@@ -34,7 +68,14 @@ export function generateSvgPoster(opts: { title: string; subtitle: string; accen
     ? `<linearGradient id="ol" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#000" stop-opacity=".05"/><stop offset="30%" stop-color="#000" stop-opacity=".4"/><stop offset="100%" stop-color="#000" stop-opacity=".92"/></linearGradient>`
     : `<linearGradient id="gg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${accentLight}"/><stop offset="100%" stop-color="#0005"/></linearGradient>`;
 
-  const valFontSize = statValue.length > 8 ? 56 : statValue.length > 5 ? 68 : 80;
+  const statSvg = hasStat ? buildStatSvg(statValue, statLabel, accent, ff) : '';
+  const statEndY = hasStat ? (() => {
+    const lines = wrapText(statValue, Math.max(10, Math.min(18, Math.floor(520 / (statValue.split(' ').length > 3 ? 22 : 26)))));
+    const lineH = lines.length > 3 ? 38 : 44;
+    return 280 + lines.length * lineH + 16 + 20;
+  })() : 0;
+  const titleY = hasStat ? Math.max(580, statEndY + 80) : 540;
+  const subY = titleY + 38;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900">
   <defs>${overlayDef}
@@ -45,13 +86,12 @@ export function generateSvgPoster(opts: { title: string; subtitle: string; accen
   <rect x="24" y="20" width="552" height="48" rx="24" fill="#000" opacity=".25"/>
   <rect x="24" y="20" width="552" height="48" rx="24" fill="none" stroke="${accentBorder}" stroke-width="1"/>
   <g transform="translate(36,28)"><g transform="translate(0,6)">${insightLogo}</g><text x="38" y="31" fill="#fff" font-size="16" font-weight="800" font-family="${ff}" letter-spacing="4">INSIGHT</text></g>
-  ${statLabel ? `<g transform="translate(462,28)"><rect x="0" y="0" width="90" height="32" rx="16" fill="${accentLight}"/><text x="45" y="20" fill="${accent}" font-size="12" font-weight="700" font-family="${ff}" text-anchor="middle">${statLabel}</text></g>` : ''}
+  ${statLabel && !hasStat ? `<g transform="translate(462,28)"><rect x="0" y="0" width="90" height="32" rx="16" fill="${accentLight}"/><text x="45" y="20" fill="${accent}" font-size="12" font-weight="700" font-family="${ff}" text-anchor="middle">${statLabel}</text></g>` : ''}
 
-  ${hasStat ? `<text x="40" y="310" fill="${accent}" font-size="${valFontSize}" font-weight="900" font-family="${ff}" filter="url(#s)" letter-spacing="-2">${statValue}</text>
-<text x="40" y="345" fill="rgba(255,255,255,.5)" font-size="13" font-weight="500" font-family="${ff}">${statLabel}</text>` : ''}
+  ${statSvg}
 
-  <text x="40" y="${hasStat ? 720 : 540}" fill="#fff" font-size="${title.length > 22 ? 24 : 28}" font-weight="700" font-family="${ff}" filter="url(#s)"><tspan x="40" dy="0">${truncate(title, 42)}</tspan></text>
-  <text x="40" y="${hasStat ? 760 : 582}" fill="#94a3b8" font-size="16" font-weight="500" font-family="${ff}" line-height="1.4"><tspan x="40" dy="0">${subtitle}</tspan></text>
+  <text x="40" y="${titleY}" fill="#fff" font-size="${title.length > 22 ? 24 : 28}" font-weight="700" font-family="${ff}" filter="url(#s)"><tspan x="40" dy="0">${truncate(title, 42)}</tspan></text>
+  <text x="40" y="${subY}" fill="#94a3b8" font-size="16" font-weight="500" font-family="${ff}" line-height="1.4"><tspan x="40" dy="0">${subtitle}</tspan></text>
 
   <text x="560" y="878" fill="#ed1c24" font-size="11" font-weight="700" font-family="${ff}" text-anchor="end" opacity=".8">trakt</text>
 </svg>`;
@@ -97,7 +137,14 @@ export function generateOverlaySvg(opts: {
 
   const insightLogo = `<polygon points="-12,-18 12,-18 0,18" fill="#ffffff"/><polygon points="-6,-9 6,-9 0,9" fill="${esc(accent)}"/>`;
 
-  const valFontSize = statValue.length > 8 ? 56 : statValue.length > 5 ? 68 : 80;
+  const statSvg = hasStat ? buildStatSvg(statValue, statLabel, esc(accent), ff) : '';
+  const statEndY = hasStat ? (() => {
+    const lines = wrapText(statValue, Math.max(10, Math.min(18, Math.floor(520 / (statValue.split(' ').length > 3 ? 22 : 26)))));
+    const lineH = lines.length > 3 ? 38 : 44;
+    return 280 + lines.length * lineH + 16 + 20;
+  })() : 0;
+  const titleY = hasStat ? Math.max(580, statEndY + 80) : 540;
+  const subY = titleY + 38;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900">
   <defs>
@@ -107,13 +154,12 @@ export function generateOverlaySvg(opts: {
   <rect x="24" y="20" width="552" height="48" rx="24" fill="#000" opacity=".25"/>
   <rect x="24" y="20" width="552" height="48" rx="24" fill="none" stroke="${esc(accentBorder)}" stroke-width="1"/>
   <g transform="translate(36,28)"><g transform="translate(0,6)">${insightLogo}</g><text x="38" y="31" fill="#fff" font-size="16" font-weight="800" font-family="${ff}" letter-spacing="4">INSIGHT</text></g>
-  ${statLabel ? `<g transform="translate(462,28)"><rect x="0" y="0" width="90" height="32" rx="16" fill="${esc(accentLight)}"/><text x="45" y="20" fill="${esc(accent)}" font-size="12" font-weight="700" font-family="${ff}" text-anchor="middle">${esc(statLabel)}</text></g>` : ''}
+  ${statLabel && !hasStat ? `<g transform="translate(462,28)"><rect x="0" y="0" width="90" height="32" rx="16" fill="${esc(accentLight)}"/><text x="45" y="20" fill="${esc(accent)}" font-size="12" font-weight="700" font-family="${ff}" text-anchor="middle">${esc(statLabel)}</text></g>` : ''}
 
-  ${hasStat ? `<text x="40" y="310" fill="${esc(accent)}" font-size="${valFontSize}" font-weight="900" font-family="${ff}" filter="url(#s)" letter-spacing="-2">${esc(statValue)}</text>
-<text x="40" y="345" fill="rgba(255,255,255,.5)" font-size="13" font-weight="500" font-family="${ff}">${esc(statLabel)}</text>` : ''}
+  ${statSvg}
 
-  <text x="40" y="${hasStat ? 720 : 540}" fill="#fff" font-size="${title.length > 22 ? 24 : 28}" font-weight="700" font-family="${ff}" filter="url(#s)"><tspan x="40" dy="0">${esc(truncate(title, 42))}</tspan></text>
-  <text x="40" y="${hasStat ? 760 : 582}" fill="#94a3b8" font-size="16" font-weight="500" font-family="${ff}" line-height="1.4"><tspan x="40" dy="0">${esc(truncate(subtitle, SUBTITLE_MAX))}</tspan></text>
+  <text x="40" y="${titleY}" fill="#fff" font-size="${title.length > 22 ? 24 : 28}" font-weight="700" font-family="${ff}" filter="url(#s)"><tspan x="40" dy="0">${esc(truncate(title, 42))}</tspan></text>
+  <text x="40" y="${subY}" fill="#94a3b8" font-size="16" font-weight="500" font-family="${ff}" line-height="1.4"><tspan x="40" dy="0">${esc(truncate(subtitle, SUBTITLE_MAX))}</tspan></text>
 
   <text x="560" y="878" fill="#ed1c24" font-size="11" font-weight="700" font-family="${ff}" text-anchor="end" opacity=".8">trakt</text>
 </svg>`;

@@ -444,22 +444,22 @@ export async function rebuildAdaptiveRow(configId: string) {
     }
   }
 
-  // Scrittore preferito
+  // Sceneggiatore preferito
   if (enabled.includes('writer')) {
     const writers = insight.top_writers || [];
     if (writers.length > 0) {
       const id = `adaptive_${configId}_writer`;
       const top = writers[0];
       cards.push(await cardMeta(configId, id,
-        `Scrittore: ${top.name}`,
+        `Sceneggiatore: ${top.name}`,
         `Compare in ${top.count} dei tuoi contenuti.`,
-        { accent: '#f59e0b', statValue: top.name, statLabel: 'SCRITTORE TOP' }
+        { accent: '#f59e0b', statValue: top.name, statLabel: 'SCENEGGIATORE' }
       ));
 
       details.push({
         meta_id: id, meta: {
-          id, type: 'movie', name: 'Scrittori preferiti',
-          description: 'Gli scrittori che guardi di più.',
+          id, type: 'movie', name: 'Sceneggiatori preferiti',
+          description: 'Gli sceneggiatori che guardi di più.',
           videos: writers.map((w: any, i: number) =>
             video(`${id}_${i}`, w.name, new Date().toISOString(), `Compare in ${w.count} contenuti.`)
           )
