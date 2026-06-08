@@ -619,12 +619,12 @@ export async function computeAdaptiveInsights(configId: string) {
   const animeRewatch = findRewatchTitles(animeEvents);
 
   const season = getSeasonalContext();
-  const memories = findMemories(events);
+  const memories = findMemories(enriched);
 
   let topActors: { name: string; count: number }[] = [];
   let topDirectors: { name: string; count: number }[] = [];
   try {
-    const people = await computeTopPeople(events);
+    const people = await computeTopPeople(enriched);
     topActors = people.actors;
     topDirectors = people.directors;
   } catch (err) {

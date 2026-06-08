@@ -19,35 +19,55 @@ export function generateSvgPoster(opts: { title: string; subtitle: string; accen
   const ff = FONT_FAMILY;
   const hasStat = !!statValue;
 
+  // Logo Insight (triangolo play)
+  const insightLogo = `<polygon points="-18,-30 18,-30 0,30" fill="#ffffff" opacity="0.95"/><polygon points="-9,-15 9,-15 0,15" fill="${accent}"/>`;
+
+  // Logo Trakt semplificato (icona cuore rosso + testo)
+  const traktBadge = `<g transform="translate(570,870)">
+    <text x="0" y="0" fill="#ed1c24" font-size="11" font-weight="600" font-family="${ff}" text-anchor="end">trakt</text>
+    <rect x="-28" y="-4" width="9" height="9" rx="2" fill="#ed1c24"/>
+  </g>`;
+
   const svg = `
   <svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900">
     <defs>
       <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stop-color="${theme}" />
-        <stop offset="55%" stop-color="${accent}22" />
+        <stop offset="50%" stop-color="${accent}22" />
         <stop offset="100%" stop-color="#020617" />
       </linearGradient>
-      <radialGradient id="glow1" cx="80%" cy="10%" r="60%">
-        <stop offset="0%" stop-color="${accent}" stop-opacity="0.35" />
+      <radialGradient id="glow1" cx="75%" cy="15%" r="55%">
+        <stop offset="0%" stop-color="${accent}" stop-opacity="0.30" />
         <stop offset="100%" stop-color="${accent}" stop-opacity="0" />
       </radialGradient>
-      <radialGradient id="glow2" cx="20%" cy="90%" r="50%">
-        <stop offset="0%" stop-color="${accent}" stop-opacity="0.2" />
+      <radialGradient id="glow2" cx="25%" cy="85%" r="45%">
+        <stop offset="0%" stop-color="${accent}" stop-opacity="0.15" />
         <stop offset="100%" stop-color="${accent}" stop-opacity="0" />
       </radialGradient>
+      <linearGradient id="boxGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#ffffff08" />
+        <stop offset="100%" stop-color="#00000060" />
+      </linearGradient>
       ${imageUrl ? `
       <linearGradient id="overlay" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#000" stop-opacity="0.1" />
-        <stop offset="50%" stop-color="#000" stop-opacity="0.6" />
+        <stop offset="0%" stop-color="#000" stop-opacity="0.05" />
+        <stop offset="45%" stop-color="#000" stop-opacity="0.5" />
         <stop offset="100%" stop-color="#000" stop-opacity="0.95" />
       </linearGradient>` : ''}
       <filter id="shadow">
-        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.7"/>
+        <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000" flood-opacity="0.6"/>
       </filter>
-      <filter id="glow">
-        <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <filter id="glowAccent">
+        <feGaussianBlur stdDeviation="3" result="blur"/>
         <feMerge>
-          <feMergeNode in="coloredBlur"/>
+          <feMergeNode in="blur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+      <filter id="softGlow">
+        <feGaussianBlur stdDeviation="1.5" result="blur"/>
+        <feMerge>
+          <feMergeNode in="blur"/>
           <feMergeNode in="SourceGraphic"/>
         </feMerge>
       </filter>
@@ -58,28 +78,43 @@ export function generateSvgPoster(opts: { title: string; subtitle: string; accen
     <rect width="600" height="900" fill="url(#bg)"/>
     <rect width="600" height="900" fill="url(#glow1)"/>
     <rect width="600" height="900" fill="url(#glow2)"/>`}
-    
-    <!-- Main stat section - centered and prominent -->
+
+    <!-- Top branding bar -->
+    <rect x="0" y="0" width="600" height="72" fill="url(#boxGrad)"/>
+    <rect x="0" y="72" width="600" height="1" fill="${accent}" opacity="0.3"/>
+    <g transform="translate(20,22)">
+      <g transform="translate(0,14)">${insightLogo}</g>
+      <text x="34" y="32" fill="${accent}" font-size="18" font-weight="800" font-family="${ff}" letter-spacing="4" filter="url(#softGlow)">INSIGHT</text>
+    </g>
+    ${statLabel ? `<rect x="390" y="20" height="32" rx="16" fill="${accent}" opacity="0.15"/>
+    <text x="404" y="40" fill="${accent}" font-size="12" font-weight="700" font-family="${ff}" letter-spacing="1">${statLabel}</text>` : ''}
+
+    <!-- Main stat section -->
     ${hasStat ? `
-    <!-- Background box for stats -->
-    <rect x="60" y="300" width="480" height="380" rx="20" fill="#000000" opacity="0.4" filter="url(#shadow)"/>
-    <rect x="60" y="300" width="480" height="380" rx="20" fill="none" stroke="${accent}" stroke-width="2" opacity="0.6"/>
+    <rect x="60" y="280" width="480" height="370" rx="24" fill="#000000" opacity="0.45" filter="url(#shadow)"/>
+    <rect x="60" y="280" width="480" height="370" rx="24" fill="none" stroke="${accent}" stroke-width="1.5" opacity="0.5"/>
+    <rect x="64" y="284" width="472" height="362" rx="22" fill="none" stroke="#ffffff" stroke-width="0.5" opacity="0.08"/>
     
     <!-- Large stat value -->
-    <text x="300" y="520" fill="${accent}" font-size="120" font-weight="900" font-family="${ff}" text-anchor="middle" filter="url(#glow)" letter-spacing="-2">${statValue}</text>
+    <text x="300" y="505" fill="${accent}" font-size="110" font-weight="900" font-family="${ff}" text-anchor="middle" filter="url(#glowAccent)" letter-spacing="-3">${statValue}</text>
     
-    <!-- Stat label -->
-    ${statLabel ? `<text x="300" y="575" fill="#ffffff" font-size="24" font-weight="700" font-family="${ff}" text-anchor="middle" filter="url(#shadow)" letter-spacing="2">${statLabel}</text>` : ''}
+    <!-- Stat label below value -->
+    ${statLabel ? `<text x="300" y="565" fill="#ffffff" font-size="20" font-weight="700" font-family="${ff}" text-anchor="middle" filter="url(#shadow)" letter-spacing="3">${statLabel}</text>` : ''}
+    
+    <!-- Decorative divider -->
+    <rect x="250" y="585" width="100" height="2" rx="1" fill="${accent}" opacity="0.6"/>
     ` : ''}
+
+    <!-- Card title (prominent on cover) -->
+    <text x="48" y="${hasStat ? 790 : 640}" fill="#ffffff" font-size="${title.length > 25 ? 22 : 26}" font-weight="800" font-family="${ff}" filter="url(#shadow)">
+      <tspan x="48" dy="0">${truncate(title, 50)}</tspan>
+    </text>
     
-    <!-- Header -->
-    <rect x="20" y="20" width="560" height="60" rx="36" fill="none" stroke="#ffffff18" stroke-width="1.5"/>
-    <rect x="32" y="32" width="536" height="6" rx="3" fill="${accent}" opacity="0.7"/>
-    <text x="48" y="60" fill="${accent}" font-size="16" font-weight="700" font-family="${ff}" letter-spacing="3" filter="url(#shadow)">INSIGHT</text>
+    <!-- Subtitle -->
+    <text x="48" y="${hasStat ? 830 : 685}" fill="#94a3b8" font-size="15" font-weight="400" font-family="${ff}" filter="url(#shadow)">${subtitle}</text>
     
-    <!-- Title and subtitle at bottom -->
-    <text x="48" y="${hasStat ? 810 : 640}" fill="#ffffff" font-size="28" font-weight="800" font-family="${ff}" filter="url(#shadow)">${title}</text>
-    <text x="48" y="${hasStat ? 850 : 690}" fill="#94a3b8" font-size="16" font-weight="400" font-family="${ff}" filter="url(#shadow)">${subtitle}</text>
+    <!-- Bottom Trakt attribution -->
+    ${traktBadge}
   </svg>`;
   return svg;
 }
@@ -119,39 +154,63 @@ export function generateOverlaySvg(opts: {
   const hasStat = !!statValue;
   const esc = escapeXml;
 
+  const insightLogo = `<polygon points="-18,-30 18,-30 0,30" fill="#ffffff" opacity="0.95"/><polygon points="-9,-15 9,-15 0,15" fill="${esc(accent)}"/>`;
+
+  const traktBadge = `<g transform="translate(570,870)">
+    <text x="0" y="0" fill="#ed1c24" font-size="11" font-weight="600" font-family="${ff}" text-anchor="end">trakt</text>
+    <rect x="-28" y="-4" width="9" height="9" rx="2" fill="#ed1c24"/>
+  </g>`;
+
   return `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900">
     <defs>
       <filter id="shadow">
-        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.7"/>
+        <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000" flood-opacity="0.6"/>
       </filter>
-      <filter id="glow">
-        <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <filter id="glowAccent">
+        <feGaussianBlur stdDeviation="3" result="blur"/>
         <feMerge>
-          <feMergeNode in="coloredBlur"/>
+          <feMergeNode in="blur"/>
           <feMergeNode in="SourceGraphic"/>
         </feMerge>
       </filter>
+      <filter id="softGlow">
+        <feGaussianBlur stdDeviation="1.5" result="blur"/>
+        <feMerge>
+          <feMergeNode in="blur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+      <linearGradient id="boxGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#ffffff08" />
+        <stop offset="100%" stop-color="#00000060" />
+      </linearGradient>
     </defs>
+    
+    <!-- Top branding bar -->
+    <rect x="0" y="0" width="600" height="72" fill="url(#boxGrad)"/>
+    <rect x="0" y="72" width="600" height="1" fill="${esc(accent)}" opacity="0.3"/>
+    <g transform="translate(20,22)">
+      <g transform="translate(0,14)">${insightLogo}</g>
+      <text x="34" y="32" fill="${esc(accent)}" font-size="18" font-weight="800" font-family="${ff}" letter-spacing="4" filter="url(#softGlow)">INSIGHT</text>
+    </g>
+    ${statLabel ? `<rect x="390" y="20" height="32" rx="16" fill="${esc(accent)}" opacity="0.15"/>
+    <text x="404" y="40" fill="${esc(accent)}" font-size="12" font-weight="700" font-family="${ff}" letter-spacing="1">${esc(statLabel)}</text>` : ''}
+
     ${hasStat ? `
-    <!-- Background box for stats -->
-    <rect x="60" y="300" width="480" height="380" rx="20" fill="#000000" opacity="0.4" filter="url(#shadow)"/>
-    <rect x="60" y="300" width="480" height="380" rx="20" fill="none" stroke="${esc(accent)}" stroke-width="2" opacity="0.6"/>
+    <rect x="60" y="280" width="480" height="370" rx="24" fill="#000000" opacity="0.45" filter="url(#shadow)"/>
+    <rect x="60" y="280" width="480" height="370" rx="24" fill="none" stroke="${esc(accent)}" stroke-width="1.5" opacity="0.5"/>
     
-    <!-- Large stat value -->
-    <text x="300" y="520" fill="${esc(accent)}" font-size="120" font-weight="900" font-family="${ff}" text-anchor="middle" filter="url(#glow)" letter-spacing="-2">${esc(statValue)}</text>
-    
-    <!-- Stat label -->
-    ${statLabel ? `<text x="300" y="575" fill="#ffffff" font-size="24" font-weight="700" font-family="${ff}" text-anchor="middle" filter="url(#shadow)" letter-spacing="2">${esc(statLabel)}</text>` : ''}
+    <text x="300" y="505" fill="${esc(accent)}" font-size="110" font-weight="900" font-family="${ff}" text-anchor="middle" filter="url(#glowAccent)" letter-spacing="-3">${esc(statValue)}</text>
+    ${statLabel ? `<text x="300" y="565" fill="#ffffff" font-size="20" font-weight="700" font-family="${ff}" text-anchor="middle" filter="url(#shadow)" letter-spacing="3">${esc(statLabel)}</text>` : ''}
+    <rect x="250" y="585" width="100" height="2" rx="1" fill="${esc(accent)}" opacity="0.6"/>
     ` : ''}
+
+    <text x="48" y="${hasStat ? 790 : 640}" fill="#ffffff" font-size="${title.length > 25 ? 22 : 26}" font-weight="800" font-family="${ff}" filter="url(#shadow)">
+      <tspan x="48" dy="0">${esc(truncate(title, 50))}</tspan>
+    </text>
+    <text x="48" y="${hasStat ? 830 : 685}" fill="#94a3b8" font-size="15" font-weight="400" font-family="${ff}" filter="url(#shadow)">${esc(truncate(subtitle, SUBTITLE_MAX))}</text>
     
-    <!-- Header -->
-    <rect x="20" y="20" width="560" height="60" rx="36" fill="none" stroke="#ffffff18" stroke-width="1.5"/>
-    <rect x="32" y="32" width="536" height="6" rx="3" fill="${esc(accent)}" opacity="0.7"/>
-    <text x="48" y="60" fill="${esc(accent)}" font-size="16" font-weight="700" font-family="${ff}" letter-spacing="3">INSIGHT</text>
-    
-    <!-- Title and subtitle at bottom -->
-    <text x="48" y="${hasStat ? 810 : 640}" fill="#ffffff" font-size="28" font-weight="800" font-family="${ff}">${esc(truncate(title, 40))}</text>
-    <text x="48" y="${hasStat ? 850 : 690}" fill="#94a3b8" font-size="16" font-weight="400" font-family="${ff}">${esc(truncate(subtitle, SUBTITLE_MAX))}</text>
+    ${traktBadge}
   </svg>`;
 }
 
