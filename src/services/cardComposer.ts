@@ -88,7 +88,7 @@ export async function rebuildAdaptiveRow(configId: string) {
   const s = insight.summary || {};
   const saved = prefs?.enabled_card_types || [];
   const allEnabled = ['totals','streak','peak','weekly','genre','binge','dropped','monthly','recurring','rewatch','seasonal','actor','director','anime','ranking','memories','giorni','migliore','anno','mese','split','notturno','events','pace','weekend','annuale','primetime','decade','break'];
-  const enabled = saved.length > 0 ? [...new Set([...saved, ...allEnabled])] : allEnabled;
+  const enabled = saved.length > 0 ? saved : allEnabled;
   const cards: any[] = [];
   const details: { meta_id: string; meta: any }[] = [];
 

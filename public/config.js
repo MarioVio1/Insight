@@ -24,21 +24,8 @@ if (!isConfig) {
       body: JSON.stringify({ slug, enabled_card_types: [], focus_mode: 'adaptive', seasonal_enabled: true, festive_enabled: true, style_mode: 'cinematic' })
     });
     const d = await r.json();
-    createBtn.disabled = false; createBtn.textContent = 'Crea';
+    createBtn.disabled = false; createBtn.textContent = 'Accedi';
     if (r.ok) window.location.href = `/configure/${d.slug}`;
-  };
-
-  // CTA links navigate directly to the configurator, so they work before JS hydration finishes.
-
-  const entBtn = $('enterBtn');
-  if (entBtn) entBtn.onclick = async () => {
-    const slug = slugInput.value.trim().replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
-    if (!slug) return;
-    entBtn.disabled = true; entBtn.textContent = '...';
-    const r = await fetch(`/api/config/${slug}`);
-    entBtn.disabled = false; entBtn.textContent = 'Entra';
-    if (r.ok) window.location.href = `/configure/${slug}`;
-    else slugInput.style.borderColor = '#ef4444';
   };
 } else {
   // Configurator mode
@@ -225,17 +212,6 @@ if (!isConfig) {
     setTimeout(() => { installBtn.textContent = 'Copia'; installBtn.style.background = ''; installBtn.style.color = '' }, 2000);
   };
 
-  const entBtn2 = $('enterBtn2');
-  if (entBtn2) entBtn2.onclick = async () => {
-    const slug = slugInput2.value.trim().replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
-    if (!slug) return;
-    entBtn2.disabled = true; entBtn2.textContent = '...';
-    const r = await fetch(`/api/config/${slug}`);
-    entBtn2.disabled = false; entBtn2.textContent = 'Entra';
-    if (r.ok) window.location.href = `/configure/${slug}`;
-    else slugInput2.style.borderColor = '#ef4444';
-  };
-
   createForm2.onsubmit = async (e) => {
     e.preventDefault();
     const slug = slugInput2.value.trim().replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
@@ -246,7 +222,7 @@ if (!isConfig) {
       body: JSON.stringify({ slug, enabled_card_types: selTypes(), focus_mode: focusMode.value, seasonal_enabled: true, festive_enabled: true, style_mode: 'cinematic' })
     });
     const d = await r.json();
-    createBtn2.disabled = false; createBtn2.textContent = 'Crea';
+    createBtn2.disabled = false; createBtn2.textContent = 'Accedi';
     if (r.ok) window.location.href = `/configure/${d.slug}`;
   };
 

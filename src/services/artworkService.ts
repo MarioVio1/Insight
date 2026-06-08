@@ -19,94 +19,50 @@ export function generateSvgPoster(opts: { title: string; subtitle: string; accen
   const ff = FONT_FAMILY;
   const hasStat = !!statValue;
 
-  const insightLogo = `<polygon points="-24,-36 24,-36 0,36" fill="#ffffff" opacity="0.95"/><polygon points="-12,-18 12,-18 0,18" fill="${accent}"/>`;
+  // Build accent colour shades
+  const accentLight = accent + '33';
+  const accentBorder = accent + '55';
 
-  const traktBadge = `<g transform="translate(570,878)">
-    <text x="0" y="0" fill="#ed1c24" font-size="13" font-weight="800" font-family="${ff}" text-anchor="end">trakt</text>
-    <rect x="-32" y="-5" width="11" height="11" rx="3" fill="#ed1c24"/>
-  </g>`;
+  const insightLogo = `<polygon points="-14,-22 14,-22 0,22" fill="#ffffff"/><polygon points="-7,-11 7,-11 0,11" fill="${accent}"/>`;
 
-  const svg = `
-  <svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900">
-    <defs>
-      <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="${theme}" />
-        <stop offset="45%" stop-color="${accent}22" />
-        <stop offset="100%" stop-color="#020617" />
-      </linearGradient>
-      <radialGradient id="glow1" cx="70%" cy="10%" r="60%">
-        <stop offset="0%" stop-color="${accent}" stop-opacity="0.35" />
-        <stop offset="100%" stop-color="${accent}" stop-opacity="0" />
-      </radialGradient>
-      <radialGradient id="glow2" cx="30%" cy="90%" r="50%">
-        <stop offset="0%" stop-color="${accent}" stop-opacity="0.15" />
-        <stop offset="100%" stop-color="${accent}" stop-opacity="0" />
-      </radialGradient>
-      ${imageUrl ? `
-      <linearGradient id="overlay" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#000" stop-opacity="0.05" />
-        <stop offset="40%" stop-color="#000" stop-opacity="0.45" />
-        <stop offset="100%" stop-color="#000" stop-opacity="0.95" />
-      </linearGradient>` : ''}
-      <filter id="shadow">
-        <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#000" flood-opacity="0.7"/>
-      </filter>
-      <filter id="glowBig">
-        <feGaussianBlur stdDeviation="4" result="blur"/>
-        <feMerge>
-          <feMergeNode in="blur"/>
-          <feMergeNode in="SourceGraphic"/>
-        </feMerge>
-      </filter>
-      <filter id="glowSmall">
-        <feGaussianBlur stdDeviation="2" result="blur"/>
-        <feMerge>
-          <feMergeNode in="blur"/>
-          <feMergeNode in="SourceGraphic"/>
-        </feMerge>
-      </filter>
-    </defs>
-    ${imageUrl ? `
-    <image href="${imageUrl}" width="600" height="900" preserveAspectRatio="xMidYMid slice"/>
-    <rect width="600" height="900" fill="url(#overlay)"/>` : `
-    <rect width="600" height="900" fill="url(#bg)"/>
-    <rect width="600" height="900" fill="url(#glow1)"/>
-    <rect width="600" height="900" fill="url(#glow2)"/>`}
+  // if imageUrl is set, use dark overlay; otherwise use gradient bg
+  const bgLayer = imageUrl
+    ? `<image href="${imageUrl}" width="600" height="900" preserveAspectRatio="xMidYMid slice"/>
+<rect width="600" height="900" fill="url(#ol)"/>`
+    : `<rect width="600" height="900" fill="${theme}"/>
+<rect width="600" height="900" fill="url(#gg)"/>`;
 
-    <!-- Top bar: logo + INSIGHT -->
-    <rect x="36" y="28" width="528" height="64" rx="32" fill="#000000" opacity="0.35" filter="url(#shadow)"/>
-    <rect x="36" y="28" width="528" height="64" rx="32" fill="none" stroke="${accent}" stroke-width="1.5" opacity="0.4"/>
-    <g transform="translate(52,38)">
-      <g transform="translate(0,12)">${insightLogo}</g>
-      <text x="52" y="44" fill="#ffffff" font-size="22" font-weight="900" font-family="${ff}" letter-spacing="6" filter="url(#glowSmall)">INSIGHT</text>
-    </g>
-    ${statLabel ? `<rect x="420" y="38" height="44" rx="22" fill="${accent}" opacity="0.2"/>
-    <rect x="420" y="38" height="44" rx="22" fill="none" stroke="${accent}" stroke-width="1" opacity="0.5"/>
-    <text x="442" y="66" fill="${accent}" font-size="15" font-weight="800" font-family="${ff}" letter-spacing="2">${statLabel}</text>` : ''}
+  const overlayDef = imageUrl
+    ? `<linearGradient id="ol" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#000" stop-opacity=".05"/><stop offset="40%" stop-color="#000" stop-opacity=".5"/><stop offset="100%" stop-color="#000" stop-opacity=".95"/></linearGradient>`
+    : `<linearGradient id="gg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${accentLight}"/><stop offset="100%" stop-color="#0005"/></linearGradient>`;
 
-    <!-- Main stat - massive -->
-    ${hasStat ? `
-    <rect x="70" y="250" width="460" height="380" rx="28" fill="#000000" opacity="0.5" filter="url(#shadow)"/>
-    <rect x="70" y="250" width="460" height="380" rx="28" fill="none" stroke="${accent}" stroke-width="1.5" opacity="0.4"/>
-    
-    <text x="300" y="500" fill="${accent}" font-size="${statValue.length > 6 ? 100 : 140}" font-weight="900" font-family="${ff}" text-anchor="middle" filter="url(#glowBig)" letter-spacing="-4">${statValue}</text>
-    
-    ${statLabel ? `<text x="300" y="565" fill="#ffffff" font-size="26" font-weight="800" font-family="${ff}" text-anchor="middle" filter="url(#shadow)" letter-spacing="4">${statLabel}</text>` : ''}
-    
-    <rect x="260" y="590" width="80" height="3" rx="1.5" fill="${accent}" opacity="0.7"/>
-    ` : ''}
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900">
+  <defs>${overlayDef}
+  <filter id="s"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity=".6"/></filter>
+  <filter id="g"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  ${bgLayer}
 
-    <!-- Title - big and bold -->
-    <text x="48" y="${hasStat ? 800 : 640}" fill="#ffffff" font-size="${title.length > 20 ? 28 : 34}" font-weight="900" font-family="${ff}" filter="url(#shadow)">
-      <tspan x="48" dy="0">${truncate(title, 45)}</tspan>
-    </text>
-    
-    <!-- Subtitle -->
-    <text x="48" y="${hasStat ? 845 : 690}" fill="#94a3b8" font-size="18" font-weight="600" font-family="${ff}" opacity="0.9">${subtitle}</text>
-    
-    ${traktBadge}
-  </svg>`;
-  return svg;
+  <!-- top bar -->
+  <rect x="30" y="24" width="540" height="56" rx="28" fill="#000" opacity=".3"/>
+  <rect x="30" y="24" width="540" height="56" rx="28" fill="none" stroke="${accentBorder}" stroke-width="1"/>
+  <g transform="translate(44,34)"><g transform="translate(0,10)">${insightLogo}</g><text x="44" y="37" fill="#fff" font-size="20" font-weight="900" font-family="${ff}" letter-spacing="5">INSIGHT</text></g>
+  ${statLabel ? `<g transform="translate(458,34)"><rect x="0" y="0" width="98" height="36" rx="18" fill="${accentLight}"/><text x="49" y="23" fill="${accent}" font-size="13" font-weight="800" font-family="${ff}" text-anchor="middle">${statLabel}</text></g>` : ''}
+
+  <!-- stat -->
+  ${hasStat ? `<rect x="60" y="270" width="480" height="360" rx="24" fill="#000" opacity=".4" filter="url(#s)"/>
+<rect x="60" y="270" width="480" height="360" rx="24" fill="none" stroke="${accentBorder}" stroke-width="1"/>
+<text x="300" y="${statValue.length > 6 ? 490 : 510}" fill="${accent}" font-size="${statValue.length > 6 ? 100 : 130}" font-weight="900" font-family="${ff}" text-anchor="middle" filter="url(#g)" letter-spacing="-3">${statValue}</text>
+${statLabel ? `<text x="300" y="575" fill="#fff" font-size="24" font-weight="800" font-family="${ff}" text-anchor="middle" letter-spacing="5">${statLabel}</text>` : ''}
+<rect x="260" y="595" width="80" height="2" rx="1" fill="${accent}" opacity=".6"/>` : ''}
+
+  <!-- title -->
+  <text x="40" y="${hasStat ? 800 : 620}" fill="#fff" font-size="${title.length > 20 ? 26 : 32}" font-weight="900" font-family="${ff}" filter="url(#s)"><tspan x="40" dy="0">${truncate(title, 45)}</tspan></text>
+  <text x="40" y="${hasStat ? 840 : 667}" fill="#94a3b8" font-size="17" font-weight="600" font-family="${ff}">${subtitle}</text>
+
+  <!-- trakt -->
+  <text x="560" y="878" fill="#ed1c24" font-size="12" font-weight="800" font-family="${ff}" text-anchor="end" opacity=".9">trakt</text>
+</svg>`;
 }
 
 export function generateBackgroundSvg(accent: string, theme = '#0f172a') {
@@ -144,61 +100,33 @@ export function generateOverlaySvg(opts: {
   const hasStat = !!statValue;
   const esc = escapeXml;
 
-  const insightLogo = `<polygon points="-24,-36 24,-36 0,36" fill="#ffffff" opacity="0.95"/><polygon points="-12,-18 12,-18 0,18" fill="${esc(accent)}"/>`;
+  const accentLight = accent + '33';
+  const accentBorder = accent + '55';
 
-  const traktBadge = `<g transform="translate(570,878)">
-    <text x="0" y="0" fill="#ed1c24" font-size="13" font-weight="800" font-family="${ff}" text-anchor="end">trakt</text>
-    <rect x="-32" y="-5" width="11" height="11" rx="3" fill="#ed1c24"/>
-  </g>`;
+  const insightLogo = `<polygon points="-14,-22 14,-22 0,22" fill="#ffffff"/><polygon points="-7,-11 7,-11 0,11" fill="${esc(accent)}"/>`;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900">
-    <defs>
-      <filter id="shadow">
-        <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#000" flood-opacity="0.7"/>
-      </filter>
-      <filter id="glowBig">
-        <feGaussianBlur stdDeviation="4" result="blur"/>
-        <feMerge>
-          <feMergeNode in="blur"/>
-          <feMergeNode in="SourceGraphic"/>
-        </feMerge>
-      </filter>
-      <filter id="glowSmall">
-        <feGaussianBlur stdDeviation="2" result="blur"/>
-        <feMerge>
-          <feMergeNode in="blur"/>
-          <feMergeNode in="SourceGraphic"/>
-        </feMerge>
-      </filter>
-    </defs>
-    
-    <!-- Top bar -->
-    <rect x="36" y="28" width="528" height="64" rx="32" fill="#000000" opacity="0.35" filter="url(#shadow)"/>
-    <rect x="36" y="28" width="528" height="64" rx="32" fill="none" stroke="${esc(accent)}" stroke-width="1.5" opacity="0.4"/>
-    <g transform="translate(52,38)">
-      <g transform="translate(0,12)">${insightLogo}</g>
-      <text x="52" y="44" fill="#ffffff" font-size="22" font-weight="900" font-family="${ff}" letter-spacing="6" filter="url(#glowSmall)">INSIGHT</text>
-    </g>
-    ${statLabel ? `<rect x="420" y="38" height="44" rx="22" fill="${esc(accent)}" opacity="0.2"/>
-    <rect x="420" y="38" height="44" rx="22" fill="none" stroke="${esc(accent)}" stroke-width="1" opacity="0.5"/>
-    <text x="442" y="66" fill="${esc(accent)}" font-size="15" font-weight="800" font-family="${ff}" letter-spacing="2">${esc(statLabel)}</text>` : ''}
+  <defs>
+  <filter id="s"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity=".6"/></filter>
+  <filter id="g"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
 
-    ${hasStat ? `
-    <rect x="70" y="250" width="460" height="380" rx="28" fill="#000000" opacity="0.5" filter="url(#shadow)"/>
-    <rect x="70" y="250" width="460" height="380" rx="28" fill="none" stroke="${esc(accent)}" stroke-width="1.5" opacity="0.4"/>
-    
-    <text x="300" y="500" fill="${esc(accent)}" font-size="${statValue.length > 6 ? 100 : 140}" font-weight="900" font-family="${ff}" text-anchor="middle" filter="url(#glowBig)" letter-spacing="-4">${esc(statValue)}</text>
-    ${statLabel ? `<text x="300" y="565" fill="#ffffff" font-size="26" font-weight="800" font-family="${ff}" text-anchor="middle" filter="url(#shadow)" letter-spacing="4">${esc(statLabel)}</text>` : ''}
-    <rect x="260" y="590" width="80" height="3" rx="1.5" fill="${esc(accent)}" opacity="0.7"/>
-    ` : ''}
+  <rect x="30" y="24" width="540" height="56" rx="28" fill="#000" opacity=".3"/>
+  <rect x="30" y="24" width="540" height="56" rx="28" fill="none" stroke="${esc(accentBorder)}" stroke-width="1"/>
+  <g transform="translate(44,34)"><g transform="translate(0,10)">${insightLogo}</g><text x="44" y="37" fill="#fff" font-size="20" font-weight="900" font-family="${ff}" letter-spacing="5">INSIGHT</text></g>
+  ${statLabel ? `<g transform="translate(458,34)"><rect x="0" y="0" width="98" height="36" rx="18" fill="${esc(accentLight)}"/><text x="49" y="23" fill="${esc(accent)}" font-size="13" font-weight="800" font-family="${ff}" text-anchor="middle">${esc(statLabel)}</text></g>` : ''}
 
-    <text x="48" y="${hasStat ? 800 : 640}" fill="#ffffff" font-size="${title.length > 20 ? 28 : 34}" font-weight="900" font-family="${ff}" filter="url(#shadow)">
-      <tspan x="48" dy="0">${esc(truncate(title, 45))}</tspan>
-    </text>
-    <text x="48" y="${hasStat ? 845 : 690}" fill="#94a3b8" font-size="18" font-weight="600" font-family="${ff}" opacity="0.9">${esc(truncate(subtitle, SUBTITLE_MAX))}</text>
-    
-    ${traktBadge}
-  </svg>`;
+  ${hasStat ? `<rect x="60" y="270" width="480" height="360" rx="24" fill="#000" opacity=".4" filter="url(#s)"/>
+<rect x="60" y="270" width="480" height="360" rx="24" fill="none" stroke="${esc(accentBorder)}" stroke-width="1"/>
+<text x="300" y="${statValue.length > 6 ? 490 : 510}" fill="${esc(accent)}" font-size="${statValue.length > 6 ? 100 : 130}" font-weight="900" font-family="${ff}" text-anchor="middle" filter="url(#g)" letter-spacing="-3">${esc(statValue)}</text>
+${statLabel ? `<text x="300" y="575" fill="#fff" font-size="24" font-weight="800" font-family="${ff}" text-anchor="middle" letter-spacing="5">${esc(statLabel)}</text>` : ''}
+<rect x="260" y="595" width="80" height="2" rx="1" fill="${esc(accent)}" opacity=".6"/>` : ''}
+
+  <text x="40" y="${hasStat ? 800 : 620}" fill="#fff" font-size="${title.length > 20 ? 26 : 32}" font-weight="900" font-family="${ff}" filter="url(#s)"><tspan x="40" dy="0">${esc(truncate(title, 45))}</tspan></text>
+  <text x="40" y="${hasStat ? 840 : 667}" fill="#94a3b8" font-size="17" font-weight="600" font-family="${ff}">${esc(truncate(subtitle, SUBTITLE_MAX))}</text>
+
+  <text x="560" y="878" fill="#ed1c24" font-size="12" font-weight="800" font-family="${ff}" text-anchor="end" opacity=".9">trakt</text>
+</svg>`;
 }
 
 export function svgToDataUri(svg: string) {
