@@ -475,17 +475,20 @@ export async function computeTopPeople(events: any[]): Promise<{ actors: { name:
     const results = await Promise.allSettled(
       batch.map(item => fetchCredits(item.tmdb_id, item.type))
     );
-    for (const result of results) {
+    for (let j = 0; j < results.length; j++) {
+      const result = results[j];
+      const item = batch[j];
       if (result.status === 'fulfilled' && result.value) {
         const credits = result.value as { cast: string[]; crew: { directors: string[]; writers: string[] } };
+        const w = item.weight;
         for (const actor of credits.cast) {
-          actorCount[actor] = (actorCount[actor] || 0) + 1;
+          actorCount[actor] = (actorCount[actor] || 0) + w;
         }
         for (const director of credits.crew.directors) {
-          directorCount[director] = (directorCount[director] || 0) + 1;
+          directorCount[director] = (directorCount[director] || 0) + w;
         }
         for (const writer of (credits.crew as any).writers || []) {
-          writerCount[writer] = (writerCount[writer] || 0) + 1;
+          writerCount[writer] = (writerCount[writer] || 0) + w;
         }
       }
     }

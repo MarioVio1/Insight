@@ -30,7 +30,7 @@ router.post('/config', async (req, res) => {
 
     await supabase.from('config_preferences').insert({
       config_id: id,
-      enabled_card_types: body.enabled_card_types ?? ['totals','streak','peak','weekly','genre','binge','monthly','recurring','rewatch','seasonal','actor','director','anime','ranking','memories','giorni','migliore','anno','mese','split','notturno'],
+      enabled_card_types: body.enabled_card_types ?? ['totals','streak','peak','weekly','genre','binge','monthly','recurring','rewatch','seasonal','actor','director','anime','ranking','memories','giorni','migliore','anno','mese','split','notturno','events','pace','weekend','annuale','primetime','decade','break','avg','night','series'],
       focus_mode: body.focus_mode ?? 'adaptive',
       seasonal_enabled: body.seasonal_enabled ?? true,
       festive_enabled: body.festive_enabled ?? true,
@@ -57,7 +57,7 @@ router.put('/config/:configId/preferences', async (req, res) => {
   const uuid = await resolveConfigId(req.params.configId);
   if (!uuid) return res.status(404).json({ ok: false, error: 'Not found' });
 
-  const { error: err1 } = await supabase.from('config_preferences').update(req.body).eq('config_id', uuid);
+  const { error: err1 } = await supabase.from('config_preferences').upsert({ config_id: uuid, ...req.body }, { onConflict: 'config_id' });
   if (err1) return res.status(500).json({ ok: false, error: err1.message });
   await supabase.from('addon_configs').update({ updated_at: new Date().toISOString() }).eq('id', uuid);
   return res.json({ ok: true });

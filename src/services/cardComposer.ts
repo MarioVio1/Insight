@@ -72,14 +72,26 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
 
   const cfg = cfgRes.data;
   const insight = insightRes.data;
-  const prefs = prefsRes.data;
+  let prefs = prefsRes.data;
 
   if (!cfg) { console.error('Config not found for', configId); return; }
   if (!insight) { console.error('Insight not found for', configId, '- run sync first'); return; }
 
+  if (!prefs) {
+    const { data: newPrefs } = await supabase.from('config_preferences').insert({
+      config_id: configId,
+      enabled_card_types: ['totals','streak','peak','weekly','genre','binge','monthly','recurring','rewatch','seasonal','actor','director','anime','ranking','memories','giorni','migliore','anno','mese','split','notturno','events','pace','weekend','annuale','primetime','decade','break','avg','night','series'],
+      focus_mode: 'adaptive',
+      seasonal_enabled: true,
+      festive_enabled: true,
+      style_mode: 'cinematic'
+    }).select('*').maybeSingle();
+    prefs = newPrefs;
+  }
+
   const s = insight.summary || {};
   const saved = prefs?.enabled_card_types || [];
-  const allEnabled = ['totals','streak','peak','weekly','genre','binge','dropped','monthly','recurring','rewatch','seasonal','actor','director','writer','anime','ranking','memories','firstplay','giorni','migliore','anno','mese','split','notturno','events','pace','weekend','annuale','primetime','decade','break'];
+  const allEnabled = ['totals','streak','peak','weekly','genre','binge','dropped','monthly','recurring','rewatch','seasonal','actor','director','writer','anime','ranking','memories','firstplay','giorni','migliore','anno','mese','split','notturno','events','pace','weekend','annuale','primetime','decade','break','avg','night','series'];
   const enabled = saved.length > 0 ? saved : allEnabled;
   const cards: any[] = [];
   const details: { meta_id: string; meta: any }[] = [];

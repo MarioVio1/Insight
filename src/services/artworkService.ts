@@ -30,7 +30,8 @@ function buildStatSvg(statValue: string, statLabel: string, accent: string, ff: 
     return `<text x="40" y="310" fill="${accent}" font-size="${fs}" font-weight="900" font-family="${ff}" filter="url(#s)" letter-spacing="-2">${statValue}</text>
 <text x="40" y="345" fill="rgba(255,255,255,.5)" font-size="13" font-weight="500" font-family="${ff}">${statLabel}</text>`;
   }
-  const maxChars = Math.max(10, Math.min(18, Math.floor(520 / (words.length > 3 ? 22 : 26))));
+  const longestWord = Math.max(...words.map(w => w.length));
+  const maxChars = Math.max(10, Math.min(16, longestWord > 8 ? longestWord + 2 : 16));
   const lines = wrapText(statValue, maxChars);
   const lineH = lines.length > 3 ? 38 : 44;
   const fs = lines.length > 3 ? 28 : lines.length > 2 ? 34 : 40;
@@ -70,9 +71,11 @@ export function generateSvgPoster(opts: { title: string; subtitle: string; accen
 
   const statSvg = hasStat ? buildStatSvg(statValue, statLabel, accent, ff) : '';
   const statEndY = hasStat ? (() => {
-    const lines = wrapText(statValue, Math.max(10, Math.min(18, Math.floor(520 / (statValue.split(' ').length > 3 ? 22 : 26)))));
-    const lineH = lines.length > 3 ? 38 : 44;
-    return 280 + lines.length * lineH + 16 + 20;
+    const sw = statValue.split(' ');
+    const maxCl = sw.length > 1 ? Math.max(10, Math.min(16, Math.max(...sw.map(w => w.length)) > 8 ? Math.max(...sw.map(w => w.length)) + 2 : 16)) : 18;
+    const slines = sw.length > 1 ? wrapText(statValue, maxCl) : [statValue];
+    const lineH = slines.length > 3 ? 38 : 44;
+    return 280 + slines.length * lineH + 16 + 20;
   })() : 0;
   const titleY = hasStat ? Math.max(580, statEndY + 80) : 540;
   const subY = titleY + 38;
@@ -95,6 +98,24 @@ export function generateSvgPoster(opts: { title: string; subtitle: string; accen
 
   <text x="560" y="878" fill="#ed1c24" font-size="11" font-weight="700" font-family="${ff}" text-anchor="end" opacity=".8">trakt</text>
 </svg>`;
+}
+
+function buildCompactStatSvg(sv: string, sl: string, accent: string, ff: string): string {
+  const words = sv.split(' ');
+  if (words.length <= 1) {
+    const fs = sv.length > 6 ? 24 : 28;
+    return `<text x="20" y="148" fill="${accent}" font-size="${fs}" font-weight="900" font-family="${ff}" filter="url(#s)" letter-spacing="-1">${sv}</text>
+<text x="20" y="168" fill="rgba(255,255,255,.5)" font-size="9" font-weight="500" font-family="${ff}">${sl}</text>`;
+  }
+  const longestWord = Math.max(...words.map(w => w.length));
+  const maxChars = Math.max(6, Math.min(longestWord + 1, 10));
+  const lines = wrapText(sv, maxChars);
+  const lineH = lines.length > 2 ? 20 : 24;
+  const fs = lines.length > 2 ? 16 : lines.length > 1 ? 20 : 28;
+  const startY = 120;
+  const tspans = lines.map((line, i) => `<tspan x="20" dy="${i === 0 ? 0 : lineH}">${line}</tspan>`).join('');
+  return `<text x="20" y="${startY}" fill="${accent}" font-size="${fs}" font-weight="900" font-family="${ff}" filter="url(#s)" letter-spacing="-1">${tspans}</text>
+<text x="20" y="${startY + lines.length * lineH + 10}" fill="rgba(255,255,255,.5)" font-size="8" font-weight="500" font-family="${ff}">${sl}</text>`;
 }
 
 export function generateCompactPosterSvg(opts: {
@@ -138,11 +159,11 @@ export function generateCompactPosterSvg(opts: {
   <rect x="12" y="10" width="276" height="24" rx="12" fill="none" stroke="${accentBorder}" stroke-width="1"/>
   <g transform="translate(18,14)"><polygon points="-6,-9 6,-9 0,9" fill="#ffffff"/><polygon points="-3,-5 3,-5 0,5" fill="${accent}"/><text x="22" y="6" fill="#fff" font-size="10" font-weight="800" font-family="${ff}" letter-spacing="3">INSIGHT</text></g>
 
-  ${sv ? `<text x="20" y="160" fill="${accent}" font-size="${sv.length > 6 ? 28 : 36}" font-weight="900" font-family="${ff}" filter="url(#s)" letter-spacing="-1">${sv}</text>
-<text x="20" y="180" fill="rgba(255,255,255,.5)" font-size="9" font-weight="500" font-family="${ff}">${sl}</text>` : ''}
+  ${sv ? buildCompactStatSvg(sv, sl, accent, ff) : ''}
 
-  <text x="20" y="${sv ? 360 : 240}" fill="#fff" font-size="${title.length > 20 ? 12 : 14}" font-weight="700" font-family="${ff}" filter="url(#s)">${truncate(title, 32)}</text>
-  <text x="20" y="${sv ? 378 : 260}" fill="#94a3b8" font-size="9" font-weight="500" font-family="${ff}">${truncate(subtitle, 60)}</text>
+  ${sv ? `<text x="20" y="260" fill="#fff" font-size="${title.length > 20 ? 12 : 14}" font-weight="700" font-family="${ff}" filter="url(#s)">${truncate(title, 32)}</text>
+  <text x="20" y="278" fill="#94a3b8" font-size="9" font-weight="500" font-family="${ff}">${truncate(subtitle, 60)}</text>` : `<text x="20" y="240" fill="#fff" font-size="${title.length > 20 ? 12 : 14}" font-weight="700" font-family="${ff}" filter="url(#s)">${truncate(title, 32)}</text>
+  <text x="20" y="260" fill="#94a3b8" font-size="9" font-weight="500" font-family="${ff}">${truncate(subtitle, 60)}</text>`}
 
   <text x="280" y="438" fill="#ed1c24" font-size="8" font-weight="700" font-family="${ff}" text-anchor="end" opacity=".8">trakt</text>
 </svg>`;
@@ -190,9 +211,11 @@ export function generateOverlaySvg(opts: {
 
   const statSvg = hasStat ? buildStatSvg(statValue, statLabel, esc(accent), ff) : '';
   const statEndY = hasStat ? (() => {
-    const lines = wrapText(statValue, Math.max(10, Math.min(18, Math.floor(520 / (statValue.split(' ').length > 3 ? 22 : 26)))));
-    const lineH = lines.length > 3 ? 38 : 44;
-    return 280 + lines.length * lineH + 16 + 20;
+    const sw = statValue.split(' ');
+    const maxCl = sw.length > 1 ? Math.max(10, Math.min(16, Math.max(...sw.map(w => w.length)) > 8 ? Math.max(...sw.map(w => w.length)) + 2 : 16)) : 18;
+    const slines = sw.length > 1 ? wrapText(statValue, maxCl) : [statValue];
+    const lineH = slines.length > 3 ? 38 : 44;
+    return 280 + slines.length * lineH + 16 + 20;
   })() : 0;
   const titleY = hasStat ? Math.max(580, statEndY + 80) : 540;
   const subY = titleY + 38;
