@@ -77,15 +77,9 @@ export async function catalogHandler(configId: string, catalogId: string) {
       type: INSIGHT_TYPE,
       name: m.name,
       poster: m.imageUrl || m.poster,
-      background: m.background,
       description: descWithStats,
       posterShape: m.posterShape,
-      genres: m.genres,
-      logo: m.logo,
-      videos: m.videos,
-      runtime: m.runtime,
-      releaseInfo: m.releaseInfo,
-      imdb_id: m.imdb_id
+      genres: m.genres
     };
   });
 

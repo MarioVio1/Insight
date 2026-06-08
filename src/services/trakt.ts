@@ -41,20 +41,19 @@ export async function getHistory(accessToken: string, type: 'movies' | 'shows') 
   const headers = { Authorization: `Bearer ${accessToken}` };
   const allItems: any[] = [];
 
-  // First request to get pagination info
-  const first = await api.get(path, { headers, params: { page: 1, limit: 100 } });
+  const twoYearsAgo = new Date(Date.now() - 730 * 86400000).toISOString();
+  const params: Record<string, any> = { page: 1, limit: 100, start_at: twoYearsAgo };
+
+  const first = await api.get(path, { headers, params });
   const items = first.data || [];
   allItems.push(...items);
 
-  // Parse pagination headers
-  const pageCount = parseInt(first.headers['x-pagination-page-count'] || '1', 10);
-  const totalItems = parseInt(first.headers['x-pagination-item-count'] || String(items.length), 10);
+  const pageCount = Math.min(parseInt(first.headers['x-pagination-page-count'] || '1', 10), 20);
 
-  // Fetch remaining pages in parallel
   if (pageCount > 1) {
     const pages = [];
     for (let p = 2; p <= pageCount; p++) {
-      pages.push(api.get(path, { headers, params: { page: p, limit: 100 } }).then(r => r.data || []));
+      pages.push(api.get(path, { headers, params: { ...params, page: p } }).then(r => r.data || []));
     }
     const results = await Promise.all(pages);
     for (const pageItems of results) {

@@ -31,29 +31,26 @@ async function cardMeta(
   description: string,
   opts?: { accent?: string; statValue?: string; statLabel?: string; imageUrl?: string; rating?: number }
 ) {
-  const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
   const accent = opts?.accent || '#0ea5e9';
-  const cardId = id.replace(`adaptive_${configId}_`, '');
-  const posterUrl = `${baseUrl}/poster/${configId}/${cardId}.png`;
 
-  const fallbackSvg = generateSvgPoster({
+  const posterSvg = generateSvgPoster({
     title: name,
     subtitle: description.slice(0, 50),
     accent,
     statValue: opts?.statValue,
-    statLabel: opts?.statLabel
+    statLabel: opts?.statLabel,
+    imageUrl: opts?.imageUrl
   });
-  const fallbackUri = svgToDataUri(fallbackSvg);
+  const posterDataUri = svgToDataUri(posterSvg);
 
   const meta: any = {
     id,
     type: 'movie',
     name,
-    poster: posterUrl,
-    background: fallbackUri,
-    description,
+    poster: opts?.imageUrl || posterDataUri,
     posterShape: 'poster',
     genres: ['Insights'],
+    description,
     statValue: opts?.statValue || null,
     statLabel: opts?.statLabel || null,
     imageUrl: opts?.imageUrl || null
