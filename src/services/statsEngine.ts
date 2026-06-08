@@ -454,14 +454,19 @@ export function findMemories(events: any[], now = new Date()): { year: number; t
 }
 
 export async function computeTopPeople(events: any[]): Promise<{ actors: { name: string; count: number }[]; directors: { name: string; count: number }[] }> {
-  const unique = new Map<string, { tmdb_id: string; type: 'movie' | 'tv' }>();
+  const freq = new Map<string, { tmdb_id: string; type: 'movie' | 'tv'; weight: number }>();
   for (const e of events) {
     const tid = String(e.tmdb_id);
-    if (e.tmdb_id && !unique.has(tid)) {
-      unique.set(tid, { tmdb_id: tid, type: e.trakt_type === 'movie' ? 'movie' : 'tv' });
+    if (e.tmdb_id) {
+      if (freq.has(tid)) {
+        freq.get(tid)!.weight++;
+      } else {
+        freq.set(tid, { tmdb_id: tid, type: e.trakt_type === 'movie' ? 'movie' : 'tv', weight: 1 });
+      }
     }
   }
-  const topN = [...unique.values()].slice(0, 30);
+  const sorted = [...freq.values()].sort((a, b) => b.weight - a.weight);
+  const topN = sorted.slice(0, 50);
   const actorCount: Record<string, number> = {};
   const directorCount: Record<string, number> = {};
 
@@ -487,11 +492,11 @@ export async function computeTopPeople(events: any[]): Promise<{ actors: { name:
   const actors = Object.entries(actorCount)
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count)
-    .slice(0, 10);
+    .slice(0, 15);
   const directors = Object.entries(directorCount)
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count)
-    .slice(0, 10);
+    .slice(0, 15);
 
   return { actors, directors };
 }
