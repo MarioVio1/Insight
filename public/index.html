@@ -36,7 +36,6 @@
       font-size: clamp(14px,2vw,17px); color: rgba(255,255,255,.6);
       max-width: 520px; line-height: 1.6; margin-bottom: 24px;
     }
-    .hero-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
     .features {
       display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
       gap: 12px; padding: 20px; max-width: 900px; margin: 0 auto;
@@ -46,18 +45,12 @@
       border: 1px solid rgba(255,255,255,.06);
       background: rgba(255,255,255,.02);
     }
-    .fcard-icon { font-size: 20px; margin-bottom: 6px; }
     .fcard h4 { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
     .fcard p { font-size: 11px; color: rgba(255,255,255,.45); line-height: 1.5; }
     .footer {
       text-align: center; padding: 20px;
       font-size: 11px; color: rgba(255,255,255,.25);
     }
-    .setup-box {
-      max-width: 420px; margin: 0 auto; width: 100%;
-    }
-    .show-config { display: none; }
-    .show-config.active { display: flex; }
   </style>
 </head>
 <body>
@@ -77,9 +70,6 @@
         </svg>
         <span>Adaptive Insights</span>
       </div>
-      <div class="nav-actions" style="margin-left:auto">
-        <a href="/configure" class="btn btn-primary btn-sm" style="text-decoration:none">Configura</a>
-      </div>
     </nav>
 
     <div class="hero">
@@ -96,42 +86,35 @@
           <text x="192" y="73" fill="#020617" font-size="26" font-weight="900" font-family="Arial" text-anchor="middle">i</text>
         </svg>
       </div>
-      <div class="hero-badge">🚀 Addon Stremio rivoluzionario</div>
+      <div class="hero-badge">Addon Stremio rivoluzionario</div>
       <h1>Le tue statistiche <span>Trakt</span> nella home di Stremio</h1>
       <p>Ogni giorno, 32 card dinamiche mostrano i tuoi dati di visione: totali, streak, binge, generi, attori, registi, anime, ricordi, durata media, serie seguite e molto altro. Nessun altro addon fa questo.</p>
-      <div class="hero-actions">
-        <a href="/configure" class="btn btn-primary" style="text-decoration:none;padding:10px 24px">Inizia Ora</a>
-        <a href="#features" class="btn btn-ghost" style="text-decoration:none;padding:10px 24px">Scopri di più</a>
-      </div>
-
-      <div class="setup-box" id="setupBox" style="display:none;margin-top:32px">
-        <form id="createForm" class="slug">
-          <div class="slug-in"><span class="slug-px">insight.to/</span><input type="text" id="slugInput" placeholder="mario123" required autocomplete="off" spellcheck="false"></div>
-          <button class="btn btn-primary" type="submit" id="createBtn" style="width:100%;margin-top:10px">Accedi</button>
-        </form>
-      </div>
+      <form id="createForm" class="slug" style="max-width:420px;width:100%;margin-top:8px">
+        <div class="slug-in"><span class="slug-px">insight.to/</span><input type="text" id="slugInput" placeholder="mario123" required autocomplete="off" spellcheck="false"></div>
+        <button class="btn btn-primary" type="submit" id="createBtn" style="padding:10px 24px">Accedi</button>
+      </form>
     </div>
 
     <div class="features" id="features">
-      <div class="fcard"><div class="fcard-icon">📊</div><h4>Totali</h4><p>Ore, film, episodi, anime, titoli unici — tutto ciò che hai guardato</p></div>
-      <div class="fcard"><div class="fcard-icon">🔥</div><h4>Streak</h4><p>Giorni consecutivi di visione, la tua costanza</p></div>
-      <div class="fcard"><div class="fcard-icon">🎯</div><h4>Binge</h4><p>Maratone di episodi, le tue sessioni più intense</p></div>
-      <div class="fcard"><div class="fcard-icon">🎬</div><h4>Generi</h4><p>I generi che dominano il tuo profilo</p></div>
-      <div class="fcard"><div class="fcard-icon">⭐</div><h4>Rewatch</h4><p>I titoli che guardi e riguardi senza stancarti</p></div>
-      <div class="fcard"><div class="fcard-icon">🎭</div><h4>Attori &amp; Registi</h4><p>I tuoi artisti preferiti, quantificati</p></div>
-      <div class="fcard"><div class="fcard-icon">🗓️</div><h4>Ricordi</h4><p>Cosa guardavi esattamente un anno fa</p></div>
-      <div class="fcard"><div class="fcard-icon">🌙</div><h4>Fasce Orarie</h4><p>Sei un nottambulo o un mattiniero?</p></div>
-      <div class="fcard"><div class="fcard-icon">🏆</div><h4>Classifica</h4><p>Come ti posizioni rispetto agli altri utenti</p></div>
-      <div class="fcard"><div class="fcard-icon">📈</div><h4>Trend</h4><p>Confronto mensile e annuale delle tue visioni</p></div>
-      <div class="fcard"><div class="fcard-icon">📅</div><h4>Prima serata</h4><p>Percentuale di visioni in fascia serale (20:00-2:00)</p></div>
-      <div class="fcard"><div class="fcard-icon">🏖️</div><h4>Weekend vs Feriale</h4><p>Sei un guardone del weekend o infrasettimanale?</p></div>
-      <div class="fcard"><div class="fcard-icon">⚡</div><h4>Ritmo</h4><p>Media di contenuti per settimana attiva</p></div>
-      <div class="fcard"><div class="fcard-icon">🔄</div><h4>Annuario</h4><p>Evoluzione anno su anno delle tue abitudini</p></div>
-      <div class="fcard"><div class="fcard-icon">📅</div><h4>Decennio</h4><p>Il decennio in cui hai guardato di più</p></div>
-      <div class="fcard"><div class="fcard-icon">⏸️</div><h4>Pausa max</h4><p>Il periodo più lungo senza guardare nulla</p></div>
-      <div class="fcard"><div class="fcard-icon">⏱️</div><h4>Durata media</h4><p>Quanto durano in media i contenuti che guardi</p></div>
-      <div class="fcard"><div class="fcard-icon">🌃</div><h4>Notte fonda</h4><p>Percentuale di visioni tra mezzanotte e le 6</p></div>
-      <div class="fcard"><div class="fcard-icon">📺</div><h4>Serie</h4><p>Serie uniche seguite e media episodi per show</p></div>
+      <div class="fcard"><h4>Totali</h4><p>Ore, film, episodi, anime, titoli unici — tutto ciò che hai guardato</p></div>
+      <div class="fcard"><h4>Streak</h4><p>Giorni consecutivi di visione, la tua costanza</p></div>
+      <div class="fcard"><h4>Binge</h4><p>Maratone di episodi, le tue sessioni più intense</p></div>
+      <div class="fcard"><h4>Generi</h4><p>I generi che dominano il tuo profilo</p></div>
+      <div class="fcard"><h4>Rewatch</h4><p>I titoli che guardi e riguardi senza stancarti</p></div>
+      <div class="fcard"><h4>Attori &amp; Registi</h4><p>I tuoi artisti preferiti, quantificati</p></div>
+      <div class="fcard"><h4>Ricordi</h4><p>Cosa guardavi esattamente un anno fa</p></div>
+      <div class="fcard"><h4>Fasce Orarie</h4><p>Sei un nottambulo o un mattiniero?</p></div>
+      <div class="fcard"><h4>Classifica</h4><p>Come ti posizioni rispetto agli altri utenti</p></div>
+      <div class="fcard"><h4>Trend</h4><p>Confronto mensile e annuale delle tue visioni</p></div>
+      <div class="fcard"><h4>Prima serata</h4><p>Percentuale di visioni in fascia serale (20:00-2:00)</p></div>
+      <div class="fcard"><h4>Weekend vs Feriale</h4><p>Sei un guardone del weekend o infrasettimanale?</p></div>
+      <div class="fcard"><h4>Ritmo</h4><p>Media di contenuti per settimana attiva</p></div>
+      <div class="fcard"><h4>Annuario</h4><p>Evoluzione anno su anno delle tue abitudini</p></div>
+      <div class="fcard"><h4>Decennio</h4><p>Il decennio in cui hai guardato di più</p></div>
+      <div class="fcard"><h4>Pausa max</h4><p>Il periodo più lungo senza guardare nulla</p></div>
+      <div class="fcard"><h4>Durata media</h4><p>Quanto durano in media i contenuti che guardi</p></div>
+      <div class="fcard"><h4>Notte fonda</h4><p>Percentuale di visioni tra mezzanotte e le 6</p></div>
+      <div class="fcard"><h4>Serie</h4><p>Serie uniche seguite e media episodi per show</p></div>
     </div>
 
     <div class="footer">
@@ -150,12 +133,6 @@
         <span>Insight</span>
         <a href="/" style="color:var(--m);font-size:11px;margin-left:4px;text-decoration:none">&larr; Home</a>
       </div>
-      <div class="nav-tabs">
-        <button class="nav-tab active" data-section="setup"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>Setup</button>
-        <button class="nav-tab" data-section="cards">Cards</button>
-        <button class="nav-tab" data-section="preview">Preview</button>
-        <button class="nav-tab" data-section="install">Install</button>
-      </div>
       <div class="nav-actions">
         <span id="accountBadge" class="hide tag tag-success"><span id="uname"></span></span>
       </div>
@@ -163,18 +140,29 @@
 
     <div class="workspace">
       <div class="workspace-grid">
-        <div class="panel" style="grid-column:1">
-          <div class="panel-header"><h3>Configurator</h3></div>
+        <!-- Stato -->
+        <div class="panel">
+          <div class="panel-header"><h3>Stato</h3></div>
+          <div class="panel-body">
+            <div class="sinfo">
+              <div class="srow"><span class="sl">Tabelle:</span><span class="sdot pending" id="sTables"></span></div>
+              <div class="srow"><span class="sl">Trakt:</span><span class="sdot pending" id="sTrakt"></span></div>
+              <div class="srow"><span class="sl">Sync:</span><span id="sSync">—</span></div>
+              <div class="srow"><span class="sl">Cards:</span><span id="sCards">—</span></div>
+            </div>
+            <div class="sissues" id="sIssues"></div>
+          </div>
+        </div>
+
+        <!-- Azioni -->
+        <div class="panel">
+          <div class="panel-header"><h3>Azioni</h3></div>
           <div class="panel-body" id="panelBody">
             <div class="p-section" id="section-setup">
-              <div class="p-section-title">Setup</div>
-              <div class="step">
-                <p>Inserisci il tuo nome utente per accedere o creare la configurazione</p>
-                <form id="createForm2" class="slug">
-                  <div class="slug-in"><span class="slug-px">insight.to/</span><input type="text" id="slugInput2" placeholder="mario123" required autocomplete="off" spellcheck="false"></div>
-                  <button class="btn btn-primary" type="submit" id="createBtn2" style="width:100%;margin-top:10px">Accedi</button>
-                </form>
-              </div>
+              <form id="createForm2" class="slug">
+                <div class="slug-in"><span class="slug-px">insight.to/</span><input type="text" id="slugInput2" placeholder="mario123" required autocomplete="off" spellcheck="false"></div>
+                <button class="btn btn-primary" type="submit" id="createBtn2" style="width:100%;margin-top:10px">Accedi</button>
+              </form>
             </div>
             <div class="p-section hide" id="section-trakt">
               <div class="p-section-title">Trakt</div>
@@ -188,6 +176,13 @@
                   <span id="syncInfoMini" style="font-size:11px;color:var(--m)"></span>
                 </div>
               </div>
+            </div>
+            <div class="p-section hide" id="section-sync">
+              <button id="syncBtn" class="btn btn-primary" style="width:100%">
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M4 10a6 6 0 0112 0M16 10l-3-3M4 10l3-3" stroke="#000" stroke-width="2" stroke-linecap="round"/></svg>
+                Sincronizza con Trakt
+              </button>
+              <div id="syncStatus" class="ssync"></div>
             </div>
             <div class="p-section hide" id="section-cards">
               <div class="p-section-title">Cards</div>
@@ -246,31 +241,6 @@
                 </div>
               </form>
             </div>
-            <div class="p-section hide" id="section-sync">
-              <button id="syncBtn" class="btn btn-primary" style="width:100%">
-                <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M4 10a6 6 0 0112 0M16 10l-3-3M4 10l3-3" stroke="#000" stroke-width="2" stroke-linecap="round"/></svg>
-                Sincronizza con Trakt
-              </button>
-              <div id="syncStatus" class="ssync"></div>
-            </div>
-          </div>
-        </div>
-        <div class="panel" style="grid-column:2">
-          <div class="panel-header">
-            <h3>Preview</h3>
-            <div style="margin-left:auto;display:flex;gap:6px">
-              <button id="refreshPreviewBtn" class="btn btn-ghost btn-icon" title="Refresh"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M4 10a6 6 0 0112 0M16 10l-3-3M4 10l3-3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
-            </div>
-          </div>
-          <div class="panel-body">
-            <div class="pgrid" id="previewGrid">
-              <div class="pempty"><p>Fai il sync per vedere le card</p></div>
-            </div>
-          </div>
-        </div>
-        <div class="panel" style="grid-column:3">
-          <div class="panel-header"><h3>Install</h3></div>
-          <div class="panel-body">
             <div class="p-section hide" id="section-token">
               <div class="p-section-title">Token</div>
               <div class="tbox">
@@ -294,15 +264,20 @@
                 Scarica JSON storico
               </a>
             </div>
-            <div class="p-section" id="section-status">
-              <div class="p-section-title">Stato</div>
-              <div class="sinfo">
-                <div class="srow"><span class="sl">Tabelle:</span><span class="sdot pending" id="sTables"></span></div>
-                <div class="srow"><span class="sl">Trakt:</span><span class="sdot pending" id="sTrakt"></span></div>
-                <div class="srow"><span class="sl">Sync:</span><span id="sSync">—</span></div>
-                <div class="srow"><span class="sl">Cards:</span><span id="sCards">—</span></div>
-              </div>
-              <div class="sissues" id="sIssues"></div>
+          </div>
+        </div>
+
+        <!-- Anteprima Card -->
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Anteprima Card</h3>
+            <div style="margin-left:auto;display:flex;gap:6px">
+              <button id="refreshPreviewBtn" class="btn btn-ghost btn-icon" title="Aggiorna"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M4 10a6 6 0 0112 0M16 10l-3-3M4 10l3-3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="pgrid" id="previewGrid">
+              <div class="pempty"><p>Fai il sync per vedere le card</p></div>
             </div>
           </div>
         </div>

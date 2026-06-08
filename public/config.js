@@ -55,13 +55,6 @@ if (!isConfig) {
   function show(id) { const e = $(id); if (e) e.classList.remove('hide'); }
   function hide(id) { const e = $(id); if (e) e.classList.add('hide'); }
 
-  document.querySelectorAll('.nav-tab').forEach(t => {
-    t.addEventListener('click', () => {
-      document.querySelectorAll('.nav-tab').forEach(x => x.classList.remove('active'));
-      t.classList.add('active');
-    });
-  });
-
   document.querySelectorAll('.seg-btn').forEach(b => {
     b.addEventListener('click', () => {
       document.querySelectorAll('.seg-btn').forEach(x => x.classList.remove('active'));
@@ -93,7 +86,6 @@ if (!isConfig) {
   async function loadPreview() {
     if (!configId || !previewGrid) return;
     previewGrid.innerHTML = '<div class="pempty"><div class="spin" style="width:16px;height:16px"></div><p>Caricamento...</p></div>';
-    document.querySelector('[data-section="preview"]')?.click();
     try {
       const r = await fetch(`/${configId}/catalog/insight/insight-stats.json`);
       const d = await r.json();
