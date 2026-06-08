@@ -20,7 +20,7 @@ body{font-family:'IBM Plex Sans','Inter',-apple-system,sans-serif;background:var
 .ag-3{width:400px;height:400px;top:40%;left:50%;background:#0ea5e9;opacity:.08}
 
 /* Layout */
-#app{display:flex;min-height:100vh;position:relative;z-index:1;overflow:visible}
+#app{display:flex;height:100vh;position:relative;z-index:1}
 
 /* Nav bar (top) */
 .nav{
@@ -35,19 +35,20 @@ body{font-family:'IBM Plex Sans','Inter',-apple-system,sans-serif;background:var
 .nav-actions{display:flex;gap:6px;align-items:center}
 
 /* Panels */
-.workspace{flex:1;display:flex;flex-direction:column;position:relative}
+.workspace{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
 .workspace-grid{
-  flex:1;display:grid;grid-template-columns:1fr;gap:12px;padding:16px;
+  flex:1;display:flex;flex-direction:column;overflow-y:auto;gap:16px;padding:16px;
   max-width:800px;margin:0 auto;width:100%;
 }
 
 
 /* Panel glass */
 .panel{
-  position:relative;overflow:visible;border-radius:20px;
-  border:1px solid rgba(255,255,255,.08);
+  position:relative;overflow:hidden;border-radius:28px;
+  border:1px solid rgba(255,255,255,.1);
   background:rgba(255,255,255,.03);
-  box-shadow:0 20px 60px -40px rgba(0,0,0,1),inset 0 1px 0 rgba(255,255,255,.06);
+  box-shadow:0 34px 100px -60px rgba(0,0,0,1),inset 0 1px 0 rgba(255,255,255,.08);
+  backdrop-filter:blur(48px);-webkit-backdrop-filter:blur(48px);
   display:flex;flex-direction:column;
 }
 .panel-inner{
@@ -60,7 +61,7 @@ body{font-family:'IBM Plex Sans','Inter',-apple-system,sans-serif;background:var
   border-bottom:1px solid rgba(255,255,255,.04);
 }
 .panel-header h3{font-size:13px;font-weight:600;color:var(--t2)}
-.panel-body{padding:16px 20px;flex:1}
+.panel-body{padding:16px 20px;flex:1;overflow-y:auto}
 .panel-body.compact{padding:12px 16px}
 
 /* Section in panel */
