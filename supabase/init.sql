@@ -11,9 +11,10 @@ drop table if exists insight_snapshots cascade;
 drop table if exists config_preferences cascade;
 drop table if exists trakt_events cascade;
 
--- 2. Aggiunge colonna slug a addon_configs (se manca)
+-- 2. Aggiunge colonne a addon_configs (se mancano)
 alter table addon_configs add column if not exists slug text;
 create unique index if not exists idx_addon_configs_slug on addon_configs(slug) where slug is not null;
+create unique index if not exists idx_addon_configs_trakt_username on addon_configs(trakt_username) where trakt_username is not null;
 
 -- 3. Recreate config_preferences
 create table if not exists config_preferences (
@@ -39,6 +40,10 @@ create table if not exists insight_snapshots (
   top_actors jsonb not null default '[]'::jsonb,
   top_directors jsonb not null default '[]'::jsonb,
   ranking jsonb null default null,
+  top_writers jsonb not null default '[]'::jsonb,
+  first_play jsonb null default null,
+  plays_by_month jsonb not null default '[]'::jsonb,
+  content_by_year jsonb not null default '[]'::jsonb,
   generated_at timestamptz not null default now()
 );
 

@@ -655,11 +655,11 @@ export async function computeAdaptiveInsights(configId: string) {
       ...stats,
       memories,
       seriesRewatch,
-      animeRewatch,
-      first_play: firstPlay,
-      plays_by_month: playsByMonth,
-      content_by_year: contentByYear
+      animeRewatch
     },
+    first_play: firstPlay,
+    plays_by_month: playsByMonth,
+    content_by_year: contentByYear,
     recurring_titles: recurring,
     rewatch_titles: rewatch,
     genre_counts: stats.genre_counts,
