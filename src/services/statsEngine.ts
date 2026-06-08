@@ -543,8 +543,8 @@ export async function enrichEventsWithTmdbAnime(events: any[]): Promise<any[]> {
 
   const animeSet = new Set<string>();
   const batch = [...unique.values()];
-  for (let i = 0; i < batch.length; i += 5) {
-    const chunk = batch.slice(i, i + 5);
+  for (let i = 0; i < batch.length; i += 10) {
+    const chunk = batch.slice(i, i + 10);
     const results = await Promise.allSettled(
       chunk.map(item => fetchTmdbDetails(item.tmdb_id, item.type))
     );
@@ -568,7 +568,7 @@ export async function enrichEventsWithTmdbAnime(events: any[]): Promise<any[]> {
         } catch {}
       }
     }
-    if (i + 5 < batch.length) await new Promise(r => setTimeout(r, 50));
+    if (i + 10 < batch.length) await new Promise(r => setTimeout(r, 20));
   }
 
   return events.map(e => {

@@ -82,19 +82,28 @@ export async function fetchTmdbDetails(tmdbId: number | string | null, type: str
   }
 }
 
+const creditsCache = new Map<string, { cast: string[]; crew: { directors: string[] } }>();
+const CREDITS_CACHE_TTL = 7 * 24 * 60 * 60 * 1000;
+
 export async function fetchCredits(tmdbId: string, type: 'movie' | 'tv') {
   if (!process.env.TMDB_API_KEY && !process.env.TMDB_BEARER_TOKEN) return null;
+  const cacheKey = `${type}_${tmdbId}`;
+  const cached = creditsCache.get(cacheKey);
+  if (cached) return cached;
   const params: Record<string, string> = {};
   if (process.env.TMDB_API_KEY) params.api_key = process.env.TMDB_API_KEY;
   try {
     const { data } = await axios.get(`${TMDB_BASE}/${type}/${tmdbId}/credits`, { params, headers: authHeaders() });
     const cast = (data.cast || []).slice(0, 10).map((c: any) => c.name).filter(Boolean);
-    const directors = (data.crew || [])
+    const directors: string[] = (data.crew || [])
       .filter((c: any) => c.job === 'Director' || c.department === 'Directing')
       .map((c: any) => c.name)
-      .filter(Boolean);
-    return { cast, crew: { directors: [...new Set(directors)] } };
+      .filter((n: string) => !!n);
+    const result = { cast, crew: { directors: [...new Set(directors)] } };
+    creditsCache.set(cacheKey, result);
+    return result;
   } catch {
+    creditsCache.set(cacheKey, { cast: [], crew: { directors: [] } });
     return null;
   }
 }
