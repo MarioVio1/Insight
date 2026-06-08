@@ -170,7 +170,7 @@ if (!isConfig) {
     if (d.preferences) {
       focusMode.value = d.preferences.focus_mode || 'adaptive';
       const sv = d.preferences.enabled_card_types || [];
-      const def = ['totals','streak','peak','weekly','genre','binge','dropped','monthly','recurring','rewatch','seasonal','actor','director','anime','ranking','memories','giorni','migliore','anno','mese','split','notturno','events','pace','weekend','annuale','primetime','decade','break','avg','night','series'];
+      const def = ['totals','streak','peak','weekly','genre','binge','dropped','monthly','recurring','rewatch','seasonal','actor','director','writer','anime','ranking','memories','firstplay','giorni','migliore','anno','mese','split','notturno','events','pace','weekend','annuale','primetime','decade','break','avg','night','series'];
       document.querySelectorAll('input[name="c"]').forEach(el => {
         const ch = sv.includes(el.value) || (sv.length === 0 && def.includes(el.value));
         el.checked = ch; el.closest('.chip')?.classList.toggle('active', ch);
@@ -297,6 +297,16 @@ if (!isConfig) {
     syncStatus.className = 'ssync err';
   }
 
+  const exportBtn = $('exportBtn');
+
+  async function updExportLink() {
+    if (exportBtn && configId) {
+      const base = location.origin;
+      exportBtn.href = `${base}/api/export/${configId}?_=${Date.now()}`;
+    }
+  }
+
   $('refreshPreviewBtn')?.addEventListener('click', loadPreview);
   loadConfig();
+  updExportLink();
 }

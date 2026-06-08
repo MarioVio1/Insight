@@ -40,7 +40,7 @@ async function getPersonImage(name: string): Promise<string | null> {
   }
 }
 
-export async function catalogHandler(configId: string, catalogId: string) {
+export async function catalogHandler(configId: string, catalogId: string, baseUrl?: string) {
   const requestedCatalogId = catalogId === INSIGHT_CATALOG_ID ? INSIGHT_CATALOG_ID : LEGACY_INSIGHT_CATALOG_ID;
   let { data } = await supabase
     .from('adaptive_rows')
@@ -72,11 +72,14 @@ export async function catalogHandler(configId: string, catalogId: string) {
 
   const metas = (data?.metas ?? []).map((m: any) => {
     const descWithStats = `${m.statLabel ? `[${m.statLabel}: ${m.statValue}]\n` : ''}${m.description}`;
+    let poster = m.poster || '';
+    if (poster.startsWith('/') && baseUrl) poster = `${baseUrl}${poster}`;
+    if (!poster && m.imageUrl) poster = m.imageUrl;
     return { 
       id: m.id,
       type: INSIGHT_TYPE,
       name: m.name,
-      poster: m.imageUrl || m.poster,
+      poster,
       description: descWithStats,
       posterShape: m.posterShape,
       genres: m.genres

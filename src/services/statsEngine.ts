@@ -453,52 +453,49 @@ export function findMemories(events: any[], now = new Date()): { year: number; t
   return memories.sort((a, b) => b.year - a.year).slice(0, 10);
 }
 
-export async function computeTopPeople(events: any[]): Promise<{ actors: { name: string; count: number }[]; directors: { name: string; count: number }[] }> {
-  const freq = new Map<string, { tmdb_id: string; type: 'movie' | 'tv'; weight: number }>();
+export async function computeTopPeople(events: any[]): Promise<{ actors: { name: string; count: number }[]; directors: { name: string; count: number }[]; writers: { name: string; count: number }[] }> {
+  const seenMap = new Map<string, { tmdb_id: string; type: 'movie' | 'tv'; weight: number }>();
   for (const e of events) {
     const tid = String(e.tmdb_id);
     if (e.tmdb_id) {
-      if (freq.has(tid)) {
-        freq.get(tid)!.weight++;
-      } else {
-        freq.set(tid, { tmdb_id: tid, type: e.trakt_type === 'movie' ? 'movie' : 'tv', weight: 1 });
-      }
+      const existing = seenMap.get(tid);
+      if (existing) existing.weight++;
+      else seenMap.set(tid, { tmdb_id: tid, type: e.trakt_type === 'movie' ? 'movie' : 'tv', weight: 1 });
     }
   }
-  const sorted = [...freq.values()].sort((a, b) => b.weight - a.weight);
-  const topN = sorted.slice(0, 50);
+  const all = [...seenMap.values()].sort((a, b) => b.weight - a.weight);
+
   const actorCount: Record<string, number> = {};
   const directorCount: Record<string, number> = {};
+  const writerCount: Record<string, number> = {};
 
   const batchSize = 10;
-  for (let i = 0; i < topN.length; i += batchSize) {
-    const batch = topN.slice(i, i + batchSize);
+  for (let i = 0; i < all.length; i += batchSize) {
+    const batch = all.slice(i, i + batchSize);
     const results = await Promise.allSettled(
       batch.map(item => fetchCredits(item.tmdb_id, item.type))
     );
     for (const result of results) {
       if (result.status === 'fulfilled' && result.value) {
-        const credits = result.value as { cast: string[]; crew: { directors: string[] } };
-        for (const actor of credits.cast.slice(0, 5)) {
+        const credits = result.value as { cast: string[]; crew: { directors: string[]; writers: string[] } };
+        for (const actor of credits.cast) {
           actorCount[actor] = (actorCount[actor] || 0) + 1;
         }
         for (const director of credits.crew.directors) {
           directorCount[director] = (directorCount[director] || 0) + 1;
         }
+        for (const writer of (credits.crew as any).writers || []) {
+          writerCount[writer] = (writerCount[writer] || 0) + 1;
+        }
       }
     }
   }
 
-  const actors = Object.entries(actorCount)
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 15);
-  const directors = Object.entries(directorCount)
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 15);
-
-  return { actors, directors };
+  return {
+    actors: Object.entries(actorCount).map(([n, c]) => ({ name: n, count: c })).sort((a, b) => b.count - a.count),
+    directors: Object.entries(directorCount).map(([n, c]) => ({ name: n, count: c })).sort((a, b) => b.count - a.count),
+    writers: Object.entries(writerCount).map(([n, c]) => ({ name: n, count: c })).sort((a, b) => b.count - a.count)
+  };
 }
 
 export async function computeRankings(configId: string, stats: { totalHours: number; totalMovies: number; totalEpisodes: number; streak: number }) {
@@ -628,10 +625,12 @@ export async function computeAdaptiveInsights(configId: string) {
 
   let topActors: { name: string; count: number }[] = [];
   let topDirectors: { name: string; count: number }[] = [];
+  let topWriters: { name: string; count: number }[] = [];
   try {
     const people = await computeTopPeople(enriched);
     topActors = people.actors;
     topDirectors = people.directors;
+    topWriters = people.writers;
   } catch (err) {
     // TMDB non configurato o errore di rete
   }
@@ -643,19 +642,72 @@ export async function computeAdaptiveInsights(configId: string) {
     // errore ranking
   }
 
+  const firstPlay = computeFirstPlay(enriched);
+  const playsByMonth = computePlaysByMonth(enriched);
+  const contentByYear = computeContentByYear(enriched);
+  const primeTimePct = stats.primeTimePct ?? 0;
+
   await safeUpsert(configId, {
     config_id: configId,
     taste_profile: 'mixed',
     seasonal_key: season.seasonKey,
-    summary: { ...stats, memories, seriesRewatch, animeRewatch },
+    summary: {
+      ...stats,
+      memories,
+      seriesRewatch,
+      animeRewatch,
+      first_play: firstPlay,
+      plays_by_month: playsByMonth,
+      content_by_year: contentByYear
+    },
     recurring_titles: recurring,
     rewatch_titles: rewatch,
     genre_counts: stats.genre_counts,
     top_actors: topActors,
     top_directors: topDirectors,
+    top_writers: topWriters,
     ranking,
     generated_at: new Date().toISOString()
   });
+}
+
+function computeFirstPlay(events: any[]): { title: string; date: string; tmdb_id: number | null } | null {
+  let earliest: string | null = null;
+  let title = '';
+  let tmdbId: number | null = null;
+  for (const e of events) {
+    if (!e.watched_at) continue;
+    if (!earliest || e.watched_at < earliest) {
+      earliest = e.watched_at;
+      title = e.title;
+      tmdbId = e.tmdb_id || null;
+    }
+  }
+  if (!earliest) return null;
+  return { title, date: earliest, tmdb_id: tmdbId };
+}
+
+function computePlaysByMonth(events: any[]): { month: string; count: number }[] {
+  const monthNames = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+  const counts: number[] = new Array(12).fill(0);
+  for (const e of events) {
+    if (!e.watched_at) continue;
+    const m = new Date(e.watched_at).getMonth();
+    counts[m]++;
+  }
+  return monthNames.map((month, i) => ({ month, count: counts[i] }));
+}
+
+function computeContentByYear(events: any[]): { year: number; count: number }[] {
+  const yearCounts: Record<number, number> = {};
+  for (const e of events) {
+    if (!e.watched_at) continue;
+    const y = new Date(e.watched_at).getFullYear();
+    yearCounts[y] = (yearCounts[y] || 0) + 1;
+  }
+  return Object.entries(yearCounts)
+    .map(([y, c]) => ({ year: parseInt(y), count: c }))
+    .sort((a, b) => a.year - b.year);
 }
 
 async function safeUpsert(configId: string, payload: Record<string, any>) {

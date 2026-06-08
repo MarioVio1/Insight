@@ -214,9 +214,11 @@
                   <label class="chip" data-cat="time" data-val="seasonal"><span class="chip-dot" style="background:#0ea5e9"></span><input type="checkbox" name="c" value="seasonal" hidden><span>Stagionale</span></label>
                   <label class="chip" data-cat="content" data-val="actor"><span class="chip-dot" style="background:#ec4899"></span><input type="checkbox" name="c" value="actor" hidden><span>Attori</span></label>
                   <label class="chip" data-cat="content" data-val="director"><span class="chip-dot" style="background:#8b5cf6"></span><input type="checkbox" name="c" value="director" hidden><span>Registi</span></label>
+                  <label class="chip" data-cat="content" data-val="writer"><span class="chip-dot" style="background:#f59e0b"></span><input type="checkbox" name="c" value="writer" hidden><span>Scrittori</span></label>
                   <label class="chip" data-cat="content" data-val="anime"><span class="chip-dot" style="background:#f43f5e"></span><input type="checkbox" name="c" value="anime" hidden><span>Anime</span></label>
                   <label class="chip" data-cat="stats" data-val="ranking"><span class="chip-dot" style="background:#fbbf24"></span><input type="checkbox" name="c" value="ranking" hidden><span>Classifica</span></label>
                   <label class="chip" data-cat="time" data-val="memories"><span class="chip-dot" style="background:#d946ef"></span><input type="checkbox" name="c" value="memories" hidden><span>Ricordi</span></label>
+                  <label class="chip" data-cat="stats" data-val="firstplay"><span class="chip-dot" style="background:#fbbf24"></span><input type="checkbox" name="c" value="firstplay" hidden><span>Primo</span></label>
                   <label class="chip" data-cat="stats" data-val="giorni"><span class="chip-dot" style="background:#06b6d4"></span><input type="checkbox" name="c" value="giorni" hidden><span>Giorni</span></label>
                   <label class="chip" data-cat="stats" data-val="migliore"><span class="chip-dot" style="background:#fbbf24"></span><input type="checkbox" name="c" value="migliore" hidden><span>Miglior anno</span></label>
                   <label class="chip" data-cat="stats" data-val="anno"><span class="chip-dot" style="background:#84cc16"></span><input type="checkbox" name="c" value="anno" hidden><span>Anno in corso</span></label>
@@ -284,6 +286,13 @@
                 <button id="installBtn" class="btn btn-primary btn-sm">Copia</button>
               </div>
               <p class="hint" id="syncInfo"></p>
+            </div>
+            <div class="p-section">
+              <div class="p-section-title">Esporta</div>
+              <a id="exportBtn" class="btn btn-ghost" style="text-decoration:none;width:100%;justify-content:center" href="#">
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 2v10M6 8l4 4 4-4M4 14v2a2 2 0 002 2h8a2 2 0 002-2v-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Scarica JSON storico
+              </a>
             </div>
             <div class="p-section" id="section-status">
               <div class="p-section-title">Stato</div>

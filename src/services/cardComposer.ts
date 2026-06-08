@@ -1,5 +1,4 @@
 import { supabase } from './supabase.js';
-import { generateSvgPoster, svgToDataUri } from './artworkService.js';
 import { fetchTmdbDetails } from './tmdbService.js';
 import { INSIGHT_CATALOG_ID } from '../addon/manifest.js';
 
@@ -33,21 +32,11 @@ async function cardMeta(
 ) {
   const accent = opts?.accent || '#0ea5e9';
 
-  const posterSvg = generateSvgPoster({
-    title: name,
-    subtitle: description.slice(0, 50),
-    accent,
-    statValue: opts?.statValue,
-    statLabel: opts?.statLabel,
-    imageUrl: opts?.imageUrl
-  });
-  const posterDataUri = svgToDataUri(posterSvg);
-
   const meta: any = {
     id,
     type: 'movie',
     name,
-    poster: opts?.imageUrl || posterDataUri,
+    poster: opts?.imageUrl || `/poster/${configId}/${id}.png`,
     posterShape: 'poster',
     genres: ['Insights'],
     description,
@@ -87,7 +76,7 @@ export async function rebuildAdaptiveRow(configId: string) {
 
   const s = insight.summary || {};
   const saved = prefs?.enabled_card_types || [];
-  const allEnabled = ['totals','streak','peak','weekly','genre','binge','dropped','monthly','recurring','rewatch','seasonal','actor','director','anime','ranking','memories','giorni','migliore','anno','mese','split','notturno','events','pace','weekend','annuale','primetime','decade','break'];
+  const allEnabled = ['totals','streak','peak','weekly','genre','binge','dropped','monthly','recurring','rewatch','seasonal','actor','director','writer','anime','ranking','memories','firstplay','giorni','migliore','anno','mese','split','notturno','events','pace','weekend','annuale','primetime','decade','break'];
   const enabled = saved.length > 0 ? saved : allEnabled;
   const cards: any[] = [];
   const details: { meta_id: string; meta: any }[] = [];
@@ -455,6 +444,30 @@ export async function rebuildAdaptiveRow(configId: string) {
     }
   }
 
+  // Scrittore preferito
+  if (enabled.includes('writer')) {
+    const writers = insight.top_writers || [];
+    if (writers.length > 0) {
+      const id = `adaptive_${configId}_writer`;
+      const top = writers[0];
+      cards.push(await cardMeta(configId, id,
+        `Scrittore: ${top.name}`,
+        `Compare in ${top.count} dei tuoi contenuti.`,
+        { accent: '#f59e0b', statValue: top.name, statLabel: 'SCRITTORE TOP' }
+      ));
+
+      details.push({
+        meta_id: id, meta: {
+          id, type: 'movie', name: 'Scrittori preferiti',
+          description: 'Gli scrittori che guardi di più.',
+          videos: writers.map((w: any, i: number) =>
+            video(`${id}_${i}`, w.name, new Date().toISOString(), `Compare in ${w.count} contenuti.`)
+          )
+        }
+      });
+    }
+  }
+
   // Anime
   if (enabled.includes('anime') && s.animeCount !== undefined && s.animeCount > 0) {
     const id = `adaptive_${configId}_anime`;
@@ -557,6 +570,34 @@ export async function rebuildAdaptiveRow(configId: string) {
         }
       });
     }
+  }
+
+  // Primo contenuto
+  if (enabled.includes('firstplay') && s.first_play) {
+    const id = `adaptive_${configId}_firstplay`;
+    const fp = s.first_play;
+    const d = new Date(fp.date);
+    const dateStr = d.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
+
+    let imageUrl = '';
+    let rating: number | null = null;
+    if (fp.tmdb_id) {
+      try { const dt = await fetchTmdbDetails(fp.tmdb_id, 'movie'); imageUrl = dt.poster || ''; rating = dt.rating; } catch {}
+    }
+
+    cards.push(await cardMeta(configId, id,
+      `Primo contenuto: ${fp.title}`,
+      `Il primo contenuto che hai mai registrato su Trakt: ${dateStr}`,
+      { accent: '#fbbf24', statValue: `${fp.title}`, statLabel: 'PRIMO', imageUrl, rating: rating || undefined }
+    ));
+
+    details.push({
+      meta_id: id, meta: {
+        id, type: 'movie', name: 'Il tuo primo contenuto',
+        description: 'Il primo contenuto mai registrato su Trakt.',
+        videos: [video(`${id}_1`, fp.title, fp.date, `Primo contenuto registrato il ${dateStr}.`)]
+      }
+    });
   }
 
   // Giorni totali

@@ -65,7 +65,8 @@ app.get('/:configId/catalog/:type/:id.json', async (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   const uuid = await resolveConfigId(req.params.configId);
   if (!uuid) return res.status(404).json({ metas: [] });
-  try { res.json(await catalogHandler(uuid, req.params.id)); }
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  try { res.json(await catalogHandler(uuid, req.params.id, baseUrl)); }
   catch (error) { logger.error({ error }, 'Catalog error'); res.status(500).json({ metas: [] }); }
 });
 

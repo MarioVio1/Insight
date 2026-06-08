@@ -82,28 +82,44 @@ export async function fetchTmdbDetails(tmdbId: number | string | null, type: str
   }
 }
 
-const creditsCache = new Map<string, { cast: string[]; crew: { directors: string[] } }>();
 const CREDITS_CACHE_TTL = 7 * 24 * 60 * 60 * 1000;
+
+async function getCachedCredits(tmdbId: string, type: string): Promise<{ cast: string[]; crew: { directors: string[]; writers: string[] } } | null> {
+  try {
+    const { data } = await supabase.from('tmdb_cache').select('data, updated_at').eq('tmdb_id', `credits_${type}_${tmdbId}`).eq('media_type', 'credits').maybeSingle();
+    if (data && Date.now() - new Date(data.updated_at).getTime() < CREDITS_CACHE_TTL) return data.data as any;
+  } catch {}
+  return null;
+}
+
+async function setCachedCredits(tmdbId: string, type: string, data: { cast: string[]; crew: { directors: string[]; writers: string[] } }) {
+  try {
+    await supabase.from('tmdb_cache').upsert({ tmdb_id: `credits_${type}_${tmdbId}`, media_type: 'credits', data, updated_at: new Date().toISOString() }, { onConflict: 'tmdb_id,media_type' });
+  } catch {}
+}
 
 export async function fetchCredits(tmdbId: string, type: 'movie' | 'tv') {
   if (!process.env.TMDB_API_KEY && !process.env.TMDB_BEARER_TOKEN) return null;
-  const cacheKey = `${type}_${tmdbId}`;
-  const cached = creditsCache.get(cacheKey);
+  const cached = await getCachedCredits(tmdbId, type);
   if (cached) return cached;
   const params: Record<string, string> = {};
   if (process.env.TMDB_API_KEY) params.api_key = process.env.TMDB_API_KEY;
   try {
     const { data } = await axios.get(`${TMDB_BASE}/${type}/${tmdbId}/credits`, { params, headers: authHeaders() });
-    const cast = (data.cast || []).slice(0, 10).map((c: any) => c.name).filter(Boolean);
+    const cast: string[] = (data.cast || []).map((c: any) => c.name).filter((n: string) => !!n);
     const directors: string[] = (data.crew || [])
       .filter((c: any) => c.job === 'Director' || c.department === 'Directing')
       .map((c: any) => c.name)
       .filter((n: string) => !!n);
-    const result = { cast, crew: { directors: [...new Set(directors)] } };
-    creditsCache.set(cacheKey, result);
+    const writers: string[] = (data.crew || [])
+      .filter((c: any) => c.department === 'Writing')
+      .map((c: any) => c.name)
+      .filter((n: string) => !!n);
+    const result = { cast, crew: { directors: [...new Set(directors)], writers: [...new Set(writers)] } };
+    await setCachedCredits(tmdbId, type, result);
     return result;
   } catch {
-    creditsCache.set(cacheKey, { cast: [], crew: { directors: [] } });
+    await setCachedCredits(tmdbId, type, { cast: [], crew: { directors: [], writers: [] } });
     return null;
   }
 }

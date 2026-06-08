@@ -1,5 +1,5 @@
-const FONT_FAMILY = "'Noto Sans', 'Noto Sans CJK JP', 'DejaVu Sans', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif";
-const SUBTITLE_MAX = 80;
+const FONT_FAMILY = "'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+const SUBTITLE_MAX = 90;
 
 function truncate(str: string, maxLen: number): string {
   if (str.length <= maxLen) return str;
@@ -19,13 +19,11 @@ export function generateSvgPoster(opts: { title: string; subtitle: string; accen
   const ff = FONT_FAMILY;
   const hasStat = !!statValue;
 
-  // Build accent colour shades
-  const accentLight = accent + '33';
-  const accentBorder = accent + '55';
+  const accentLight = accent + '22';
+  const accentBorder = accent + '44';
 
-  const insightLogo = `<polygon points="-14,-22 14,-22 0,22" fill="#ffffff"/><polygon points="-7,-11 7,-11 0,11" fill="${accent}"/>`;
+  const insightLogo = `<polygon points="-12,-18 12,-18 0,18" fill="#ffffff"/><polygon points="-6,-9 6,-9 0,9" fill="${accent}"/>`;
 
-  // if imageUrl is set, use dark overlay; otherwise use gradient bg
   const bgLayer = imageUrl
     ? `<image href="${imageUrl}" width="600" height="900" preserveAspectRatio="xMidYMid slice"/>
 <rect width="600" height="900" fill="url(#ol)"/>`
@@ -33,35 +31,29 @@ export function generateSvgPoster(opts: { title: string; subtitle: string; accen
 <rect width="600" height="900" fill="url(#gg)"/>`;
 
   const overlayDef = imageUrl
-    ? `<linearGradient id="ol" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#000" stop-opacity=".05"/><stop offset="40%" stop-color="#000" stop-opacity=".5"/><stop offset="100%" stop-color="#000" stop-opacity=".95"/></linearGradient>`
+    ? `<linearGradient id="ol" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#000" stop-opacity=".05"/><stop offset="30%" stop-color="#000" stop-opacity=".4"/><stop offset="100%" stop-color="#000" stop-opacity=".92"/></linearGradient>`
     : `<linearGradient id="gg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${accentLight}"/><stop offset="100%" stop-color="#0005"/></linearGradient>`;
+
+  const valFontSize = statValue.length > 8 ? 56 : statValue.length > 5 ? 68 : 80;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900">
   <defs>${overlayDef}
-  <filter id="s"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity=".6"/></filter>
-  <filter id="g"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <filter id="s"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity=".5"/></filter>
   </defs>
   ${bgLayer}
 
-  <!-- top bar -->
-  <rect x="30" y="24" width="540" height="56" rx="28" fill="#000" opacity=".3"/>
-  <rect x="30" y="24" width="540" height="56" rx="28" fill="none" stroke="${accentBorder}" stroke-width="1"/>
-  <g transform="translate(44,34)"><g transform="translate(0,10)">${insightLogo}</g><text x="44" y="37" fill="#fff" font-size="20" font-weight="900" font-family="${ff}" letter-spacing="5">INSIGHT</text></g>
-  ${statLabel ? `<g transform="translate(458,34)"><rect x="0" y="0" width="98" height="36" rx="18" fill="${accentLight}"/><text x="49" y="23" fill="${accent}" font-size="13" font-weight="800" font-family="${ff}" text-anchor="middle">${statLabel}</text></g>` : ''}
+  <rect x="24" y="20" width="552" height="48" rx="24" fill="#000" opacity=".25"/>
+  <rect x="24" y="20" width="552" height="48" rx="24" fill="none" stroke="${accentBorder}" stroke-width="1"/>
+  <g transform="translate(36,28)"><g transform="translate(0,6)">${insightLogo}</g><text x="38" y="31" fill="#fff" font-size="16" font-weight="800" font-family="${ff}" letter-spacing="4">INSIGHT</text></g>
+  ${statLabel ? `<g transform="translate(462,28)"><rect x="0" y="0" width="90" height="32" rx="16" fill="${accentLight}"/><text x="45" y="20" fill="${accent}" font-size="12" font-weight="700" font-family="${ff}" text-anchor="middle">${statLabel}</text></g>` : ''}
 
-  <!-- stat -->
-  ${hasStat ? `<rect x="60" y="270" width="480" height="360" rx="24" fill="#000" opacity=".4" filter="url(#s)"/>
-<rect x="60" y="270" width="480" height="360" rx="24" fill="none" stroke="${accentBorder}" stroke-width="1"/>
-<text x="300" y="${statValue.length > 6 ? 490 : 510}" fill="${accent}" font-size="${statValue.length > 6 ? 100 : 130}" font-weight="900" font-family="${ff}" text-anchor="middle" filter="url(#g)" letter-spacing="-3">${statValue}</text>
-${statLabel ? `<text x="300" y="575" fill="#fff" font-size="24" font-weight="800" font-family="${ff}" text-anchor="middle" letter-spacing="5">${statLabel}</text>` : ''}
-<rect x="260" y="595" width="80" height="2" rx="1" fill="${accent}" opacity=".6"/>` : ''}
+  ${hasStat ? `<text x="40" y="310" fill="${accent}" font-size="${valFontSize}" font-weight="900" font-family="${ff}" filter="url(#s)" letter-spacing="-2">${statValue}</text>
+<text x="40" y="345" fill="rgba(255,255,255,.5)" font-size="13" font-weight="500" font-family="${ff}">${statLabel}</text>` : ''}
 
-  <!-- title -->
-  <text x="40" y="${hasStat ? 800 : 620}" fill="#fff" font-size="${title.length > 20 ? 26 : 32}" font-weight="900" font-family="${ff}" filter="url(#s)"><tspan x="40" dy="0">${truncate(title, 45)}</tspan></text>
-  <text x="40" y="${hasStat ? 840 : 667}" fill="#94a3b8" font-size="17" font-weight="600" font-family="${ff}">${subtitle}</text>
+  <text x="40" y="${hasStat ? 720 : 540}" fill="#fff" font-size="${title.length > 22 ? 24 : 28}" font-weight="700" font-family="${ff}" filter="url(#s)"><tspan x="40" dy="0">${truncate(title, 42)}</tspan></text>
+  <text x="40" y="${hasStat ? 760 : 582}" fill="#94a3b8" font-size="16" font-weight="500" font-family="${ff}" line-height="1.4"><tspan x="40" dy="0">${subtitle}</tspan></text>
 
-  <!-- trakt -->
-  <text x="560" y="878" fill="#ed1c24" font-size="12" font-weight="800" font-family="${ff}" text-anchor="end" opacity=".9">trakt</text>
+  <text x="560" y="878" fill="#ed1c24" font-size="11" font-weight="700" font-family="${ff}" text-anchor="end" opacity=".8">trakt</text>
 </svg>`;
 }
 
@@ -100,32 +92,30 @@ export function generateOverlaySvg(opts: {
   const hasStat = !!statValue;
   const esc = escapeXml;
 
-  const accentLight = accent + '33';
-  const accentBorder = accent + '55';
+  const accentLight = accent + '22';
+  const accentBorder = accent + '44';
 
-  const insightLogo = `<polygon points="-14,-22 14,-22 0,22" fill="#ffffff"/><polygon points="-7,-11 7,-11 0,11" fill="${esc(accent)}"/>`;
+  const insightLogo = `<polygon points="-12,-18 12,-18 0,18" fill="#ffffff"/><polygon points="-6,-9 6,-9 0,9" fill="${esc(accent)}"/>`;
+
+  const valFontSize = statValue.length > 8 ? 56 : statValue.length > 5 ? 68 : 80;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900">
   <defs>
-  <filter id="s"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity=".6"/></filter>
-  <filter id="g"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <filter id="s"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity=".5"/></filter>
   </defs>
 
-  <rect x="30" y="24" width="540" height="56" rx="28" fill="#000" opacity=".3"/>
-  <rect x="30" y="24" width="540" height="56" rx="28" fill="none" stroke="${esc(accentBorder)}" stroke-width="1"/>
-  <g transform="translate(44,34)"><g transform="translate(0,10)">${insightLogo}</g><text x="44" y="37" fill="#fff" font-size="20" font-weight="900" font-family="${ff}" letter-spacing="5">INSIGHT</text></g>
-  ${statLabel ? `<g transform="translate(458,34)"><rect x="0" y="0" width="98" height="36" rx="18" fill="${esc(accentLight)}"/><text x="49" y="23" fill="${esc(accent)}" font-size="13" font-weight="800" font-family="${ff}" text-anchor="middle">${esc(statLabel)}</text></g>` : ''}
+  <rect x="24" y="20" width="552" height="48" rx="24" fill="#000" opacity=".25"/>
+  <rect x="24" y="20" width="552" height="48" rx="24" fill="none" stroke="${esc(accentBorder)}" stroke-width="1"/>
+  <g transform="translate(36,28)"><g transform="translate(0,6)">${insightLogo}</g><text x="38" y="31" fill="#fff" font-size="16" font-weight="800" font-family="${ff}" letter-spacing="4">INSIGHT</text></g>
+  ${statLabel ? `<g transform="translate(462,28)"><rect x="0" y="0" width="90" height="32" rx="16" fill="${esc(accentLight)}"/><text x="45" y="20" fill="${esc(accent)}" font-size="12" font-weight="700" font-family="${ff}" text-anchor="middle">${esc(statLabel)}</text></g>` : ''}
 
-  ${hasStat ? `<rect x="60" y="270" width="480" height="360" rx="24" fill="#000" opacity=".4" filter="url(#s)"/>
-<rect x="60" y="270" width="480" height="360" rx="24" fill="none" stroke="${esc(accentBorder)}" stroke-width="1"/>
-<text x="300" y="${statValue.length > 6 ? 490 : 510}" fill="${esc(accent)}" font-size="${statValue.length > 6 ? 100 : 130}" font-weight="900" font-family="${ff}" text-anchor="middle" filter="url(#g)" letter-spacing="-3">${esc(statValue)}</text>
-${statLabel ? `<text x="300" y="575" fill="#fff" font-size="24" font-weight="800" font-family="${ff}" text-anchor="middle" letter-spacing="5">${esc(statLabel)}</text>` : ''}
-<rect x="260" y="595" width="80" height="2" rx="1" fill="${esc(accent)}" opacity=".6"/>` : ''}
+  ${hasStat ? `<text x="40" y="310" fill="${esc(accent)}" font-size="${valFontSize}" font-weight="900" font-family="${ff}" filter="url(#s)" letter-spacing="-2">${esc(statValue)}</text>
+<text x="40" y="345" fill="rgba(255,255,255,.5)" font-size="13" font-weight="500" font-family="${ff}">${esc(statLabel)}</text>` : ''}
 
-  <text x="40" y="${hasStat ? 800 : 620}" fill="#fff" font-size="${title.length > 20 ? 26 : 32}" font-weight="900" font-family="${ff}" filter="url(#s)"><tspan x="40" dy="0">${esc(truncate(title, 45))}</tspan></text>
-  <text x="40" y="${hasStat ? 840 : 667}" fill="#94a3b8" font-size="17" font-weight="600" font-family="${ff}">${esc(truncate(subtitle, SUBTITLE_MAX))}</text>
+  <text x="40" y="${hasStat ? 720 : 540}" fill="#fff" font-size="${title.length > 22 ? 24 : 28}" font-weight="700" font-family="${ff}" filter="url(#s)"><tspan x="40" dy="0">${esc(truncate(title, 42))}</tspan></text>
+  <text x="40" y="${hasStat ? 760 : 582}" fill="#94a3b8" font-size="16" font-weight="500" font-family="${ff}" line-height="1.4"><tspan x="40" dy="0">${esc(truncate(subtitle, SUBTITLE_MAX))}</tspan></text>
 
-  <text x="560" y="878" fill="#ed1c24" font-size="12" font-weight="800" font-family="${ff}" text-anchor="end" opacity=".9">trakt</text>
+  <text x="560" y="878" fill="#ed1c24" font-size="11" font-weight="700" font-family="${ff}" text-anchor="end" opacity=".8">trakt</text>
 </svg>`;
 }
 
