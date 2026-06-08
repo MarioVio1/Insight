@@ -42,6 +42,13 @@ app.get('/logo.png', async (_req, res) => {
   }
 });
 app.get('/poster/:configId/:cardId.png', posterHandler);
+app.options('/poster/:configId/:cardId.png', (_req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', '*');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.status(204).end();
+});
 app.get('/manifest.json', (_req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.json(getManifest());

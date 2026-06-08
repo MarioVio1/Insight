@@ -71,13 +71,21 @@ export async function catalogHandler(configId: string, catalogId: string) {
   }
 
   const metas = (data?.metas ?? []).map((m: any) => {
-    const { imageUrl, ...rest } = m;
     const descWithStats = `${m.statLabel ? `[${m.statLabel}: ${m.statValue}]\n` : ''}${m.description}`;
     return { 
-      ...rest, 
+      id: m.id,
       type: INSIGHT_TYPE,
+      name: m.name,
+      poster: m.imageUrl || m.poster,
+      background: m.background,
       description: descWithStats,
-      poster: m.poster || m.background
+      posterShape: m.posterShape,
+      genres: m.genres,
+      logo: m.logo,
+      videos: m.videos,
+      runtime: m.runtime,
+      releaseInfo: m.releaseInfo,
+      imdb_id: m.imdb_id
     };
   });
 

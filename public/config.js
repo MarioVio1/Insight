@@ -29,6 +29,17 @@ if (!isConfig) {
   };
 
   // CTA links navigate directly to the configurator, so they work before JS hydration finishes.
+
+  const entBtn = $('enterBtn');
+  if (entBtn) entBtn.onclick = async () => {
+    const slug = slugInput.value.trim().replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
+    if (!slug) return;
+    entBtn.disabled = true; entBtn.textContent = '...';
+    const r = await fetch(`/api/config/${slug}`);
+    entBtn.disabled = false; entBtn.textContent = 'Entra';
+    if (r.ok) window.location.href = `/configure/${slug}`;
+    else slugInput.style.borderColor = '#ef4444';
+  };
 } else {
   // Configurator mode
   const app = $('app');
@@ -212,6 +223,17 @@ if (!isConfig) {
     await navigator.clipboard.writeText(manifestUrl);
     installBtn.textContent = 'Copiato!'; installBtn.style.background = '#22c55e'; installBtn.style.color = '#000';
     setTimeout(() => { installBtn.textContent = 'Copia'; installBtn.style.background = ''; installBtn.style.color = '' }, 2000);
+  };
+
+  const entBtn2 = $('enterBtn2');
+  if (entBtn2) entBtn2.onclick = async () => {
+    const slug = slugInput2.value.trim().replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
+    if (!slug) return;
+    entBtn2.disabled = true; entBtn2.textContent = '...';
+    const r = await fetch(`/api/config/${slug}`);
+    entBtn2.disabled = false; entBtn2.textContent = 'Entra';
+    if (r.ok) window.location.href = `/configure/${slug}`;
+    else slugInput2.style.borderColor = '#ef4444';
   };
 
   createForm2.onsubmit = async (e) => {
