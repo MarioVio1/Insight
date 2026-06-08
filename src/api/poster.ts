@@ -1,5 +1,5 @@
 import { supabase } from '../services/supabase.js';
-import { generateBackgroundSvg, generateOverlaySvg, generateSvgPoster } from '../services/artworkService.js';
+import { generateBackgroundSvg, generateCompactPosterSvg, generateOverlaySvg, generateSvgPoster } from '../services/artworkService.js';
 import { resolveConfigId } from '../services/db.js';
 import { fetchImageBuffer } from '../services/tmdbService.js';
 import { INSIGHT_CATALOG_ID, LEGACY_INSIGHT_CATALOG_ID } from '../addon/manifest.js';
@@ -131,6 +131,84 @@ function setCors(res: any) {
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', '*');
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+}
+
+export async function videoPosterHandler(req: any, res: any) {
+  setCors(res);
+  try {
+    const { configId, cardId, vIdx } = req.params;
+    if (!configId || !cardId || vIdx == null) { res.status(400).send('Missing params'); return; }
+
+    const uuid = await resolveConfigId(configId);
+    if (!uuid) { res.status(404).send('Config not found'); return; }
+
+    const cacheKey = `vp_${uuid}_${cardId}_${vIdx}`;
+    const cached = cache.get(cacheKey);
+    if (cached && Date.now() - cached.age < CACHE_TTL) {
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      res.send(cached.buffer);
+      return;
+    }
+
+    const { data: metaRow } = await supabase
+      .from('adaptive_meta')
+      .select('meta')
+      .eq('config_id', uuid)
+      .eq('meta_id', decodeURIComponent(cardId))
+      .maybeSingle();
+
+    const videos = metaRow?.meta?.videos || [];
+    const video = videos[parseInt(vIdx)];
+    if (!video) { res.status(404).send('Video not found'); return; }
+
+    const accent = metaRow?.meta?.accent || '#0ea5e9';
+    const cardAccent = accent;
+    const videoTitle = video.title || 'Insight';
+    const videoDesc = video.overview || '';
+
+    const sharp = await getSharp();
+    if (sharp) {
+      try {
+        const bgSvg = generateBackgroundSvg(cardAccent);
+        const bgBuf = await sharp(Buffer.from(bgSvg)).resize(300, 450).png().toBuffer();
+
+        const compactSvg = generateCompactPosterSvg({
+          title: videoTitle,
+          subtitle: videoDesc,
+          accent: cardAccent,
+          statValue: videoTitle.replace(/[^0-9]/g, '').slice(0, 6) || '',
+          statLabel: ''
+        });
+
+        const result = await sharp(bgBuf)
+          .composite([{ input: Buffer.from(compactSvg), top: 0, left: 0 }])
+          .png()
+          .toBuffer();
+
+        cache.set(cacheKey, { buffer: result, age: Date.now() });
+        res.setHeader('Content-Type', 'image/png');
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        res.send(result);
+        return;
+      } catch { /* fall through */ }
+    }
+
+    const svg = generateCompactPosterSvg({
+      title: videoTitle,
+      subtitle: videoDesc,
+      accent: cardAccent,
+      statValue: videoTitle.replace(/[^0-9]/g, '').slice(0, 6) || '',
+      statLabel: ''
+    });
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.send(svg);
+  } catch {
+    const svg = generateCompactPosterSvg({ title: 'Insight', subtitle: '', accent: '#0ea5e9' });
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.send(svg);
+  }
 }
 
 export async function posterHandler(req: any, res: any) {

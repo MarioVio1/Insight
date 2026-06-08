@@ -97,6 +97,57 @@ export function generateSvgPoster(opts: { title: string; subtitle: string; accen
 </svg>`;
 }
 
+export function generateCompactPosterSvg(opts: {
+  title: string;
+  subtitle: string;
+  accent: string;
+  statValue?: string;
+  statLabel?: string;
+}) {
+  const { accent, statValue, statLabel } = opts;
+  const title = escapeXml(opts.title || '');
+  const subtitle = escapeXml(opts.subtitle || '');
+  const ff = FONT_FAMILY;
+  const sv = statValue ? escapeXml(statValue) : '';
+  const sl = statLabel ? escapeXml(statLabel) : '';
+  const accentLight = accent + '22';
+  const accentBorder = accent + '44';
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="450" viewBox="0 0 300 450">
+  <defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#0f172a"/>
+    <stop offset="55%" stop-color="${accentLight}"/>
+    <stop offset="100%" stop-color="#020617"/>
+  </linearGradient>
+  <radialGradient id="g1" cx="80%" cy="10%" r="60%">
+    <stop offset="0%" stop-color="${accent}" stop-opacity=".35"/>
+    <stop offset="100%" stop-color="${accent}" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="g2" cx="20%" cy="90%" r="50%">
+    <stop offset="0%" stop-color="${accent}" stop-opacity=".2"/>
+    <stop offset="100%" stop-color="${accent}" stop-opacity="0"/>
+  </radialGradient>
+  <filter id="s"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#000" flood-opacity=".5"/></filter>
+  </defs>
+  <rect width="300" height="450" fill="url(#bg)"/>
+  <rect width="300" height="450" fill="url(#g1)"/>
+  <rect width="300" height="450" fill="url(#g2)"/>
+
+  <rect x="12" y="10" width="276" height="24" rx="12" fill="#000" opacity=".25"/>
+  <rect x="12" y="10" width="276" height="24" rx="12" fill="none" stroke="${accentBorder}" stroke-width="1"/>
+  <g transform="translate(18,14)"><polygon points="-6,-9 6,-9 0,9" fill="#ffffff"/><polygon points="-3,-5 3,-5 0,5" fill="${accent}"/><text x="22" y="6" fill="#fff" font-size="10" font-weight="800" font-family="${ff}" letter-spacing="3">INSIGHT</text></g>
+
+  ${sv ? `<text x="20" y="160" fill="${accent}" font-size="${sv.length > 6 ? 28 : 36}" font-weight="900" font-family="${ff}" filter="url(#s)" letter-spacing="-1">${sv}</text>
+<text x="20" y="180" fill="rgba(255,255,255,.5)" font-size="9" font-weight="500" font-family="${ff}">${sl}</text>` : ''}
+
+  <text x="20" y="${sv ? 360 : 240}" fill="#fff" font-size="${title.length > 20 ? 12 : 14}" font-weight="700" font-family="${ff}" filter="url(#s)">${truncate(title, 32)}</text>
+  <text x="20" y="${sv ? 378 : 260}" fill="#94a3b8" font-size="9" font-weight="500" font-family="${ff}">${truncate(subtitle, 60)}</text>
+
+  <text x="280" y="438" fill="#ed1c24" font-size="8" font-weight="700" font-family="${ff}" text-anchor="end" opacity=".8">trakt</text>
+</svg>`;
+}
+
 export function generateBackgroundSvg(accent: string, theme = '#0f172a') {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900">
     <defs>

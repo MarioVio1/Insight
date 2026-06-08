@@ -84,7 +84,7 @@ export async function syncConfig(configId: string) {
 
     await ensureDefaultProfile(configId);
     await computeAdaptiveInsights(configId);
-    await rebuildAdaptiveRow(configId);
+    await rebuildAdaptiveRow(configId, process.env.BASE_URL || 'https://insightboard-production-335f.up.railway.app');
 
     logger.info({ configId }, 'Sync completed');
     return { ok: true, count: historyRows.length };

@@ -54,7 +54,10 @@ function video(id: string, title: string, released: string, overview: string) {
   return { id, title, released, overview };
 }
 
-export async function rebuildAdaptiveRow(configId: string) {
+const TMDB_IMG = process.env.TMDB_IMAGE_BASE_URL || 'https://image.tmdb.org/t/p';
+
+export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
+  if (!baseUrl) baseUrl = process.env.BASE_URL || 'http://localhost:3000';
   const cfgRes = await supabase.from('addon_configs').select('*').eq('id', configId).single();
   if (cfgRes.error && String(cfgRes.error).includes('does not exist')) {
     throw new Error('Tabella "addon_configs" non esiste.');
@@ -937,6 +940,19 @@ export async function rebuildAdaptiveRow(configId: string) {
         videos: [video(`${id}_1`, `${s.uniqueShows} serie uniche`, new Date().toISOString(), `${s.avgEpisodesPerShow} episodi medi per serie.`)]
       }
     });
+  }
+
+  // Arricchisce ogni video con thumbnail
+  for (const d of details) {
+    if (d.meta?.videos?.length) {
+      d.meta.videos = d.meta.videos.map((v: any, i: number) => {
+        if (v.tmdb_id) {
+          const posterFallback = `${baseUrl}/vposter/${configId}/${encodeURIComponent(d.meta_id)}/${i}.png`;
+          return { ...v, thumbnail: posterFallback };
+        }
+        return { ...v, thumbnail: `${baseUrl}/vposter/${configId}/${encodeURIComponent(d.meta_id)}/${i}.png` };
+      });
+    }
   }
 
   await supabase.from('adaptive_rows').upsert({
