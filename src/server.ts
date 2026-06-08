@@ -54,7 +54,7 @@ app.get('/:configId/manifest.json', async (req, res) => {
   res.json(getManifest(uuid, req.params.configId));
 });
 
-app.get('/:configId/catalog/:type/:id/:extra?.json', async (req, res) => {
+app.get('/:configId/catalog/:type/:id.json', async (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   const uuid = await resolveConfigId(req.params.configId);
   if (!uuid) return res.status(404).json({ metas: [] });
