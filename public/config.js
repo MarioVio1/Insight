@@ -228,7 +228,15 @@ if (!isConfig) {
   if (stremioBtn) {
     stremioBtn.addEventListener('click', () => {
       if (!manifestUrl) return;
-      window.open('stremio://install/' + encodeURIComponent(manifestUrl), '_self');
+      window.open('stremio://' + manifestUrl.replace(/^https?:\/\//, ''), '_self');
+    });
+  }
+
+  const webBtn = $('stremioWebBtn');
+  if (webBtn) {
+    webBtn.addEventListener('click', () => {
+      if (!manifestUrl) return;
+      window.open('https://app.strem.io/shell-v4.4?addon=' + encodeURIComponent(manifestUrl), '_blank');
     });
   }
 

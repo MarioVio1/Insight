@@ -1,4 +1,4 @@
-export const INSIGHT_TYPE = 'insight';
+export const INSIGHT_TYPE = 'movie';
 export const INSIGHT_CATALOG_ID = 'insight-stats';
 export const LEGACY_INSIGHT_CATALOG_ID = 'adaptive-insights';
 
