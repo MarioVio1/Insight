@@ -3,6 +3,7 @@ import { supabase } from '../services/supabase.js';
 import { generatePosterBuffer, generateSvgPoster } from '../services/artworkService.js';
 import { resolveConfigId } from '../services/db.js';
 import { fetchImageBuffer } from '../services/tmdbService.js';
+import { INSIGHT_CATALOG_ID, LEGACY_INSIGHT_CATALOG_ID } from '../addon/manifest.js';
 
 const CACHE_TTL = 300_000;
 
@@ -84,12 +85,22 @@ export async function posterHandler(req: Request, res: Response) {
       return;
     }
 
-    const { data: rowData } = await supabase
+    let { data: rowData } = await supabase
       .from('adaptive_rows')
       .select('metas')
       .eq('config_id', uuid)
-      .eq('catalog_id', 'adaptive-insights')
+      .eq('catalog_id', INSIGHT_CATALOG_ID)
       .maybeSingle();
+
+    if (!rowData?.metas?.length) {
+      const { data: legacy } = await supabase
+        .from('adaptive_rows')
+        .select('metas')
+        .eq('config_id', uuid)
+        .eq('catalog_id', LEGACY_INSIGHT_CATALOG_ID)
+        .maybeSingle();
+      if (legacy?.metas?.length) rowData = legacy;
+    }
 
     const cardData = buildCardData(rowData, cardId);
 
@@ -129,12 +140,22 @@ export async function videoPosterHandler(req: Request, res: Response) {
     const uuid = await resolveConfigId(configId);
     if (!uuid) { res.status(404).send('Config not found'); return; }
 
-    const { data: rowData } = await supabase
+    let { data: rowData } = await supabase
       .from('adaptive_rows')
       .select('metas')
       .eq('config_id', uuid)
-      .eq('catalog_id', 'adaptive-insights')
+      .eq('catalog_id', INSIGHT_CATALOG_ID)
       .maybeSingle();
+
+    if (!rowData?.metas?.length) {
+      const { data: legacy } = await supabase
+        .from('adaptive_rows')
+        .select('metas')
+        .eq('config_id', uuid)
+        .eq('catalog_id', LEGACY_INSIGHT_CATALOG_ID)
+        .maybeSingle();
+      if (legacy?.metas?.length) rowData = legacy;
+    }
 
     if (!rowData?.metas) { res.status(404).send('No metas'); return; }
 
