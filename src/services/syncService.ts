@@ -34,7 +34,7 @@ function normalizeWatchItem(configId: string, item: any, traktType: 'movie' | 's
     watched_at: ts,
     runtime_minutes: episode?.runtime || (traktType === 'movie' ? source.runtime : null) || null,
     genres: source.genres || null,
-    tmdb_id: episode?.ids?.tmdb || source.ids?.tmdb || null,
+    tmdb_id: source.ids?.tmdb || episode?.ids?.tmdb || null,
     payload: item
   };
 }

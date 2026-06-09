@@ -13,14 +13,27 @@ async function getEvents(configId: string, daysBack?: number): Promise<any[]> {
 }
 
 function eventToVideo(event: any, index: number, prefix: string) {
+  const episodeTitle = event.payload?.episode?.title;
   return {
     id: `${prefix}_c_${index}`,
-    title: event.title,
+    title: episodeTitle || event.title,
     released: event.watched_at,
-    overview: `${event.trakt_type === 'movie' ? 'Film' : event.year ? `Episodio (${event.year})` : 'Episodio'}`,
+    overview: episodeTitle
+      ? `${event.title} · Stagione ${event.payload.episode.season} Episodio ${event.payload.episode.number}`
+      : `${event.trakt_type === 'movie' ? 'Film' : event.year ? `Episodio (${event.year})` : 'Episodio'}`,
     tmdb_id: event.tmdb_id,
     trakt_type: event.trakt_type
   };
+}
+
+function dedupeEvents(events: any[]): any[] {
+  const seen = new Set<number>();
+  return events.filter(e => {
+    if (!e.tmdb_id) return true;
+    if (seen.has(e.tmdb_id)) return false;
+    seen.add(e.tmdb_id);
+    return true;
+  });
 }
 
 async function cardMeta(
@@ -199,7 +212,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
       { accent: '#a855f7', statValue: tg, statLabel: 'GENERE TOP' }
     ));
 
-    const genreEvents = tg && tg.length > 0 ? (await getEvents(configId)).filter((e: any) => (e.genres || []).includes(tg)).slice(0, 30) : [];
+    const genreEvents = tg && tg.length > 0 ? dedupeEvents((await getEvents(configId)).filter((e: any) => (e.genres || []).includes(tg))).slice(0, 30) : [];
     const genreVids = genreEvents.length > 0
       ? genreEvents.map((evt: any, i: number) => eventToVideo(evt, i, id))
       : genreCounts.slice(0, 10).map((g: any, i: number) =>
@@ -294,7 +307,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
       { accent: '#14b8a6', statValue: `${curr}`, statLabel: 'QUESTO MESE' }
     ));
 
-    const recentEvents = await getEvents(configId, 30);
+    const recentEvents = dedupeEvents(await getEvents(configId, 30));
     const monthlyVids = recentEvents.slice(0, 40).map((evt, i) => eventToVideo(evt, i, id));
 
     details.push({
@@ -507,9 +520,9 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
     if (ad.length > 0) av.push(video(`${id}_5`, `${ad.length} anime in pausa`, new Date().toISOString(), 'Anime che non guardi da mesi.'));
     if (ar.length > 0) av.push(video(`${id}_6`, `${ar[0].title} rivisto ${ar[0].count}x`, new Date().toISOString(), 'Anime più rivisto.'));
 
-    const animeEvts = (await getEvents(configId)).filter((e: any) => (e.genres || []).includes('anime')).slice(0, 30);
+    const animeEvts = dedupeEvents((await getEvents(configId)).filter((e: any) => (e.genres || []).includes('anime')));
     const animeVids = animeEvts.length > 0
-      ? animeEvts.map((evt: any, i: number) => eventToVideo(evt, i, id))
+      ? animeEvts.slice(0, 30).map((evt: any, i: number) => eventToVideo(evt, i, id))
       : av;
 
     details.push({
@@ -766,7 +779,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
   // Attività recente (Events)
   if (enabled.includes('events')) {
     const id = `adaptive_${configId}_events`;
-    const recentEvts = await getEvents(configId, 7);
+    const recentEvts = dedupeEvents(await getEvents(configId, 7));
     const evtVids = recentEvts.slice(0, 40).map((evt, i) => eventToVideo(evt, i, id));
 
     cards.push(await cardMeta(configId, id,
