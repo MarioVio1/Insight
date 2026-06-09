@@ -83,7 +83,14 @@ export async function catalogHandler(configId: string, catalogId: string, baseUr
 
   const metas = (data?.metas ?? []).map((m: any) => {
     const { statValue, statLabel, imageUrl, ...clean } = m;
-    return { ...clean, type: 'movie' };
+    const meta: any = { ...clean, type: 'movie' };
+    if (meta.poster && !meta.poster.startsWith('http')) {
+      meta.poster = `${baseUrl || ''}${meta.poster}`;
+    }
+    if (meta.background && !meta.background.startsWith('http')) {
+      meta.background = `${baseUrl || ''}${meta.background}`;
+    }
+    return meta;
   });
 
   return { metas };
