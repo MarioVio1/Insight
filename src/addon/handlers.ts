@@ -164,28 +164,16 @@ export async function metaHandler(configId: string, metaId: string) {
         .select('title, watched_at, trakt_type, tmdb_id')
         .eq('config_id', configId)
         .order('watched_at', { ascending: false })
-        .limit(10);
+        .limit(3);
 
       if (recent && recent.length > 0) {
-        const recentLookups = recent
-          .filter(e => e.tmdb_id)
-          .map(e => getTmdbData(e.tmdb_id, e.trakt_type === 'movie' ? 'movie' : 'tv'));
-        const recentResults = recentLookups.length > 0 ? await Promise.all(recentLookups) : [];
-        let rIdx = 0;
-        for (let i = 0; i < recent.length; i++) {
-          const evt = recent[i];
-          let rt = null;
-          if (evt.tmdb_id) {
-            rt = recentResults[rIdx];
-            rIdx++;
-          }
+        for (const evt of recent) {
+          if (!evt.tmdb_id) continue;
           enrichedVideos.push({
-            id: `${metaId}_recent_${i}`,
+            id: `${metaId}_recent_${enrichedVideos.length}`,
             title: evt.title,
             released: evt.watched_at,
-            overview: 'Contenuto recente dalle tue statistiche',
-            thumbnail: rt?.backdrop || rt?.poster || undefined,
-            rating: rt?.rating || undefined,
+            overview: '',
             tmdb_id: evt.tmdb_id
           });
         }
