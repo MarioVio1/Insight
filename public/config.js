@@ -97,7 +97,7 @@ if (!isConfig) {
     try {
       const r = await fetch(`/${configId}/catalog/insight/insight-stats.json`);
       const d = await r.json();
-      if (!d.metas || !d.metas.length) { previewGrid.innerHTML = '<div class="pempty"><p>Nessuna card. Fai il sync.</p></div>'; return; }
+      if (!d.metas || !d.metas.length) { previewGrid.innerHTML = '<div class="pempty"><div class="pempty-icon">📊</div><p><strong>Nessuna card ancora</strong></p><p style="font-size:11px;color:var(--m);max-width:200px">Completato il sync, le card appariranno qui automaticamente</p></div>'; return; }
       previewGrid.innerHTML = '';
       for (const m of d.metas) {
         const c = document.createElement('div'); c.className = 'pcard';
@@ -156,11 +156,23 @@ if (!isConfig) {
     } catch {}
   }
 
+  function statusMsg(text, type) {
+    const si = $('sIssues'); if (!si) return;
+    if (!text) { si.classList.remove('show'); si.innerHTML = ''; return; }
+    si.classList.add('show');
+    if (type === 'ok') { si.style.background='rgba(34,197,94,.06)'; si.style.border='1px solid rgba(34,197,94,.12)'; si.style.color='#86efac'; }
+    else if (type === 'warn') { si.style.background='rgba(234,179,8,.06)'; si.style.border='1px solid rgba(234,179,8,.12)'; si.style.color='#fde047'; }
+    else { si.style.background=''; si.style.border=''; si.style.color=''; }
+    si.innerHTML = '<div>' + text + '</div>';
+  }
+
   async function loadConfig() {
-    if (!configId) return;
+    if (!configId) { statusMsg('Inserisci uno slug per iniziare', 'warn'); return; }
+    statusMsg('Caricamento configurazione...', '');
     const r = await fetch(`/api/config/${configId}`);
     const d = await r.json();
-    if (!r.ok) return;
+    if (!r.ok) { statusMsg('Configurazione non trovata. Crea un nuovo slug.', 'warn'); return; }
+    statusMsg('', '');
     show('section-trakt'); show('section-cards'); show('section-sync');
     if (accountBadge && d.trakt_username) { accountBadge.classList.remove('hide'); uname.textContent = d.trakt_username; }
     if (udidValue && d.udid) { show('section-token'); udidValue.textContent = d.udid; }
@@ -211,6 +223,14 @@ if (!isConfig) {
     installBtn.textContent = 'Copiato!'; installBtn.style.background = '#22c55e'; installBtn.style.color = '#000';
     setTimeout(() => { installBtn.textContent = 'Copia'; installBtn.style.background = ''; installBtn.style.color = '' }, 2000);
   };
+
+  const stremioBtn = $('stremioBtn');
+  if (stremioBtn) {
+    stremioBtn.addEventListener('click', () => {
+      if (!manifestUrl) return;
+      window.open('stremio://install/' + encodeURIComponent(manifestUrl), '_self');
+    });
+  }
 
   createForm2.onsubmit = async (e) => {
     e.preventDefault();
@@ -309,4 +329,5 @@ if (!isConfig) {
   $('refreshPreviewBtn')?.addEventListener('click', loadPreview);
   loadConfig();
   updExportLink();
+  try { localStorage.setItem('insight_last_slug', configId); } catch(e) {}
 }

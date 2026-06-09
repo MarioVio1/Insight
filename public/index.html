@@ -182,8 +182,14 @@
  <div class="metric"><div class="metric-val" style="color:#38bdf8">24h</div><div class="metric-label">Sync</div></div>
  <div class="metric"><div class="metric-val" style="color:#a855f7">TMDB</div><div class="metric-label">Poster</div></div>
  </div>
- <div class="setup-box" id="setupBox" style="display:none;margin-top:32px">
- <form id="createForm" class="slug">
+  <div class="setup-box" id="setupBox" style="display:none;margin-top:32px">
+  <div id="continueBanner" style="display:none;margin-bottom:12px">
+  <a id="continueLink" href="#" class="btn btn-ghost" style="width:100%;justify-content:center;padding:8px 16px;border:1px solid rgba(14,165,233,.2);border-radius:12px;background:rgba(14,165,233,.04)">
+  <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm-1 5l4 3-4 3V7z" fill="currentColor"/></svg>
+  Continua dove eri rimasto
+  </a>
+  </div>
+  <form id="createForm" class="slug">
  <div class="slug-in"><span class="slug-px">insight.to/</span><input type="text" id="slugInput" placeholder="mario123" required autocomplete="off" spellcheck="false"></div>
  <button class="btn btn-primary" type="submit" id="createBtn" style="width:100%;margin-top:10px">Accedi</button>
  </form>
@@ -375,14 +381,27 @@
  </div>
  <div class="panel-body">
  <div class="pgrid" id="previewGrid">
- <div class="pempty"><p>Fai il sync per vedere le card</p></div>
+  <div class="pempty" id="pemptyDefault">
+  <div class="pempty-icon">📊</div>
+  <p><strong>Nessuna card ancora</strong></p>
+  <p style="font-size:11px;color:var(--m);max-width:200px">Collega Trakt e fai il sync per visualizzare le tue statistiche</p>
+  </div>
  </div>
  </div>
  </div>
- <div class="panel" style="grid-column:3">
- <div class="panel-header"><h3>Install</h3></div>
- <div class="panel-body">
- <div class="p-section hide" id="section-token">
+  <div class="panel" style="grid-column:3">
+  <div class="panel-header"><h3>Install</h3></div>
+  <div class="panel-body">
+  <div class="p-section" id="section-guide">
+  <div class="p-section-title">Come installare</div>
+  <div class="guide">
+  <div class="guide-step"><span class="guide-num">1</span><div class="guide-text"><strong>Collega Trakt</strong><span class="guide-sub">Autorizza l'accesso alla cronologia</span></div></div>
+  <div class="guide-step"><span class="guide-num">2</span><div class="guide-text"><strong>Sincronizza</strong><span class="guide-sub">Elabora tutti i dati Trakt</span></div></div>
+  <div class="guide-step"><span class="guide-num">3</span><div class="guide-text"><strong>Apri in Stremio</strong><span class="guide-sub">Usa il bottone qui sotto per installare</span></div></div>
+  <div class="guide-step"><span class="guide-check">✓</span><div class="guide-text"><strong>Fatto!</strong><span class="guide-sub">Le card appaiono nella home di Stremio</span></div></div>
+  </div>
+  </div>
+  <div class="p-section hide" id="section-token">
  <div class="p-section-title">Token</div>
  <div class="tbox">
  <span class="tbox-label">Token</span>
@@ -396,10 +415,16 @@
  <code id="manifestBox"></code>
  <button id="installBtn" class="btn btn-primary btn-sm">Copia</button>
  </div>
- <p class="hint" id="syncInfo"></p>
- </div>
- <div class="p-section">
- <div class="p-section-title">Esporta</div>
+  <p class="hint" id="syncInfo"></p>
+  <div class="mbox" style="margin-top:8px">
+  <button id="stremioBtn" class="btn btn-primary" style="width:100%;justify-content:center">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+  Apri in Stremio
+  </button>
+  </div>
+  </div>
+  <div class="p-section">
+  <div class="p-section-title">Esporta</div>
  <a id="exportBtn" class="btn btn-ghost" style="text-decoration:none;width:100%;justify-content:center" href="#">
  <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 2v10M6 8l4 4 4-4M4 14v2a2 2 0 002 2h8a2 2 0 002-2v-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
  Scarica JSON storico
@@ -421,6 +446,20 @@
  </div>
  </div>
 
- <script src="/config.js"></script>
+  <script>
+    (function() {
+      var lastSlug;
+      try { lastSlug = localStorage.getItem('insight_last_slug'); } catch(e) {}
+      if (lastSlug) {
+        var banner = document.getElementById('continueBanner');
+        var link = document.getElementById('continueLink');
+        if (banner && link) {
+          link.href = '/configure/' + lastSlug;
+          banner.style.display = '';
+        }
+      }
+    })();
+  </script>
+  <script src="/config.js"></script>
 </body>
 </html>
