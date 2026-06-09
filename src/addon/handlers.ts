@@ -40,7 +40,7 @@ async function getPersonImage(name: string): Promise<string | null> {
   }
 }
 
-export async function catalogHandler(configId: string, catalogId: string) {
+export async function catalogHandler(configId: string, catalogId: string, baseUrl?: string) {
   const { data } = await supabase
     .from('adaptive_rows')
     .select('metas')
@@ -86,8 +86,8 @@ export async function metaHandler(configId: string, metaId: string) {
   const videos = meta.videos || [];
 
   const tmdbLookups = videos
-    .filter(v => v.tmdb_id)
-    .map(v => getTmdbData(v.tmdb_id, v.trakt_type || 'movie'));
+    .filter((v: any) => v.tmdb_id)
+    .map((v: any) => getTmdbData(v.tmdb_id, v.trakt_type || 'movie'));
   const tmdbResults = tmdbLookups.length > 0 ? await Promise.all(tmdbLookups) : [];
 
   let tmdbIdx = 0;

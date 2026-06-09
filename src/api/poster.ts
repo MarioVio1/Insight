@@ -121,3 +121,55 @@ export async function posterHandler(req: Request, res: Response) {
     res.send(svg);
   }
 }
+
+export async function videoPosterHandler(req: Request, res: Response) {
+  setCors(res);
+  try {
+    const { configId, cardId, vIdx } = req.params;
+    if (!configId || !cardId || vIdx === undefined) { res.status(400).send('Missing params'); return; }
+
+    const uuid = await resolveConfigId(configId);
+    if (!uuid) { res.status(404).send('Config not found'); return; }
+
+    const { data: rowData } = await supabase
+      .from('adaptive_rows')
+      .select('metas')
+      .eq('config_id', uuid)
+      .eq('catalog_id', 'adaptive-insights')
+      .maybeSingle();
+
+    if (!rowData?.metas) { res.status(404).send('No metas'); return; }
+
+    const card = rowData.metas.find((m: any) => m.id === cardId || m.id.endsWith(`_${cardId}`));
+    if (!card) { res.status(404).send('Card not found'); return; }
+
+    const metaId = `adaptive_${uuid}_${cardId}`;
+    const { data: metaData } = await supabase
+      .from('adaptive_meta')
+      .select('meta')
+      .eq('config_id', uuid)
+      .eq('meta_id', metaId)
+      .maybeSingle();
+
+    const videos = metaData?.meta?.videos || [];
+    const vid = videos[parseInt(vIdx, 10)];
+    if (!vid) { res.status(404).send('Video not found'); return; }
+
+    if (vid.tmdb_id) {
+      const { fetchTmdbDetails } = await import('../services/tmdbService.js');
+      const tmdbData = await fetchTmdbDetails(vid.tmdb_id, vid.trakt_type || 'movie');
+      const imgUrl = tmdbData?.backdrop || tmdbData?.poster;
+      if (imgUrl) {
+        res.redirect(imgUrl);
+        return;
+      }
+    }
+
+    const fallback = generateSvgPoster({ title: vid.title, subtitle: 'Nessuna immagine disponibile', imageUrl: '' });
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.send(fallback);
+  } catch {
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.send(generateSvgPoster({ title: 'Insight', subtitle: 'Statistiche personali' }));
+  }
+}
