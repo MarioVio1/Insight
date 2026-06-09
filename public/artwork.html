@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Artwork Generator - Adaptive Insights</title>
+<link rel="stylesheet" href="/style.css" />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+.container{max-width:880px;margin:0 auto;padding:32px 20px}
+h1{font-size:24px;font-weight:800;letter-spacing:-.5px;margin-bottom:4px}
+.sub{color:rgba(255,255,255,.45);font-size:13px;margin-bottom:24px}
+.back{display:inline-flex;align-items:center;gap:4px;color:rgba(255,255,255,.3);font-size:12px;text-decoration:none;margin-bottom:16px}
+.back:hover{color:var(--o,#0ea5e9)}
+.row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.col{flex:1;min-width:180px}
+label{display:block;font-size:11px;font-weight:600;color:rgba(255,255,255,.4);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+input,select{width:100%;padding:9px 12px;background:var(--b,#0a0a0f);border:1px solid rgba(255,255,255,.08);border-radius:8px;color:#fff;font-size:13px;font-family:inherit;outline:none}
+input:focus,select:focus{border-color:var(--o,#0ea5e9)}
+.preview{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;margin-top:16px}
+.preview img{border-radius:8px;border:1px solid rgba(255,255,255,.08);max-width:100%;max-height:400px}
+.preview .empty{width:200px;height:300px;border-radius:8px;border:1px dashed rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.2);font-size:12px;text-align:center;padding:20px}
+.url-row{display:flex;gap:8px;margin-top:12px}
+.url-row input{flex:1;font-family:'IBM Plex Mono',monospace;font-size:11px}
+.info{font-size:12px;color:rgba(255,255,255,.3);margin-top:8px}
+.btn{padding:9px 20px;border-radius:8px;font-size:13px;font-weight:600;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.btn-p{background:var(--o,#0ea5e9);color:#000}
+.btn-p:hover{background:#38bdf8}
+.btn-g{background:rgba(255,255,255,.04);color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.06)}
+.btn-g:hover{color:#fff;border-color:rgba(255,255,255,.12)}
+.btn-s{padding:6px 14px;font-size:11px}
+.spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.08);border-top-color:var(--o,#0ea5e9);border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="container">
+<a href="/" class="back">&larr; Torna alla home</a>
+<h1>Generatore Artwork</h1>
+<p class="sub">Genera poster, backdrop, logo e thumbnail con badge rating sovrapposti. Usa un ID TMDB o genera senza immagine di base.</p>
+
+<div class="panel" style="padding:20px;border-radius:12px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.02)">
+<div class="row">
+<div class="col">
+<label>Tipo</label>
+<select id="artType">
+<option value="poster">Poster (300x450)</option>
+<option value="backdrop">Backdrop (1280x720)</option>
+<option value="logo">Logo (400x200)</option>
+<option value="thumbnail">Thumbnail (92x138)</option>
+</select></div>
+<div class="col">
+<label>TMDB ID</label>
+<input id="artId" placeholder="es. 27205 (lascia vuoto per badge-only)">
+</div>
+<div class="col">
+<label>Media Type</label>
+<select id="artMedia"><option value="movie">Movie</option><option value="tv">TV</option></select></div>
+</div>
+<div class="row">
+<div class="col">
+<label>Rating</label>
+<input type="number" id="artRating" value="7.5" min="0" max="10" step="0.1">
+</div>
+<div class="col">
+<label>Stile Badge</label>
+<select id="artStyle">
+<option value="star">Star</option>
+<option value="pill">Pill</option>
+<option value="circle">Circle</option>
+<option value="minimal">Minimal</option>
+</select></div>
+<div class="col">
+<label>Etichetta</label>
+<input id="artSource" value="TMDB" placeholder="TMDB, IMDB, Trakt">
+</div>
+</div>
+<button class="btn btn-p" onclick="generate()">Genera</button>
+</div>
+
+<div class="preview" id="preview">
+<div class="empty" id="placeholder">Configura e genera<br>per vedere l'anteprima</div>
+<div style="flex:1;min-width:200px">
+<div class="url-row">
+<input id="urlOut" readonly placeholder="URL dell'artwork">
+<button class="btn btn-g btn-s" onclick="copyUrl()">Copia</button>
+</div>
+<div class="info">Dimensioni: <span id="dimInfo">—</span></div>
+</div>
+</div>
+</div>
+
+<script>
+const SIZES={poster:{w:300,h:450},backdrop:{w:1280,h:720},logo:{w:400,h:200},thumbnail:{w:92,h:138}}
+async function generate(){
+const type=document.getElementById('artType').value
+const id=document.getElementById('artId').value.trim()
+const media=document.getElementById('artMedia').value
+const rating=document.getElementById('artRating').value
+const style=document.getElementById('artStyle').value
+const source=document.getElementById('artSource').value
+const dim=SIZES[type]||SIZES.poster
+document.getElementById('dimInfo').textContent=dim.w+'x'+dim.h
+let url=window.location.origin+'/artwork/'+type+'?rating='+rating+'&badge_style='+style+'&source='+encodeURIComponent(source)
+if(id)url+='&id='+id+'&media_type='+media
+document.getElementById('urlOut').value=url
+const ph=document.getElementById('placeholder')
+ph.innerHTML='<div class="spinner"></div>'
+ph.className=''
+const img=new Image()
+img.onload=()=>{ph.innerHTML='';ph.appendChild(img)}
+img.onerror=()=>{ph.innerHTML='<div style="color:#ef4444">Errore caricamento</div>'}
+img.src=url
+}
+function copyUrl(){const i=document.getElementById('urlOut');i.select();document.execCommand('copy')}
+</script>
+</body>
+</html>

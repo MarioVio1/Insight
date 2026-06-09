@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Stremio Proxy - Adaptive Insights</title>
+<link rel="stylesheet" href="/style.css" />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+.container{max-width:720px;margin:0 auto;padding:32px 20px}
+h1{font-size:24px;font-weight:800;letter-spacing:-.5px;margin-bottom:4px}
+.sub{color:rgba(255,255,255,.45);font-size:13px;margin-bottom:24px}
+.back{display:inline-flex;align-items:center;gap:4px;color:rgba(255,255,255,.3);font-size:12px;text-decoration:none;margin-bottom:16px}
+.back:hover{color:var(--o,#0ea5e9)}
+.card{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:20px;margin-bottom:16px}
+.card h2{font-size:16px;font-weight:700;margin-bottom:12px}
+.row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.col{flex:1;min-width:160px}
+label{display:block;font-size:11px;font-weight:600;color:rgba(255,255,255,.4);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+input,select{width:100%;padding:9px 12px;background:var(--b,#0a0a0f);border:1px solid rgba(255,255,255,.08);border-radius:8px;color:#fff;font-size:13px;font-family:inherit;outline:none}
+input:focus,select:focus{border-color:var(--o,#0ea5e9)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.chips label{display:flex;align-items:center;gap:5px;font-weight:400;text-transform:none;font-size:12px;color:rgba(255,255,255,.7);cursor:pointer}
+.btn{padding:9px 20px;border-radius:8px;font-size:13px;font-weight:600;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.btn-p{background:var(--o,#0ea5e9);color:#000}
+.btn-p:hover{background:#38bdf8}
+.btn-g{background:rgba(255,255,255,.04);color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.06)}
+.btn-g:hover{color:#fff;border-color:rgba(255,255,255,.12)}
+.btn-s{padding:6px 14px;font-size:11px}
+.btn-d{color:#ef4444}
+.btn-d:hover{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.2)}
+.url-row{display:flex;gap:8px;margin-top:10px}
+.url-row input{flex:1;font-family:'IBM Plex Mono',monospace;font-size:11px}
+.msg{padding:10px 14px;border-radius:8px;font-size:12px;margin-top:10px}
+.msg.ok{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.15);color:#22c55e}
+.msg.err{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.15);color:#ef4444}
+.plist{display:flex;flex-direction:column;gap:6px}
+.pitem{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--b,#0a0a0f);border-radius:8px;border:1px solid rgba(255,255,255,.04);gap:8px}
+.pitem .pi{flex:1;min-width:0}
+.pitem .pi strong{font-size:12px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pitem .pi span{font-size:10px;color:rgba(255,255,255,.3)}
+.pitem .pa{display:flex;gap:4px;flex-shrink:0}
+.empty{text-align:center;padding:32px;color:rgba(255,255,255,.2);font-size:13px}
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.08);border-top-color:var(--o,#0ea5e9);border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="container">
+<a href="/" class="back">&larr; Torna alla home</a>
+<h1>Proxy Stremio</h1>
+<p class="sub">Aggiungi badge rating a qualsiasi addon Stremio. Incolla un manifest URL, scegli i tipi di artwork da riscrivere, e installa il proxy in Stremio.</p>
+
+<div class="card">
+<h2>Crea proxy</h2>
+<div class="row">
+<div class="col" style="flex:2">
+<label>Manifest URL</label>
+<input id="pmUrl" placeholder="https://esempio.com/addon/manifest.json">
+</div>
+<div class="col">
+<label>Rating default</label>
+<input type="number" id="pmRating" value="7.5" min="0" max="10" step="0.1">
+</div>
+<div class="col">
+<label>Stile badge</label>
+<select id="pmStyle"><option value="star">Star</option><option value="pill">Pill</option><option value="circle">Circle</option><option value="minimal">Minimal</option></select>
+</div>
+</div>
+<label style="font-size:11px;font-weight:600;color:rgba(255,255,255,.4);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Tipi da riscrivere</label>
+<div class="chips">
+<label><input type="checkbox" id="rwPoster" checked> Poster</label>
+<label><input type="checkbox" id="rwBackdrop" checked> Backdrop</label>
+<label><input type="checkbox" id="rwLogo"> Logo</label>
+</div>
+<button class="btn btn-p" onclick="createProxy()">Crea proxy</button>
+<div id="pmResult"></div>
+</div>
+
+<div class="card">
+<h2>Proxy attivi</h2>
+<div id="proxyList"><div class="empty">Nessun proxy attivo.</div></div>
+</div>
+</div>
+
+<script>
+async function createProxy(){
+const url=document.getElementById('pmUrl').value.trim()
+const rating=parseFloat(document.getElementById('pmRating').value)||7.5
+const style=document.getElementById('pmStyle').value
+const types=[]
+if(document.getElementById('rwPoster').checked)types.push('poster')
+if(document.getElementById('rwBackdrop').checked)types.push('backdrop')
+if(document.getElementById('rwLogo').checked)types.push('logo')
+if(!url){showMsg('Inserisci un URL manifesto','err');return}
+const btn=document.querySelector('.btn-p')
+btn.disabled=true;btn.innerHTML='<div class="spinner"></div>'
+try{
+const r=await fetch('/api/proxy/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({manifestUrl:url,rating,rewriteTypes:types,badgeStyle:style})})
+const d=await r.json()
+if(r.ok){
+const el=document.getElementById('pmResult')
+el.innerHTML='<div class="msg ok">Proxy creato!</div><div class="url-row"><input readonly value="'+d.manifestUrl+'"><button class="btn btn-g btn-s" onclick="copy(this)">Copia</button></div>'
+loadList()
+}else{showMsg(d.error||'Errore','err')}
+}catch(e){showMsg('Errore: '+e.message,'err')}
+btn.disabled=false;btn.innerHTML='Crea proxy'
+}
+function showMsg(m,t){document.getElementById('pmResult').innerHTML='<div class="msg '+t+'">'+m+'</div>'}
+async function loadList(){
+const el=document.getElementById('proxyList')
+try{
+const r=await fetch('/api/proxy/list');const d=await r.json()
+if(!d.length){el.innerHTML='<div class="empty">Nessun proxy attivo.</div>';return}
+el.innerHTML='<div class="plist">'+d.map(p=>{
+const d2=new Date(p.createdAt+'Z').toLocaleDateString()
+return '<div class="pitem"><div class="pi"><strong>'+esc(p.manifestUrl)+'</strong><span>'+p.rating.toFixed(1)+' &middot; '+(p.rewriteTypes||[]).join(', ')+' &middot; '+d2+'</span></div><div class="pa"><button class="btn btn-g btn-s" onclick="copyVal(\''+window.location.origin+'/proxy/'+p.token+'/manifest.json\')">Copia</button><button class="btn btn-g btn-s btn-d" onclick="delProxy(\''+p.token+'\')">Elimina</button></div></div>'
+}).join('')+'</div>'
+}catch{el.innerHTML='<div class="empty">Errore caricamento.</div>'}
+}
+async function delProxy(t){if(!confirm('Eliminare questo proxy?'))return;await fetch('/api/proxy/'+t,{method:'DELETE'});loadList()}
+function copy(el){const i=el.previousElementSibling;i.select();document.execCommand('copy');const o=el.textContent;el.textContent='Copiato!';setTimeout(()=>el.textContent=o,1500)}
+function copyVal(v){const ta=document.createElement('textarea');ta.value=v;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta)}
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+loadList()
+</script>
+</body>
+</html>

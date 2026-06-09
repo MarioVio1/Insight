@@ -89,6 +89,91 @@ export function svgToDataUri(svg: string) {
   return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
 }
 
+export function getRatingColor(rating: number): string {
+  if (rating >= 8) return '#22c55e';
+  if (rating >= 6) return '#eab308';
+  if (rating >= 4) return '#f97316';
+  return '#ef4444';
+}
+
+export function ratingBadgeSvg(rating: number, style: string, sourceLabel: string): string {
+  const color = getRatingColor(rating);
+  const star = '&#9733;';
+  const label = sourceLabel ? esc(sourceLabel) : 'RATING';
+  if (style === 'pill') {
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="64" viewBox="0 0 200 64">
+      <rect x="0" y="0" width="200" height="64" rx="32" fill="${color}" opacity="0.9"/>
+      <text x="100" y="42" fill="#000" font-size="28" font-weight="900" text-anchor="middle" font-family="Arial,Helvetica,sans-serif">${star} ${rating.toFixed(1)}</text>
+    </svg>`;
+  }
+  if (style === 'circle') {
+    const r = 48;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${r*2}" height="${r*2}" viewBox="0 0 ${r*2} ${r*2}">
+      <circle cx="${r}" cy="${r}" r="${r-2}" fill="${color}" opacity="0.9"/>
+      <text x="${r}" y="${r+14}" fill="#000" font-size="36" font-weight="900" text-anchor="middle" font-family="Arial,Helvetica,sans-serif">${rating.toFixed(1)}</text>
+    </svg>`;
+  }
+  if (style === 'minimal') {
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="36" viewBox="0 0 160 36">
+      <rect x="0" y="0" width="160" height="36" rx="4" fill="${color}" opacity="0.85"/>
+      <text x="14" y="25" fill="#000" font-size="16" font-weight="800" font-family="Arial,Helvetica,sans-serif">${star} ${rating.toFixed(1)}</text>
+    </svg>`;
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="220" height="68" viewBox="0 0 220 68">
+    <rect x="0" y="0" width="220" height="68" rx="8" fill="#000" opacity="0.55"/>
+    <rect x="0" y="0" width="220" height="68" rx="8" fill="${color}" opacity="0.2"/>
+    <rect x="0" y="0" width="6" height="68" fill="${color}" rx="3"/>
+    <text x="20" y="30" fill="${color}" font-size="11" font-weight="700" font-family="Arial,Helvetica,sans-serif" letter-spacing="1.5">${label}</text>
+    <text x="20" y="55" fill="#fff" font-size="30" font-weight="900" font-family="Arial,Helvetica,sans-serif">${star} ${rating.toFixed(1)}</text>
+  </svg>`;
+}
+
+export async function generateArtworkWithBadge(opts: {
+  imageBuffer?: Buffer | null;
+  rating: number;
+  width: number;
+  height: number;
+  badgeStyle?: string;
+  source?: string;
+}): Promise<Buffer> {
+  const { imageBuffer, rating, width: outW, height: outH, badgeStyle = 'star', source = 'TMDB' } = opts;
+  const layers: { input: Buffer; top: number; left: number }[] = [];
+
+  if (imageBuffer) {
+    const base = await sharp(imageBuffer)
+      .resize(outW, outH, { fit: 'cover', position: 'center' })
+      .modulate({ brightness: 0.9, saturation: 0.95 })
+      .png({ compressionLevel: 1 })
+      .toBuffer();
+    layers.push({ input: base, top: 0, left: 0 });
+    const overlaySvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${outW}" height="${outH}" viewBox="0 0 ${outW} ${outH}">
+      <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#000" stop-opacity=".4"/><stop offset="30%" stop-color="#000" stop-opacity="0"/><stop offset="100%" stop-color="#000" stop-opacity=".5"/></linearGradient></defs>
+      <rect width="100%" height="100%" fill="url(#g)"/>
+    </svg>`;
+    const overlay = await sharp(Buffer.from(overlaySvg)).png({ compressionLevel: 1 }).toBuffer();
+    layers.push({ input: overlay, top: 0, left: 0 });
+  }
+
+  if (rating > 0) {
+    const badgeW = Math.min(Math.round(outW * 0.55), 200);
+    const badgeH = Math.round(badgeW * 0.32);
+    const badgeSvg = ratingBadgeSvg(rating, badgeStyle, source);
+    const badgeBuf = await sharp(Buffer.from(badgeSvg))
+      .resize(badgeW, badgeH, { fit: 'contain' })
+      .png({ compressionLevel: 1 })
+      .toBuffer();
+    const badgePad = Math.max(Math.round(outW * 0.04), 4);
+    layers.push({ input: badgeBuf, top: badgePad, left: outW - badgeW - badgePad });
+  }
+
+  return sharp({
+    create: { width: outW, height: outH, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 1 } }
+  })
+    .composite(layers)
+    .png({ compressionLevel: 6 })
+    .toBuffer();
+}
+
 export async function generatePosterBuffer(opts: {
   title: string; subtitle: string; accent?: string;
   statValue?: string; statLabel?: string;
