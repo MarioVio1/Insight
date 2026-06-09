@@ -1,5 +1,5 @@
 import { supabase } from './supabase.js';
-import { fetchTmdbDetails } from './tmdbService.js';
+import { fetchTmdbDetails, searchTmdbPerson, tmdbPersonImage } from './tmdbService.js';
 import { INSIGHT_CATALOG_ID } from '../addon/manifest.js';
 
 async function getEvents(configId: string, daysBack?: number): Promise<any[]> {
@@ -93,7 +93,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
   if (!prefs) {
     const { data: newPrefs } = await supabase.from('config_preferences').insert({
       config_id: configId,
-      enabled_card_types: ['totals','streak','peak','weekly','genre','binge','monthly','recurring','rewatch','seasonal','actor','director','anime','ranking','memories','giorni','migliore','anno','mese','split','notturno','events','pace','weekend','annuale','primetime','decade','break','avg','night','series'],
+      enabled_card_types: ['totals','streak','peak','weekly','genre','binge','monthly','recurring','rewatch','seasonal','actor','director','anime','ranking','memories','giorni','migliore','anno','mese','split','notturno','events','pace','weekend','annuale','primetime','decade','break','avg','night','series','vintage','completion'],
       focus_mode: 'adaptive',
       seasonal_enabled: true,
       festive_enabled: true,
@@ -104,7 +104,17 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
 
   const s = insight.summary || {};
   const saved = prefs?.enabled_card_types || [];
-  const allEnabled = ['totals','streak','peak','weekly','genre','binge','dropped','monthly','recurring','rewatch','seasonal','actor','director','writer','anime','ranking','memories','firstplay','giorni','migliore','anno','mese','split','notturno','events','pace','weekend','annuale','primetime','decade','break','avg','night','series'];
+  const allEnabled = ['totals','streak','peak','weekly','genre','binge','dropped','monthly','recurring','rewatch','seasonal','actor','director','writer','anime','ranking','memories','firstplay','giorni','migliore','anno','mese','split','notturno','events','pace','weekend','annuale','primetime','decade','break','avg','night','series','vintage','completion'];
+
+  // Build title→TMDB map from all events for cross-referencing
+  const allEvents = await getEvents(configId);
+  const titleTmdbMap = new Map<string, { tmdb_id: number; trakt_type: string; year: number }>();
+  for (const e of allEvents) {
+    const key = e.title?.toLowerCase();
+    if (key && e.tmdb_id && !titleTmdbMap.has(key)) {
+      titleTmdbMap.set(key, { tmdb_id: e.tmdb_id, trakt_type: e.trakt_type, year: e.year });
+    }
+  }
   const enabled = saved.length > 0 ? saved : allEnabled;
   const cards: any[] = [];
   const details: { meta_id: string; meta: any }[] = [];
@@ -330,19 +340,30 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
     const recurringTitles = insight.recurring_titles || [];
     if (recurringTitles.length > 0) {
       const id = `adaptive_${configId}_recurring`;
+
+      const firstTitle = recurringTitles[0].title;
+      const firstEvt = titleTmdbMap.get(firstTitle.toLowerCase());
+      let imageUrl = '';
+      if (firstEvt?.tmdb_id) {
+        try { const dt = await fetchTmdbDetails(firstEvt.tmdb_id, firstEvt.trakt_type === 'movie' ? 'movie' : 'tv'); imageUrl = dt.poster || ''; } catch {}
+      }
+
       cards.push(await cardMeta(configId, id,
         `${recurringTitles.length} titoli ricorrenti`,
         `Titoli che torni a guardare ogni anno nello stesso periodo.`,
-        { accent: '#f59e0b', statValue: `${recurringTitles.length}`, statLabel: 'RICORRENTI' }
+        { accent: '#f59e0b', statValue: `${recurringTitles.length}`, statLabel: 'RICORRENTI', imageUrl: imageUrl || undefined }
       ));
 
       details.push({
         meta_id: id, meta: {
           id, type: 'movie', name: 'Le tue ricorrenze',
           description: 'Titoli che guardi sempre nello stesso mese.',
-          videos: recurringTitles.slice(0, 12).map((r: any, i: number) =>
-            video(`${id}_${i}`, r.title, new Date().toISOString(), `Visto ${r.count} volte nei mesi: ${r.months.join(', ')}.`)
-          )
+          videos: recurringTitles.slice(0, 12).map((r: any, i: number) => {
+            const evt = titleTmdbMap.get(r.title.toLowerCase());
+            const v: any = video(`${id}_${i}`, r.title, new Date().toISOString(), `Visto ${r.count} volte nei mesi: ${r.months.join(', ')}.`);
+            if (evt?.tmdb_id) v.tmdb_id = evt.tmdb_id;
+            return v;
+          })
         }
       });
     }
@@ -408,10 +429,19 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
       ? `Più visti: ${seasonalTitles.slice(0, 5).map((t: any) => t.title).join(', ')}`
       : (seasonTexts[seasonalKey] || seasonTexts.standard);
 
+    let imageUrl = '';
+    if (seasonalTitles.length > 0) {
+      const firstTitle = seasonalTitles[0].title;
+      const firstEvt = titleTmdbMap.get(firstTitle.toLowerCase());
+      if (firstEvt?.tmdb_id) {
+        try { const dt = await fetchTmdbDetails(firstEvt.tmdb_id, firstEvt.trakt_type === 'movie' ? 'movie' : 'tv'); imageUrl = dt.poster || ''; } catch {}
+      }
+    }
+
     cards.push(await cardMeta(configId, id,
       `Stagione: ${seasonalKey}`,
       desc,
-      { accent: seasonAccents[seasonalKey] || seasonAccents.standard, statValue: seasonalKey.toUpperCase(), statLabel: 'STAGIONE' }
+      { accent: seasonAccents[seasonalKey] || seasonAccents.standard, statValue: seasonalKey.toUpperCase(), statLabel: 'STAGIONE', imageUrl: imageUrl || undefined }
     ));
 
     details.push({
@@ -419,9 +449,12 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
         id, type: 'movie', name: 'La stagione del tuo profilo',
         description: desc,
         videos: seasonalTitles.length > 0
-          ? seasonalTitles.map((t: any, i: number) =>
-              video(`${id}_${i}`, t.title, new Date().toISOString(), `Visto ${t.count} volte in questa stagione.`)
-            )
+          ? seasonalTitles.slice(0, 12).map((t: any, i: number) => {
+              const evt = titleTmdbMap.get(t.title.toLowerCase());
+              const v: any = video(`${id}_${i}`, t.title, new Date().toISOString(), `Visto ${t.count} volte in questa stagione.`);
+              if (evt?.tmdb_id) v.tmdb_id = evt.tmdb_id;
+              return v;
+            })
           : [video(`${id}_1`, seasonalKey, new Date().toISOString(), seasonTexts[seasonalKey] || seasonTexts.standard)]
       }
     });
@@ -433,19 +466,36 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
     if (actors.length > 0) {
       const id = `adaptive_${configId}_actor`;
       const top = actors[0];
+
+      let imageUrl = '';
+      try {
+        const p = await searchTmdbPerson(top.name);
+        if (p?.profile_path) imageUrl = tmdbPersonImage(p.profile_path) || '';
+      } catch {}
+
       cards.push(await cardMeta(configId, id,
         `Attore: ${top.name}`,
         `Appare in ${top.count} dei tuoi contenuti guardati.`,
-        { accent: '#ec4899', statValue: top.name, statLabel: 'ATTORE TOP' }
+        { accent: '#ec4899', statValue: top.name, statLabel: 'ATTORE TOP', imageUrl: imageUrl || undefined }
       ));
+
+      const actorVids = await Promise.all(actors.slice(0, 10).map(async (a: any, i: number) => {
+        const v: any = video(`${id}_${i}`, a.name, new Date().toISOString(), `Appare in ${a.count} contenuti.`);
+        try {
+          const p = await searchTmdbPerson(a.name);
+          if (p?.profile_path) {
+            v.thumbnail = tmdbPersonImage(p.profile_path);
+            v.tmdb_id = p.id;
+          }
+        } catch {}
+        return v;
+      }));
 
       details.push({
         meta_id: id, meta: {
           id, type: 'movie', name: 'Attori preferiti',
           description: 'Gli attori che vedi più spesso.',
-          videos: actors.map((a: any, i: number) =>
-            video(`${id}_${i}`, a.name, new Date().toISOString(), `Appare in ${a.count} contenuti.`)
-          )
+          videos: actorVids
         }
       });
     }
@@ -457,19 +507,36 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
     if (directors.length > 0) {
       const id = `adaptive_${configId}_director`;
       const top = directors[0];
+
+      let imageUrl = '';
+      try {
+        const p = await searchTmdbPerson(top.name);
+        if (p?.profile_path) imageUrl = tmdbPersonImage(p.profile_path) || '';
+      } catch {}
+
       cards.push(await cardMeta(configId, id,
         `Regista: ${top.name}`,
         `Compare in ${top.count} dei tuoi contenuti.`,
-        { accent: '#8b5cf6', statValue: top.name, statLabel: 'REGISTA TOP' }
+        { accent: '#8b5cf6', statValue: top.name, statLabel: 'REGISTA TOP', imageUrl: imageUrl || undefined }
       ));
+
+      const directorVids = await Promise.all(directors.slice(0, 10).map(async (d: any, i: number) => {
+        const v: any = video(`${id}_${i}`, d.name, new Date().toISOString(), `Compare in ${d.count} contenuti.`);
+        try {
+          const p = await searchTmdbPerson(d.name);
+          if (p?.profile_path) {
+            v.thumbnail = tmdbPersonImage(p.profile_path);
+            v.tmdb_id = p.id;
+          }
+        } catch {}
+        return v;
+      }));
 
       details.push({
         meta_id: id, meta: {
           id, type: 'movie', name: 'Registi preferiti',
           description: 'I registi che guardi di più.',
-          videos: directors.map((d: any, i: number) =>
-            video(`${id}_${i}`, d.name, new Date().toISOString(), `Compare in ${d.count} contenuti.`)
-          )
+          videos: directorVids
         }
       });
     }
@@ -481,19 +548,36 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
     if (writers.length > 0) {
       const id = `adaptive_${configId}_writer`;
       const top = writers[0];
+
+      let imageUrl = '';
+      try {
+        const p = await searchTmdbPerson(top.name);
+        if (p?.profile_path) imageUrl = tmdbPersonImage(p.profile_path) || '';
+      } catch {}
+
       cards.push(await cardMeta(configId, id,
         `Sceneggiatore: ${top.name}`,
         `Compare in ${top.count} dei tuoi contenuti.`,
-        { accent: '#f59e0b', statValue: top.name, statLabel: 'SCENEGGIATORE' }
+        { accent: '#f59e0b', statValue: top.name, statLabel: 'SCENEGGIATORE', imageUrl: imageUrl || undefined }
       ));
+
+      const writerVids = await Promise.all(writers.slice(0, 10).map(async (w: any, i: number) => {
+        const v: any = video(`${id}_${i}`, w.name, new Date().toISOString(), `Compare in ${w.count} contenuti.`);
+        try {
+          const p = await searchTmdbPerson(w.name);
+          if (p?.profile_path) {
+            v.thumbnail = tmdbPersonImage(p.profile_path);
+            v.tmdb_id = p.id;
+          }
+        } catch {}
+        return v;
+      }));
 
       details.push({
         meta_id: id, meta: {
           id, type: 'movie', name: 'Sceneggiatori preferiti',
           description: 'Gli sceneggiatori che guardi di più.',
-          videos: writers.map((w: any, i: number) =>
-            video(`${id}_${i}`, w.name, new Date().toISOString(), `Compare in ${w.count} contenuti.`)
-          )
+          videos: writerVids
         }
       });
     }
@@ -970,15 +1054,72 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
     });
   }
 
+  // Vintage — epoca media dei contenuti
+  if (enabled.includes('vintage') && allEvents.length > 0) {
+    const id = `adaptive_${configId}_vintage`;
+    const years = allEvents.filter(e => e.year).map(e => e.year);
+    if (years.length > 0) {
+      const avgYear = Math.round(years.reduce((a, b) => a + b, 0) / years.length);
+      const oldest = Math.min(...years);
+      const newest = Math.max(...years);
+      const era = avgYear < 2000 ? 'classici' : avgYear < 2010 ? 'anni 2000' : avgYear < 2020 ? 'anni 2010' : 'recenti';
+      cards.push(await cardMeta(configId, id,
+        `Contenuti ${era}: media ${avgYear}`,
+        `Dal ${oldest} al ${newest} — guardi sia classici che novità.`,
+        { accent: '#f97316', statValue: `${avgYear}`, statLabel: 'VINTAGE' }
+      ));
+
+      const decadeGroups: Record<string, number> = {};
+      for (const y of years) {
+        const d = `${Math.floor(y / 10) * 10}s`;
+        decadeGroups[d] = (decadeGroups[d] || 0) + 1;
+      }
+      const decadeVids = Object.entries(decadeGroups)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([dec, cnt], i) =>
+          video(`${id}_${i}`, dec, new Date().toISOString(), `${cnt} contenuti`)
+        );
+
+      details.push({
+        meta_id: id, meta: {
+          id, type: 'movie', name: 'Epoca dei tuoi contenuti',
+          description: `Media ${avgYear}, dal ${oldest} al ${newest}.`,
+          videos: decadeVids
+        }
+      });
+    }
+  }
+
+  // Completamento serie
+  if (enabled.includes('completion') && s.uniqueShows !== undefined && s.uniqueShows > 0 && s.dropped?.length) {
+    const id = `adaptive_${configId}_completion`;
+    const droppedCount = s.dropped.length;
+    const completedCount = Math.max(0, s.uniqueShows - droppedCount);
+    const pct = Math.round((completedCount / s.uniqueShows) * 100);
+    cards.push(await cardMeta(configId, id,
+      `Completate ${completedCount} su ${s.uniqueShows} serie (${pct}%)`,
+      `${droppedCount} serie in pausa.`,
+      { accent: '#22c55e', statValue: `${pct}%`, statLabel: 'COMPLETATE' }
+    ));
+    details.push({
+      meta_id: id, meta: {
+        id, type: 'movie', name: 'Serie completate',
+        description: `Hai completato ${completedCount} serie su ${s.uniqueShows}.`,
+        videos: [
+          video(`${id}_1`, `Completate: ${completedCount}`, new Date().toISOString(), `${pct}% delle serie.`),
+          video(`${id}_2`, `In pausa: ${droppedCount}`, new Date().toISOString(), 'Serie da riprendere.')
+        ]
+      }
+    });
+  }
+
   // Arricchisce ogni video con thumbnail
   for (const d of details) {
     if (d.meta?.videos?.length) {
       d.meta.videos = d.meta.videos.map((v: any, i: number) => {
-        if (v.tmdb_id) {
-          const posterFallback = `${baseUrl}/vposter/${configId}/${encodeURIComponent(d.meta_id)}/${i}.png`;
-          return { ...v, thumbnail: posterFallback };
-        }
-        return { ...v, thumbnail: `${baseUrl}/vposter/${configId}/${encodeURIComponent(d.meta_id)}/${i}.png` };
+        if (v.thumbnail) return v;
+        const posterFallback = `${baseUrl}/vposter/${configId}/${encodeURIComponent(d.meta_id)}/${i}.png`;
+        return { ...v, thumbnail: posterFallback };
       });
     }
   }
