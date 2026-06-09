@@ -65,6 +65,11 @@ export async function getHistory(accessToken: string, type: 'movies' | 'shows') 
   return allItems;
 }
 
+export async function getUserStats(accessToken: string, username: string) {
+  const { data } = await api.get(`/users/${username}/stats`, { headers: { Authorization: `Bearer ${accessToken}` } });
+  return data as { movies: { plays: number; minutes: number }; episodes: { plays: number; minutes: number } } | null;
+}
+
 export function buildAuthorizeUrl(state: string) {
   const u = new URL('https://trakt.tv/oauth/authorize');
   u.searchParams.set('response_type', 'code');

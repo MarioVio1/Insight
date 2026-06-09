@@ -83,7 +83,7 @@ export async function syncConfig(configId: string) {
     }
 
     await ensureDefaultProfile(configId);
-    await computeAdaptiveInsights(configId);
+    await computeAdaptiveInsights(configId, access, settings.user?.username || row.trakt_username);
     await rebuildAdaptiveRow(configId, process.env.BASE_URL || 'https://insightboard-production-335f.up.railway.app');
 
     logger.info({ configId }, 'Sync completed');

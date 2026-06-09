@@ -103,7 +103,7 @@ export function findDroppedShows(events: any[]): { title: string; lastDate: stri
   return dropped.sort((a, b) => b.totalEpisodes - a.totalEpisodes).slice(0, 10);
 }
 
-export function computeTraktStats(events: any[]) {
+export function computeTraktStats(events: any[], apiStats?: { movies: { plays: number; minutes: number }; episodes: { plays: number; minutes: number } }) {
   const now = Date.now();
   const yearStart = now - YEAR_MS;
   const weekStart = now - WEEK_MS;
@@ -117,7 +117,12 @@ export function computeTraktStats(events: any[]) {
   const animeEpisodes = anime.filter(e => e.trakt_type !== 'movie');
   const series = episodes.filter(e => !(e.genres || []).includes('anime'));
 
-  const totalHours = events.reduce((sum, e) => sum + runtime(e), 0) / 60;
+  const totalHours = apiStats
+    ? (apiStats.movies.minutes + apiStats.episodes.minutes) / 60
+    : events.reduce((sum, e) => sum + runtime(e), 0) / 60;
+  const movieHours = apiStats ? apiStats.movies.minutes / 60 : movies.reduce((sum, e) => sum + runtime(e), 0) / 60;
+  const showHours = apiStats ? apiStats.episodes.minutes / 60 : episodes.reduce((sum, e) => sum + runtime(e), 0) / 60;
+  const totalPlays = apiStats ? apiStats.movies.plays + apiStats.episodes.plays : events.length;
   const yearHours = events.filter((e) => new Date(e.watched_at).getTime() >= yearStart).reduce((sum, e) => sum + runtime(e), 0) / 60;
   const totalMovies = movies.length;
   const totalEpisodes = episodes.length;
@@ -322,8 +327,8 @@ export function computeTraktStats(events: any[]) {
     monthCount,
     lastMonthCount,
     totalEvents: events.length,
-    movieHours: Math.round(movies.reduce((s, e) => s + runtime(e), 0) / 60 * 10) / 10,
-    episodeHours: Math.round(episodes.reduce((s, e) => s + runtime(e), 0) / 60 * 10) / 10,
+    movieHours: Math.round(movieHours * 10) / 10,
+    episodeHours: Math.round(showHours * 10) / 10,
     animeCount,
     animeHours: Math.round(anime.reduce((s, e) => s + runtime(e), 0) / 60 * 10) / 10,
     seriesEpisodes,
@@ -586,7 +591,7 @@ export async function enrichEventsWithTmdbAnime(events: any[]): Promise<any[]> {
   });
 }
 
-export async function computeAdaptiveInsights(configId: string) {
+export async function computeAdaptiveInsights(configId: string, accessToken?: string, traktUsername?: string) {
   const { data: events, error: evErr } = await supabase
     .from('trakt_events')
     .select('*')
@@ -613,8 +618,16 @@ export async function computeAdaptiveInsights(configId: string) {
     return;
   }
 
+  let apiStats = undefined;
+  if (accessToken && traktUsername) {
+    try {
+      const { getUserStats } = await import('./trakt.js');
+      apiStats = await getUserStats(accessToken, traktUsername);
+    } catch {}
+  }
+
   const enriched = await enrichEventsWithTmdbAnime(events);
-  const stats = computeTraktStats(enriched);
+  const stats = computeTraktStats(enriched, apiStats || undefined);
   const recurring = findRecurringTitles(enriched);
   const rewatch = findRewatchTitles(enriched);
 

@@ -8,7 +8,7 @@ import { getManifest } from './addon/manifest.js';
 import { catalogHandler, metaHandler } from './addon/handlers.js';
 import { startCron } from './jobs/cron.js';
 import { logger } from './utils/logger.js';
-import { posterHandler, videoPosterHandler } from './api/poster.js';
+import * as poster from './api/poster.js';
 import { resolveConfigId, checkTables } from './services/db.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -42,7 +42,7 @@ app.get('/logo.png', async (_req, res) => {
     return res.send(logo);
   }
 });
-app.get('/poster/:configId/:cardId.png', posterHandler);
+app.get('/poster/:configId/:cardId.png', poster.posterHandler);
 app.options('/poster/:configId/:cardId.png', (_req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -50,7 +50,7 @@ app.options('/poster/:configId/:cardId.png', (_req, res) => {
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   res.status(204).end();
 });
-app.get('/vposter/:configId/:cardId/:vIdx.png', videoPosterHandler);
+app.get('/vposter/:configId/:cardId/:vIdx.png', poster.videoPosterHandler);
 app.options('/vposter/:configId/:cardId/:vIdx.png', (_req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');

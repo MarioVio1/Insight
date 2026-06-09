@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { supabase } from '../services/supabase.js';
-import { generateSvgPoster } from '../services/artworkService.js';
+import { generatePosterBuffer, generateSvgPoster } from '../services/artworkService.js';
 import { resolveConfigId } from '../services/db.js';
 import { fetchImageBuffer } from '../services/tmdbService.js';
 
@@ -64,7 +64,7 @@ function buildCardData(rowData: any, cardId: string) {
   return { title, subtitle, accent, statValue, statLabel: statLabel.slice(0, 30), imageUrl };
 }
 
-const svgCache = new Map<string, { svg: string; age: number }>();
+const pngCache = new Map<string, { buf: Buffer; age: number }>();
 
 export async function posterHandler(req: Request, res: Response) {
   setCors(res);
@@ -76,11 +76,11 @@ export async function posterHandler(req: Request, res: Response) {
     if (!uuid) { res.status(404).send('Config not found'); return; }
 
     const cacheKey = `${uuid}_${cardId}`;
-    const cached = svgCache.get(cacheKey);
+    const cached = pngCache.get(cacheKey);
     if (cached && Date.now() - cached.age < CACHE_TTL) {
-      res.setHeader('Content-Type', 'image/svg+xml');
+      res.setHeader('Content-Type', 'image/png');
       res.setHeader('Cache-Control', 'public, max-age=3600');
-      res.send(cached.svg);
+      res.send(cached.buf);
       return;
     }
 
@@ -93,32 +93,30 @@ export async function posterHandler(req: Request, res: Response) {
 
     const cardData = buildCardData(rowData, cardId);
 
-    let imageDataUri = '';
+    let imageBuffer: Buffer | null = null;
     if (cardData.imageUrl) {
       try {
-        const imgBuf = await fetchImageBuffer(cardData.imageUrl);
-        const mime = cardData.imageUrl.match(/\.png/i) ? 'image/png' : 'image/jpeg';
-        imageDataUri = `data:${mime};base64,${imgBuf.toString('base64')}`;
+        imageBuffer = await fetchImageBuffer(cardData.imageUrl);
       } catch {}
     }
 
-    const svg = generateSvgPoster({
+    const buf = await generatePosterBuffer({
       title: cardData.title,
       subtitle: cardData.subtitle.slice(0, 60),
       accent: cardData.accent,
       statValue: cardData.statValue,
       statLabel: cardData.statLabel,
-      imageUrl: imageDataUri
+      imageBuffer
     });
 
-    svgCache.set(cacheKey, { svg, age: Date.now() });
-    res.setHeader('Content-Type', 'image/svg+xml');
+    pngCache.set(cacheKey, { buf, age: Date.now() });
+    res.setHeader('Content-Type', 'image/png');
     res.setHeader('Cache-Control', 'public, max-age=3600');
-    res.send(svg);
+    res.send(buf);
   } catch {
-    const svg = generateSvgPoster({ title: 'Insight', subtitle: 'Statistiche personali' });
+    const fallback = generateSvgPoster({ title: 'Insight', subtitle: 'Statistiche personali' });
     res.setHeader('Content-Type', 'image/svg+xml');
-    res.send(svg);
+    res.send(fallback);
   }
 }
 

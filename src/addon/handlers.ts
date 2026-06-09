@@ -85,9 +85,10 @@ export async function metaHandler(configId: string, metaId: string) {
   const cardType = (metaId.split('_').pop() || '').toLowerCase();
   const videos = meta.videos || [];
 
-  const tmdbLookups = videos
-    .filter((v: any) => v.tmdb_id)
-    .map((v: any) => getTmdbData(v.tmdb_id, v.trakt_type || 'movie'));
+  const anyVideos = videos as any[];
+  const tmdbLookups = anyVideos
+    .filter(v => v.tmdb_id)
+    .map(v => getTmdbData(v.tmdb_id, v.trakt_type || 'movie'));
   const tmdbResults = tmdbLookups.length > 0 ? await Promise.all(tmdbLookups) : [];
 
   let tmdbIdx = 0;
