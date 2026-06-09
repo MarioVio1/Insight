@@ -61,12 +61,22 @@ export async function fetchCredits(tmdbId: string, type: 'movie' | 'tv') {
   const params: Record<string, string> = {};
   if (process.env.TMDB_API_KEY) params.api_key = process.env.TMDB_API_KEY;
   try {
-    const { data } = await axios.get(`${TMDB_BASE}/${type}/${tmdbId}/credits`, { params, headers: authHeaders() });
+    const headers = authHeaders();
+    const { data } = await axios.get(`${TMDB_BASE}/${type}/${tmdbId}/credits`, { params, headers });
     const cast = (data.cast || []).slice(0, 10).map((c: any) => c.name).filter(Boolean);
     const directors = (data.crew || [])
       .filter((c: any) => c.job === 'Director' || c.department === 'Directing')
       .map((c: any) => c.name)
       .filter(Boolean);
+
+    if (type === 'tv') {
+      try {
+        const { data: details } = await axios.get(`${TMDB_BASE}/tv/${tmdbId}`, { params, headers });
+        const creators = (details.created_by || []).map((c: any) => c.name).filter(Boolean);
+        directors.push(...creators);
+      } catch {}
+    }
+
     return { cast, crew: { directors: [...new Set(directors)] } };
   } catch {
     return null;
