@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { supabase } from '../services/supabase.js';
 import { syncConfig } from '../services/syncService.js';
 import { resolveConfigId, checkTablesDetailed } from '../services/db.js';
+import { rebuildAdaptiveRow } from '../services/cardComposer.js';
 import { logger } from '../utils/logger.js';
 import { INSIGHT_CATALOG_ID, LEGACY_INSIGHT_CATALOG_ID } from '../addon/manifest.js';
 
@@ -60,6 +61,8 @@ router.put('/config/:configId/preferences', async (req, res) => {
   const { error: err1 } = await supabase.from('config_preferences').upsert({ config_id: uuid, ...req.body }, { onConflict: 'config_id' });
   if (err1) return res.status(500).json({ ok: false, error: err1.message });
   await supabase.from('addon_configs').update({ updated_at: new Date().toISOString() }).eq('id', uuid);
+  const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+  await rebuildAdaptiveRow(uuid, baseUrl).catch(e => logger.error({ configId: uuid, error: String(e) }, 'Rebuild after prefs failed'));
   return res.json({ ok: true });
 });
 

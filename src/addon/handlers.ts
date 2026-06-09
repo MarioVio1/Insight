@@ -1,5 +1,6 @@
 import { supabase } from '../services/supabase.js';
 import { fetchTmdbDetails, searchTmdbPerson, tmdbPersonImage } from '../services/tmdbService.js';
+import { INSIGHT_CATALOG_ID, LEGACY_INSIGHT_CATALOG_ID } from './manifest.js';
 
 const tmdbCache = new Map<string, { poster: string | null; backdrop: string | null; rating: number | null; age: number }>();
 const TMDB_CACHE_TTL = 86_400_000;
@@ -41,12 +42,33 @@ async function getPersonImage(name: string): Promise<string | null> {
 }
 
 export async function catalogHandler(configId: string, catalogId: string, baseUrl?: string) {
-  const { data } = await supabase
+  let { data } = await supabase
     .from('adaptive_rows')
     .select('metas')
     .eq('config_id', configId)
-    .eq('catalog_id', 'adaptive-insights')
+    .eq('catalog_id', INSIGHT_CATALOG_ID)
     .maybeSingle();
+
+  if (!data?.metas?.length) {
+    const { data: legacy } = await supabase
+      .from('adaptive_rows')
+      .select('metas')
+      .eq('config_id', configId)
+      .eq('catalog_id', LEGACY_INSIGHT_CATALOG_ID)
+      .maybeSingle();
+    if (legacy?.metas?.length) {
+      data = legacy;
+      await supabase.from('adaptive_rows').upsert({
+        config_id: configId,
+        catalog_id: INSIGHT_CATALOG_ID,
+        metas: legacy.metas,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'config_id,catalog_id' });
+      await supabase.from('adaptive_rows').delete()
+        .eq('config_id', configId)
+        .eq('catalog_id', LEGACY_INSIGHT_CATALOG_ID);
+    }
+  }
 
   if (!data?.metas?.length) {
     return { metas: [{
