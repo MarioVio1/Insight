@@ -7,6 +7,10 @@ function esc(s: string) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+function trunc(s: string, max: number) {
+  return s.length > max ? s.slice(0, max - 1) + '…' : s;
+}
+
 function textSvg(title: string, subtitle: string, accent: string, statValue?: string, statLabel?: string) {
   const hasStat = !!statValue;
   const valY = hasStat ? 360 : 400;
@@ -17,10 +21,10 @@ function textSvg(title: string, subtitle: string, accent: string, statValue?: st
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
     <rect x="24" y="24" width="552" height="852" rx="28" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="1"/>
     <rect x="24" y="24" width="552" height="4" rx="2" fill="${accent}"/>
-    <text x="300" y="${valY}" fill="#fff" font-size="${hasStat ? 120 : 40}" font-weight="900" text-anchor="middle" font-family="${ff}" dominant-baseline="middle">${hasStat ? esc(statValue!) : esc(title)}</text>
-    ${hasStat && statLabel ? `<text x="300" y="${labelY}" fill="${accent}" font-size="18" font-weight="700" text-anchor="middle" font-family="${ff}" letter-spacing="3" dominant-baseline="middle">${esc(statLabel).toUpperCase()}</text>` : ''}
-    ${hasStat ? `<text x="300" y="${titleY}" fill="#fff" font-size="26" font-weight="800" text-anchor="middle" font-family="${ff}">${esc(title)}</text>` : ''}
-    <text x="300" y="${subY}" fill="rgba(255,255,255,.4)" font-size="15" font-weight="500" text-anchor="middle" font-family="${ff}">${esc(hasStat ? subtitle : subtitle)}</text>
+    <text x="300" y="${valY}" fill="#fff" font-size="${hasStat ? 120 : 40}" font-weight="900" text-anchor="middle" font-family="${ff}" dominant-baseline="middle">${hasStat ? esc(trunc(statValue!, 8)) : esc(trunc(title, 14))}</text>
+    ${hasStat && statLabel ? `<text x="300" y="${labelY}" fill="${accent}" font-size="18" font-weight="700" text-anchor="middle" font-family="${ff}" letter-spacing="3" dominant-baseline="middle">${esc(trunc(statLabel, 28)).toUpperCase()}</text>` : ''}
+    ${hasStat ? `<text x="300" y="${titleY}" fill="#fff" font-size="26" font-weight="800" text-anchor="middle" font-family="${ff}">${esc(trunc(title, 26))}</text>` : ''}
+    <text x="300" y="${subY}" fill="rgba(255,255,255,.4)" font-size="15" font-weight="500" text-anchor="middle" font-family="${ff}">${esc(trunc(hasStat ? subtitle : subtitle, 46))}</text>
     <rect x="42" y="838" width="516" height="1" fill="rgba(255,255,255,.08)"/>
     <text x="42" y="865" fill="rgba(255,255,255,.15)" font-size="11" font-weight="600" font-family="${ff}" letter-spacing="2">INSIGHT</text>
     <text x="558" y="865" fill="${accent}" font-size="18" font-weight="900" text-anchor="end" font-family="${ff}">&#9679;</text>
@@ -65,10 +69,10 @@ export function generateSvgPoster(opts: {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs>${defs}</defs>${bg}${ov}
     <rect x="24" y="24" width="552" height="852" rx="28" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="1"/>
     <rect x="24" y="24" width="552" height="4" rx="2" fill="${accent}"/>
-    <text x="300" y="${valY}" fill="#fff" font-size="${hasStat ? 120 : 40}" font-weight="900" text-anchor="middle" font-family="${ff}" dominant-baseline="middle">${hasStat ? esc(opts.statValue!) : esc(opts.title)}</text>
-    ${hasStat && opts.statLabel ? `<text x="300" y="${labelY}" fill="${accent}" font-size="18" font-weight="700" text-anchor="middle" font-family="${ff}" letter-spacing="3" dominant-baseline="middle">${esc(opts.statLabel).toUpperCase()}</text>` : ''}
-    ${hasStat ? `<text x="300" y="${titleY}" fill="#fff" font-size="26" font-weight="800" text-anchor="middle" font-family="${ff}">${esc(opts.title)}</text>` : ''}
-    <text x="300" y="${subY}" fill="rgba(255,255,255,.4)" font-size="15" font-weight="500" text-anchor="middle" font-family="${ff}">${esc(hasStat ? opts.subtitle : opts.subtitle)}</text>
+    <text x="300" y="${valY}" fill="#fff" font-size="${hasStat ? 120 : 40}" font-weight="900" text-anchor="middle" font-family="${ff}" dominant-baseline="middle">${hasStat ? esc(trunc(opts.statValue!, 8)) : esc(trunc(opts.title, 14))}</text>
+    ${hasStat && opts.statLabel ? `<text x="300" y="${labelY}" fill="${accent}" font-size="18" font-weight="700" text-anchor="middle" font-family="${ff}" letter-spacing="3" dominant-baseline="middle">${esc(trunc(opts.statLabel, 28)).toUpperCase()}</text>` : ''}
+    ${hasStat ? `<text x="300" y="${titleY}" fill="#fff" font-size="26" font-weight="800" text-anchor="middle" font-family="${ff}">${esc(trunc(opts.title, 26))}</text>` : ''}
+    <text x="300" y="${subY}" fill="rgba(255,255,255,.4)" font-size="15" font-weight="500" text-anchor="middle" font-family="${ff}">${esc(trunc(hasStat ? opts.subtitle : opts.subtitle, 46))}</text>
     <rect x="42" y="838" width="516" height="1" fill="rgba(255,255,255,.08)"/>
     <text x="42" y="865" fill="rgba(255,255,255,.15)" font-size="11" font-weight="600" font-family="${ff}" letter-spacing="2">INSIGHT</text>
     <text x="558" y="865" fill="${accent}" font-size="18" font-weight="900" text-anchor="end" font-family="${ff}">&#9679;</text>

@@ -83,7 +83,7 @@ if (!isConfig) {
   function selTypes() { return [...document.querySelectorAll('input[name="c"]:checked')].map(e => e.value); }
 
   function updManifest(ls) {
-    manifestUrl = `${location.origin}/${configId}/manifest.json?_=${Date.now()}`;
+    manifestUrl = `${location.origin}/${configId}/manifest.json`;
     manifestBox.textContent = manifestUrl;
     const si = $('syncInfo');
     if (si && ls) si.textContent = `Ultimo sync: ${new Date(ls).toLocaleDateString('it-IT')}`;
