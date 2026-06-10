@@ -93,7 +93,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
   if (!prefs) {
     const { data: newPrefs } = await supabase.from('config_preferences').insert({
       config_id: configId,
-      enabled_card_types: ['totals','streak','peak','weekly','genre','binge','dropped','monthly','recurring','rewatch','seasonal','actor','director','writer','anime','ranking','memories','firstplay','giorni','migliore','anno','mese','split','notturno','events','pace','weekend','annuale','primetime','decade','break','avg','night','series','vintage','completion'],
+      enabled_card_types: ['totals','streak','peak','weekly','genre','binge','dropped','monthly','recurring','rewatch','seasonal','actor','director','writer','movieActors','seriesActors','animeActors','movieDirectors','seriesDirectors','animeDirectors','movieWriters','seriesWriters','animeWriters','top5genres','anime','ranking','memories','firstplay','giorni','migliore','anno','mese','split','notturno','events','pace','weekend','annuale','primetime','decade','break','avg','night','series','vintage','completion'],
       focus_mode: 'adaptive',
       seasonal_enabled: true,
       festive_enabled: true,
@@ -104,7 +104,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
 
   const s = insight.summary || {};
   const saved = prefs?.enabled_card_types || [];
-  const allEnabled = ['totals','streak','peak','weekly','genre','binge','dropped','monthly','recurring','rewatch','seasonal','actor','director','writer','anime','ranking','memories','firstplay','giorni','migliore','anno','mese','split','notturno','events','pace','weekend','annuale','primetime','decade','break','avg','night','series','vintage','completion'];
+  const allEnabled = ['totals','streak','peak','weekly','genre','binge','dropped','monthly','recurring','rewatch','seasonal','actor','director','writer','movieActors','seriesActors','animeActors','movieDirectors','seriesDirectors','animeDirectors','movieWriters','seriesWriters','animeWriters','top5genres','anime','ranking','memories','firstplay','giorni','migliore','anno','mese','split','notturno','events','pace','weekend','annuale','primetime','decade','break','avg','night','series','vintage','completion'];
 
   // Build title→TMDB map from all events for cross-referencing
   const allEvents = await getEvents(configId);
@@ -538,6 +538,73 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
           description: 'Gli sceneggiatori che guardi di più.',
           videos: writerVids
         }
+      });
+    }
+  }
+
+  // Card suddivise per ruolo + categoria (film/serie/anime)
+  async function addRoleSplitCards(
+    cardType: string,
+    list: any[],
+    metaName: string,
+    metaDesc: string,
+    statLabel: string,
+    accent: string,
+    roleName: string
+  ) {
+    if (!enabled.includes(cardType) || !list?.length) return;
+    const id = `adaptive_${configId}_${cardType}`;
+    const top = list[0];
+    cards.push(await cardMeta(configId, id,
+      `${roleName}: ${top.name}`,
+      `Compare in ${top.count} contenuti ${metaName.toLowerCase()}.`,
+      { accent, statValue: top.name, statLabel }
+    ));
+    const vids = await Promise.all(list.slice(0, 100).map(async (item: any, i: number) => {
+      const v: any = video(`${id}_${i}`, item.name, new Date().toISOString(), `Compare in ${item.count} contenuti.`);
+      try {
+        const p = await searchTmdbPerson(item.name);
+        if (p?.profile_path) {
+          v.thumbnail = tmdbPersonImage(p.profile_path);
+          v.tmdb_id = p.id;
+        }
+      } catch {}
+      return v;
+    }));
+    details.push({
+      meta_id: id, meta: { id, type: 'movie', name: metaName, description: metaDesc, videos: vids }
+    });
+  }
+
+  await addRoleSplitCards('movieActors', s.topMovieActors, 'Attori Film', 'Attori che guardi nei film.', 'ATTORE FILM', '#ec4899', 'Attore film');
+  await addRoleSplitCards('seriesActors', s.topSeriesActors, 'Attori Serie', 'Attori che guardi nelle serie.', 'ATTORE SERIE', '#f43f5e', 'Attore serie');
+  await addRoleSplitCards('animeActors', s.topAnimeActors, 'Attori Anime', 'Attori che guardi negli anime.', 'ATTORE ANIME', '#d946ef', 'Attore anime');
+  await addRoleSplitCards('movieDirectors', s.topMovieDirectors, 'Registi Film', 'Registi che guardi nei film.', 'REGISTA FILM', '#8b5cf6', 'Regista film');
+  await addRoleSplitCards('seriesDirectors', s.topSeriesDirectors, 'Registi Serie', 'Registi che guardi nelle serie.', 'REGISTA SERIE', '#a855f7', 'Regista serie');
+  await addRoleSplitCards('animeDirectors', s.topAnimeDirectors, 'Registi Anime', 'Registi che guardi negli anime.', 'REGISTA ANIME', '#6366f1', 'Regista anime');
+  await addRoleSplitCards('movieWriters', s.topMovieWriters, 'Sceneggiatori Film', 'Sceneggiatori che guardi nei film.', 'SCENEGG. FILM', '#f59e0b', 'Sceneggiatore film');
+  await addRoleSplitCards('seriesWriters', s.topSeriesWriters, 'Sceneggiatori Serie', 'Sceneggiatori che guardi nelle serie.', 'SCENEGG. SERIE', '#fb923c', 'Sceneggiatore serie');
+  await addRoleSplitCards('animeWriters', s.topAnimeWriters, 'Sceneggiatori Anime', 'Sceneggiatori che guardi negli anime.', 'SCENEGG. ANIME', '#f97316', 'Sceneggiatore anime');
+
+  // Top 5 generi
+  if (enabled.includes('top5genres')) {
+    const genres = s.genre_counts || [];
+    if (genres.length > 0) {
+      const top5 = genres.slice(0, 5);
+      const id = `adaptive_${configId}_top5genres`;
+      const line = top5.map((g: any) => `${g.genre} (${g.count})`).join(' · ');
+      cards.push(await cardMeta(configId, id,
+        `Generi: ${top5[0].genre}`,
+        `Top 5 generi: ${line}`,
+        { accent: '#a855f7', statValue: top5[0].genre, statLabel: 'GENERE TOP' }
+      ));
+      const genreVids = await Promise.all(top5.map(async (g: any, i: number) => {
+        const v: any = video(`${id}_${i}`, g.genre, new Date().toISOString(), `${g.count} contenuti in questo genere.`);
+        v.trakt_type = 'movie';
+        return v;
+      }));
+      details.push({
+        meta_id: id, meta: { id, type: 'movie', name: 'Top 5 generi', description: 'I tuoi 5 generi più guardati.', videos: genreVids }
       });
     }
   }

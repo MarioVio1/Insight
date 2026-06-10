@@ -472,7 +472,20 @@ export function findMemories(events: TraktEvent[], now = new Date()): { year: nu
   return memories.sort((a, b) => b.year - a.year);
 }
 
-export async function computeTopPeople(events: TraktEvent[]): Promise<{ actors: { name: string; count: number }[]; directors: { name: string; count: number }[]; writers: { name: string; count: number }[] }> {
+export async function computeTopPeople(events: TraktEvent[], animeTmdbIds: Set<number> = new Set()): Promise<{
+  actors: { name: string; count: number }[];
+  directors: { name: string; count: number }[];
+  writers: { name: string; count: number }[];
+  movieActors: { name: string; count: number }[];
+  seriesActors: { name: string; count: number }[];
+  animeActors: { name: string; count: number }[];
+  movieDirectors: { name: string; count: number }[];
+  seriesDirectors: { name: string; count: number }[];
+  animeDirectors: { name: string; count: number }[];
+  movieWriters: { name: string; count: number }[];
+  seriesWriters: { name: string; count: number }[];
+  animeWriters: { name: string; count: number }[];
+}> {
   // Risolvi TMDB ID mancanti via ricerca TMDB
   const missingMap = new Map<string, { title: string; type: 'movie' | 'tv'; year: number | null; weight: number }>();
   const seenMap = new Map<string, { tmdb_id: string; type: 'movie' | 'tv'; weight: number }>();
@@ -519,6 +532,26 @@ export async function computeTopPeople(events: TraktEvent[]): Promise<{ actors: 
   const actorCount: Record<string, number> = {};
   const directorCount: Record<string, number> = {};
   const writerCount: Record<string, number> = {};
+  const movieActorCount: Record<string, number> = {};
+  const seriesActorCount: Record<string, number> = {};
+  const animeActorCount: Record<string, number> = {};
+  const movieDirectorCount: Record<string, number> = {};
+  const seriesDirectorCount: Record<string, number> = {};
+  const animeDirectorCount: Record<string, number> = {};
+  const movieWriterCount: Record<string, number> = {};
+  const seriesWriterCount: Record<string, number> = {};
+  const animeWriterCount: Record<string, number> = {};
+
+  function getCategory(tmdbId: string, type: 'movie' | 'tv'): 'movie' | 'series' | 'anime' {
+    if (animeTmdbIds.has(parseInt(tmdbId, 10))) return 'anime';
+    return type === 'movie' ? 'movie' : 'series';
+  }
+
+  function addToCounters(counters: Record<string, number>[], names: string[], weight: number) {
+    for (const name of names) {
+      for (const c of counters) c[name] = (c[name] || 0) + weight;
+    }
+  }
 
   const batchSize = 10;
   for (let i = 0; i < all.length; i += batchSize) {
@@ -529,26 +562,34 @@ export async function computeTopPeople(events: TraktEvent[]): Promise<{ actors: 
     for (let j = 0; j < results.length; j++) {
       const result = results[j];
       const item = batch[j];
-      if (result.status === 'fulfilled' && result.value) {
+        if (result.status === 'fulfilled' && result.value) {
         const credits = result.value as { cast: string[]; crew: { directors: string[]; writers: string[] } };
         const w = item.weight;
-        for (const actor of credits.cast) {
-          actorCount[actor] = (actorCount[actor] || 0) + w;
-        }
-        for (const director of credits.crew.directors) {
-          directorCount[director] = (directorCount[director] || 0) + w;
-        }
-        for (const writer of credits.crew.writers || []) {
-          writerCount[writer] = (writerCount[writer] || 0) + w;
-        }
+        const cat = getCategory(item.tmdb_id, item.type);
+        const catActorCount = cat === 'anime' ? animeActorCount : cat === 'movie' ? movieActorCount : seriesActorCount;
+        const catDirectorCount = cat === 'anime' ? animeDirectorCount : cat === 'movie' ? movieDirectorCount : seriesDirectorCount;
+        const catWriterCount = cat === 'anime' ? animeWriterCount : cat === 'movie' ? movieWriterCount : seriesWriterCount;
+        addToCounters([actorCount, catActorCount], credits.cast, w);
+        addToCounters([directorCount, catDirectorCount], credits.crew.directors, w);
+        addToCounters([writerCount, catWriterCount], credits.crew.writers || [], w);
       }
     }
   }
 
+  const sortDesc = (a: { name: string; count: number }, b: { name: string; count: number }) => b.count - a.count;
   return {
-    actors: Object.entries(actorCount).map(([n, c]) => ({ name: n, count: c })).sort((a, b) => b.count - a.count),
-    directors: Object.entries(directorCount).map(([n, c]) => ({ name: n, count: c })).sort((a, b) => b.count - a.count),
-    writers: Object.entries(writerCount).map(([n, c]) => ({ name: n, count: c })).sort((a, b) => b.count - a.count)
+    actors: Object.entries(actorCount).map(([n, c]) => ({ name: n, count: c })).sort(sortDesc),
+    directors: Object.entries(directorCount).map(([n, c]) => ({ name: n, count: c })).sort(sortDesc),
+    writers: Object.entries(writerCount).map(([n, c]) => ({ name: n, count: c })).sort(sortDesc),
+    movieActors: Object.entries(movieActorCount).map(([n, c]) => ({ name: n, count: c })).sort(sortDesc),
+    seriesActors: Object.entries(seriesActorCount).map(([n, c]) => ({ name: n, count: c })).sort(sortDesc),
+    animeActors: Object.entries(animeActorCount).map(([n, c]) => ({ name: n, count: c })).sort(sortDesc),
+    movieDirectors: Object.entries(movieDirectorCount).map(([n, c]) => ({ name: n, count: c })).sort(sortDesc),
+    seriesDirectors: Object.entries(seriesDirectorCount).map(([n, c]) => ({ name: n, count: c })).sort(sortDesc),
+    animeDirectors: Object.entries(animeDirectorCount).map(([n, c]) => ({ name: n, count: c })).sort(sortDesc),
+    movieWriters: Object.entries(movieWriterCount).map(([n, c]) => ({ name: n, count: c })).sort(sortDesc),
+    seriesWriters: Object.entries(seriesWriterCount).map(([n, c]) => ({ name: n, count: c })).sort(sortDesc),
+    animeWriters: Object.entries(animeWriterCount).map(([n, c]) => ({ name: n, count: c })).sort(sortDesc),
   };
 }
 
@@ -666,7 +707,7 @@ export async function computeAdaptiveInsights(configId: string, accessToken?: st
       config_id: configId,
       taste_profile: 'mixed',
       seasonal_key: 'standard',
-      summary: { memories: [], seriesRewatch: [], animeRewatch: [], animeBinges: [], animeDropped: [], animeTmdbIds: [] },
+      summary: { memories: [], seriesRewatch: [], animeRewatch: [], animeBinges: [], animeDropped: [], animeTmdbIds: [], topMovieActors: [], topSeriesActors: [], topAnimeActors: [], topMovieDirectors: [], topSeriesDirectors: [], topAnimeDirectors: [], topMovieWriters: [], topSeriesWriters: [], topAnimeWriters: [] },
       recurring_titles: [],
       rewatch_titles: [],
       genre_counts: [],
@@ -702,11 +743,29 @@ export async function computeAdaptiveInsights(configId: string, accessToken?: st
   let topActors: { name: string; count: number }[] = [];
   let topDirectors: { name: string; count: number }[] = [];
   let topWriters: { name: string; count: number }[] = [];
+  let topMovieActors: { name: string; count: number }[] = [];
+  let topSeriesActors: { name: string; count: number }[] = [];
+  let topAnimeActors: { name: string; count: number }[] = [];
+  let topMovieDirectors: { name: string; count: number }[] = [];
+  let topSeriesDirectors: { name: string; count: number }[] = [];
+  let topAnimeDirectors: { name: string; count: number }[] = [];
+  let topMovieWriters: { name: string; count: number }[] = [];
+  let topSeriesWriters: { name: string; count: number }[] = [];
+  let topAnimeWriters: { name: string; count: number }[] = [];
   try {
-    const people = await computeTopPeople(enriched);
+    const people = await computeTopPeople(enriched, new Set(animeTmdbIds));
     topActors = people.actors;
     topDirectors = people.directors;
     topWriters = people.writers;
+    topMovieActors = people.movieActors;
+    topSeriesActors = people.seriesActors;
+    topAnimeActors = people.animeActors;
+    topMovieDirectors = people.movieDirectors;
+    topSeriesDirectors = people.seriesDirectors;
+    topAnimeDirectors = people.animeDirectors;
+    topMovieWriters = people.movieWriters;
+    topSeriesWriters = people.seriesWriters;
+    topAnimeWriters = people.animeWriters;
   } catch (err) {
     // TMDB non configurato o errore di rete
   }
@@ -733,7 +792,16 @@ export async function computeAdaptiveInsights(configId: string, accessToken?: st
         memories,
         seriesRewatch,
         animeRewatch,
-        animeTmdbIds
+        animeTmdbIds,
+        topMovieActors,
+        topSeriesActors,
+        topAnimeActors,
+        topMovieDirectors,
+        topSeriesDirectors,
+        topAnimeDirectors,
+        topMovieWriters,
+        topSeriesWriters,
+        topAnimeWriters
       },
       first_play: firstPlay,
       plays_by_month: playsByMonth,
@@ -748,7 +816,6 @@ export async function computeAdaptiveInsights(configId: string, accessToken?: st
       generated_at: new Date().toISOString()
     });
   } catch {
-    // Se l'upsert completo fallisce (colonne mancanti), salva un payload minimo
     console.error('safeUpsert completo fallito, salvo payload minimo');
     await safeUpsertMinimal(configId, {
       config_id: configId,
@@ -759,7 +826,16 @@ export async function computeAdaptiveInsights(configId: string, accessToken?: st
         memories,
         seriesRewatch,
         animeRewatch,
-        animeTmdbIds
+        animeTmdbIds,
+        topMovieActors,
+        topSeriesActors,
+        topAnimeActors,
+        topMovieDirectors,
+        topSeriesDirectors,
+        topAnimeDirectors,
+        topMovieWriters,
+        topSeriesWriters,
+        topAnimeWriters
       },
       recurring_titles: recurring,
       rewatch_titles: rewatch,
