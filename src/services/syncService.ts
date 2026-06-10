@@ -5,8 +5,9 @@ import { ensureDefaultProfile } from './profileService.js';
 import { computeAdaptiveInsights } from './statsEngine.js';
 import { rebuildAdaptiveRow } from './cardComposer.js';
 import { logger } from '../utils/logger.js';
+import type { TraktEvent, TraktHistoryPayload } from '../types.js';
 
-async function ensureFreshToken(row: any) {
+async function ensureFreshToken(row: { id: string; expires_at?: string; refresh_token_enc: string }) {
   if (!row.expires_at || new Date(row.expires_at).getTime() > Date.now() + 60000) return row;
   logger.info({ configId: row.id }, 'Refreshing Trakt token');
   const refreshed = await refreshToken(decrypt(row.refresh_token_enc));
@@ -19,7 +20,7 @@ async function ensureFreshToken(row: any) {
   return { ...row, ...updated };
 }
 
-function normalizeWatchItem(configId: string, item: any, traktType: 'movie' | 'show') {
+function normalizeWatchItem(configId: string, item: TraktHistoryPayload, traktType: 'movie' | 'show'): TraktEvent {
   const source = item.movie || item.show || item;
   const episode = item.episode || null;
   const ts = item.watched_at || new Date().toISOString();
@@ -70,8 +71,8 @@ export async function syncConfig(configId: string) {
 
     // Save in batches to avoid overwhelming Supabase
     const historyRows = [
-      ...hm.map((x: any) => normalizeWatchItem(configId, x, 'movie')),
-      ...hs.map((x: any) => normalizeWatchItem(configId, x, 'show'))
+      ...hm.map((x: TraktHistoryPayload) => normalizeWatchItem(configId, x, 'movie')),
+      ...hs.map((x: TraktHistoryPayload) => normalizeWatchItem(configId, x, 'show'))
     ];
 
     logger.info({ configId, total: historyRows.length }, 'Cleaning old events');

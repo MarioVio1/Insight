@@ -1,6 +1,7 @@
 import { supabase } from './supabase.js';
 import { fetchCredits, fetchTmdbDetails, searchTmdbByTitle } from './tmdbService.js';
 import { isAnimeByKitsu } from './kitsuService.js';
+import type { TraktEvent, InsightSummary } from '../types.js';
 
 const DAY_MS = 86400000;
 const WEEK_MS = 7 * DAY_MS;
@@ -18,13 +19,13 @@ export function getSeasonalContext(now = new Date()) {
   return { seasonKey: 'standard', label: 'Current Highlights', accent: '#0ea5e9' };
 }
 
-function runtime(e: any): number {
+function runtime(e: TraktEvent): number {
   if (e.runtime_minutes) return e.runtime_minutes;
   if (e.trakt_type === 'movie') return DEFAULT_RUNTIME_MOVIE;
   return DEFAULT_RUNTIME_EPISODE;
 }
 
-export function computeStreak(events: any[]): number {
+export function computeStreak(events: TraktEvent[]): number {
   const days = new Set<string>();
   for (const e of events) {
     if (e.watched_at) days.add(e.watched_at.substring(0, 10));
@@ -41,7 +42,7 @@ export function computeStreak(events: any[]): number {
   return streak;
 }
 
-export function computePeakHour(events: any[]): { hour: number; count: number } | null {
+export function computePeakHour(events: TraktEvent[]): { hour: number; count: number } | null {
   const hourMap: Record<number, number> = {};
   for (const e of events) {
     if (!e.watched_at) continue;
@@ -53,7 +54,7 @@ export function computePeakHour(events: any[]): { hour: number; count: number } 
   return entries[0] || null;
 }
 
-export function computeWeekdayPattern(events: any[]): { day: number; count: number }[] {
+export function computeWeekdayPattern(events: TraktEvent[]): { day: number; count: number }[] {
   const dayMap: Record<number, number> = {};
   for (const e of events) {
     if (!e.watched_at) continue;
@@ -63,7 +64,7 @@ export function computeWeekdayPattern(events: any[]): { day: number; count: numb
   return Object.entries(dayMap).map(([d, c]) => ({ day: parseInt(d), count: c })).sort((a, b) => b.count - a.count);
 }
 
-export function findBingeSessions(events: any[]): { title: string; episodes: number; date: string; tmdb_id: number | null }[] {
+export function findBingeSessions(events: TraktEvent[]): { title: string; episodes: number; date: string; tmdb_id: number | null }[] {
   const dayShow: Record<string, Record<string, { count: number; tmdb_id: number | null }>> = {};
   for (const e of events) {
     if (e.trakt_type === 'movie' || !e.watched_at) continue;
@@ -83,7 +84,7 @@ export function findBingeSessions(events: any[]): { title: string; episodes: num
   return binges.sort((a, b) => b.episodes - a.episodes);
 }
 
-export function findDroppedShows(events: any[]): { title: string; lastDate: string; totalEpisodes: number; tmdb_id: number | null }[] {
+export function findDroppedShows(events: TraktEvent[]): { title: string; lastDate: string; totalEpisodes: number; tmdb_id: number | null }[] {
   const showEpisodes: Record<string, { dates: string[]; lastDate: string; tmdb_id: number | null }> = {};
   for (const e of events) {
     if (e.trakt_type === 'movie' || !e.watched_at) continue;
@@ -103,7 +104,7 @@ export function findDroppedShows(events: any[]): { title: string; lastDate: stri
   return dropped.sort((a, b) => b.totalEpisodes - a.totalEpisodes);
 }
 
-export function computeTraktStats(events: any[], apiStats?: { movies: { plays: number; minutes: number }; episodes: { plays: number; minutes: number } }) {
+export function computeTraktStats(events: TraktEvent[], apiStats?: { movies: { plays: number; minutes: number }; episodes: { plays: number; minutes: number } }) {
   const now = Date.now();
   const yearStart = now - YEAR_MS;
   const weekStart = now - WEEK_MS;
@@ -381,7 +382,7 @@ export function computeTraktStats(events: any[], apiStats?: { movies: { plays: n
   };
 }
 
-export function findRecurringTitles(events: any[]) {
+export function findRecurringTitles(events: TraktEvent[]) {
   const monthly: Record<string, Record<string, number>> = {};
   for (const e of events) {
     const date = new Date(e.watched_at);
@@ -407,7 +408,7 @@ export function findRecurringTitles(events: any[]) {
   return recurring.sort((a, b) => b.count - a.count);
 }
 
-export function findRewatchTitles(events: any[]) {
+export function findRewatchTitles(events: TraktEvent[]) {
   const keyInfo: Record<string, { title: string; count: number; tmdb_id: number | null; type: string }> = {};
   for (const e of events) {
     const key = e.tmdb_id ? `${e.trakt_type}_${e.tmdb_id}` : (e.trakt_id || e.title);
@@ -422,7 +423,7 @@ export function findRewatchTitles(events: any[]) {
     .sort((a, b) => b.count - a.count);
 }
 
-export function findSeasonalTitles(events: any[], now = new Date()): { title: string; count: number }[] {
+export function findSeasonalTitles(events: TraktEvent[], now = new Date()): { title: string; count: number }[] {
   const month = now.getUTCMonth() + 1;
   let seasonMonths: number[];
   if (month >= 6 && month <= 8) seasonMonths = [6, 7, 8];
@@ -445,7 +446,7 @@ export function findSeasonalTitles(events: any[], now = new Date()): { title: st
     .sort((a, b) => b.count - a.count);
 }
 
-export function findMemories(events: any[], now = new Date()): { year: number; title: string; tmdb_id: number | null; type: string }[] {
+export function findMemories(events: TraktEvent[], now = new Date()): { year: number; title: string; tmdb_id: number | null; type: string }[] {
   const memories: { year: number; title: string; tmdb_id: number | null; type: string }[] = [];
   const seen = new Set<string>();
 
@@ -471,7 +472,7 @@ export function findMemories(events: any[], now = new Date()): { year: number; t
   return memories.sort((a, b) => b.year - a.year);
 }
 
-export async function computeTopPeople(events: any[]): Promise<{ actors: { name: string; count: number }[]; directors: { name: string; count: number }[]; writers: { name: string; count: number }[] }> {
+export async function computeTopPeople(events: TraktEvent[]): Promise<{ actors: { name: string; count: number }[]; directors: { name: string; count: number }[]; writers: { name: string; count: number }[] }> {
   // Risolvi TMDB ID mancanti via ricerca TMDB
   const missingMap = new Map<string, { title: string; type: 'movie' | 'tv'; year: number | null; weight: number }>();
   const seenMap = new Map<string, { tmdb_id: string; type: 'movie' | 'tv'; weight: number }>();
@@ -537,7 +538,7 @@ export async function computeTopPeople(events: any[]): Promise<{ actors: { name:
         for (const director of credits.crew.directors) {
           directorCount[director] = (directorCount[director] || 0) + w;
         }
-        for (const writer of (credits.crew as any).writers || []) {
+        for (const writer of credits.crew.writers || []) {
           writerCount[writer] = (writerCount[writer] || 0) + w;
         }
       }
@@ -564,13 +565,13 @@ export async function computeRankings(configId: string, stats: { totalHours: num
     .not('trakt_username', 'is', null);
   const activeConfigIds = new Set((configs || []).map(c => c.id));
 
-  const entries = (snapshots as any[])
-    .filter((s: any) =>
+  const entries = (snapshots as { config_id: string; summary: Record<string, any> }[])
+    .filter(s =>
       s.summary &&
       s.summary.totalHours > 0 &&
       activeConfigIds.has(s.config_id)
     )
-    .map((s: any) => ({
+    .map(s => ({
       configId: s.config_id,
       totalHours: s.summary.totalHours as number,
       totalMovies: s.summary.totalMovies as number || 0,
@@ -594,7 +595,7 @@ export async function computeRankings(configId: string, stats: { totalHours: num
   };
 }
 
-export async function enrichEventsWithTmdbAnime(events: any[]): Promise<{ events: any[]; animeTmdbIds: number[] }> {
+export async function enrichEventsWithTmdbAnime(events: TraktEvent[]): Promise<{ events: TraktEvent[]; animeTmdbIds: number[] }> {
   const unique = new Map<string, { tmdb_id: string; type: string }>();
   const ANIME_GENRE_ID = 16;
 
@@ -710,7 +711,7 @@ export async function computeAdaptiveInsights(configId: string, accessToken?: st
     // TMDB non configurato o errore di rete
   }
 
-  let ranking: any = null;
+  let ranking: Record<string, number> | null = null;
   try {
     ranking = await computeRankings(configId, stats);
   } catch (err) {
@@ -771,7 +772,7 @@ export async function computeAdaptiveInsights(configId: string, accessToken?: st
   }
 }
 
-function computeFirstPlay(events: any[]): { title: string; date: string; tmdb_id: number | null } | null {
+function computeFirstPlay(events: TraktEvent[]): { title: string; date: string; tmdb_id: number | null } | null {
   let earliest: string | null = null;
   let title = '';
   let tmdbId: number | null = null;
@@ -787,7 +788,7 @@ function computeFirstPlay(events: any[]): { title: string; date: string; tmdb_id
   return { title, date: earliest, tmdb_id: tmdbId };
 }
 
-function computePlaysByMonth(events: any[]): { month: string; count: number }[] {
+function computePlaysByMonth(events: TraktEvent[]): { month: string; count: number }[] {
   const monthNames = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
   const counts: number[] = new Array(12).fill(0);
   for (const e of events) {
@@ -798,7 +799,7 @@ function computePlaysByMonth(events: any[]): { month: string; count: number }[] 
   return monthNames.map((month, i) => ({ month, count: counts[i] }));
 }
 
-function computeContentByYear(events: any[]): { year: number; count: number }[] {
+function computeContentByYear(events: TraktEvent[]): { year: number; count: number }[] {
   const yearCounts: Record<number, number> = {};
   for (const e of events) {
     if (!e.watched_at) continue;
