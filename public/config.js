@@ -134,7 +134,7 @@ if (!isConfig) {
         for (const v of meta.videos) {
           const ratingStars = v.rating ? 'Ôÿà'.repeat(Math.round(v.rating / 2)) : '';
           html += `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.04);transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background=''">
-            ${v.thumbnail ? `<img src="${v.thumbnail}" style="width:40px;height:60px;border-radius:6px;object-fit:cover;flex-shrink:0" onerror="this.style.display='none'">` : isPersonCard ? `<div style="width:40px;height:60px;border-radius:6px;background:linear-gradient(135deg,rgba(14,165,233,.1),rgba(99,102,241,.1));flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px">${v.title.charAt(0)}</div>` : ''}
+            ${v.thumbnail ? `<img src="${v.thumbnail}" style="width:80px;height:45px;border-radius:6px;object-fit:cover;flex-shrink:0" onerror="this.style.display='none'">` : isPersonCard ? `<div style="width:40px;height:60px;border-radius:6px;background:linear-gradient(135deg,rgba(14,165,233,.1),rgba(99,102,241,.1));flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px">${v.title.charAt(0)}</div>` : ''}
             <div style="flex:1;min-width:0">
               <div style="font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${v.title}</div>
               <div style="display:flex;align-items:center;gap:8px;margin-top:2px">

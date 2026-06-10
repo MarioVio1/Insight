@@ -136,14 +136,11 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
       { accent: '#22c55e', statValue: `${Math.floor(totalHours)}h`, statLabel: 'TOTALI' }
     ));
 
-    const recentEvents = dedupeEvents(await getEvents(configId));
-    const totalVids = recentEvents.slice(0, 60).map((evt, i) => eventToVideo(evt, i, id));
-
     details.push({
       meta_id: id, meta: {
         id, type: 'movie', name: 'Il tuo viaggio totale',
         description: `${totalM} film · ${seriesE} episodi · ${animeC} anime · ${Math.floor(totalHours)} ore`,
-        videos: totalVids.length > 0 ? totalVids : [
+        videos: [
           video(`${id}_1`, `${totalM} film visti (${Math.floor(mh)} ore)`, new Date().toISOString(), 'Totale film.'),
           video(`${id}_2`, `${seriesE} episodi (${Math.floor(eh)} ore)`, new Date().toISOString(), 'Totale episodi.'),
           video(`${id}_3`, `${animeC} anime guardati`, new Date().toISOString(), 'Contenuti anime.'),
