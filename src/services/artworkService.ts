@@ -96,29 +96,60 @@ export function generateSvgThumbnail(opts: {
   statValue?: string; statLabel?: string; imageUrl?: string;
 }) {
   const accent = opts.accent || '#0ea5e9';
-  const hasStat = !!opts.statValue;
-  const valY = hasStat ? 260 : 300;
-  const labelY = valY + 55;
-  const titleY = hasStat ? 440 : 400;
-  const subY = hasStat ? 475 : 435;
   const ff = 'sans-serif';
-  const valSize = hasStat ? autoSize(opts.statValue!, 1000, 90) : autoSize(opts.title, 1000, 36);
-  const titleSize = hasStat ? autoSize(opts.title, 1000, 22, 0.65) : 0;
   const img = opts.imageUrl;
-  const defs = img ? '' : `<radialGradient id="a" cx="50%" cy="0%" r="100%"><stop offset="0%" stop-color="${accent}" stop-opacity=".25"/><stop offset="100%" stop-color="${accent}" stop-opacity="0"/></radialGradient>
+  const hasImg = !!img;
+  const hasStat = !!opts.statValue;
+
+  const titleSize = hasStat ? autoSize(opts.title, 500, 32, 0.6) : autoSize(opts.title, 1100, 42, 0.6);
+  const valSize = hasStat ? autoSize(opts.statValue!, 320, 50) : 0;
+  const subSize = 16;
+
+  const defs = `<radialGradient id="a" cx="50%" cy="0%" r="100%"><stop offset="0%" stop-color="${accent}" stop-opacity=".25"/><stop offset="100%" stop-color="${accent}" stop-opacity="0"/></radialGradient>
     <radialGradient id="b" cx="20%" cy="80%" r="70%"><stop offset="0%" stop-color="${accent}" stop-opacity=".12"/><stop offset="100%" stop-color="${accent}" stop-opacity="0"/></radialGradient>`;
-  const bg = img ? `<image href="${img}" width="${TW}" height="${TH}" preserveAspectRatio="xMidYMid slice"/>` : `<rect width="100%" height="100%" fill="#050505"/><rect width="100%" height="100%" fill="url(#a)"/><rect width="100%" height="100%" fill="url(#b)"/>`;
-  const ov = img ? `<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#000" stop-opacity=".75"/><stop offset="30%" stop-color="#000" stop-opacity="0"/><stop offset="60%" stop-color="#000" stop-opacity="0"/><stop offset="100%" stop-color="#000" stop-opacity=".85"/></linearGradient></defs><rect width="100%" height="100%" fill="url(#g)"/>` : '';
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${TW}" height="${TH}" viewBox="0 0 ${TW} ${TH}"><defs>${defs}</defs>${bg}${ov}
-    <rect x="32" y="32" width="1216" height="656" rx="20" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="1"/>
-    <rect x="32" y="32" width="1216" height="3" rx="1.5" fill="${accent}"/>
-    <text x="${TW / 2}" y="${valY}" fill="#fff" font-size="${valSize}" font-weight="900" text-anchor="middle" font-family="${ff}" dominant-baseline="middle">${hasStat ? esc(opts.statValue!) : esc(opts.title)}</text>
-    ${hasStat && opts.statLabel ? `<text x="${TW / 2}" y="${labelY}" fill="${accent}" font-size="16" font-weight="700" text-anchor="middle" font-family="${ff}" letter-spacing="3" dominant-baseline="middle">${esc(trunc(opts.statLabel, 38)).toUpperCase()}</text>` : ''}
-    ${hasStat ? `<text x="${TW / 2}" y="${titleY}" fill="#fff" font-size="${titleSize}" font-weight="800" text-anchor="middle" font-family="${ff}">${esc(trunc(opts.title, 36))}</text>` : ''}
-    <text x="${TW / 2}" y="${subY}" fill="rgba(255,255,255,.4)" font-size="14" font-weight="500" text-anchor="middle" font-family="${ff}">${esc(trunc(hasStat ? opts.subtitle : opts.subtitle, 60))}</text>
-    <rect x="48" y="660" width="1184" height="1" fill="rgba(255,255,255,.08)"/>
-    <text x="48" y="685" fill="rgba(255,255,255,.15)" font-size="11" font-weight="600" font-family="${ff}" letter-spacing="2">INSIGHT</text>
-    <text x="1232" y="685" fill="${accent}" font-size="16" font-weight="900" text-anchor="end" font-family="${ff}">&#9679;</text>
+
+  // Cover box on the right (when imageUrl is available)
+  const boxX = 660;
+  const boxY = 90;
+  const boxW = 550;
+  const boxH = 550;
+  const boxR = 20;
+
+  const coverHtml = hasImg ? `
+    <defs>
+      <clipPath id="coverClip"><rect x="${boxX + 4}" y="${boxY + 4}" width="${boxW - 8}" height="${boxH - 8}" rx="${boxR - 4}"/></clipPath>
+    </defs>
+    <rect x="${boxX}" y="${boxY}" width="${boxW}" height="${boxH}" rx="${boxR}" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="2"/>
+    <rect x="${boxX + 4}" y="${boxY + 4}" width="${boxW - 8}" height="${boxH - 8}" rx="${boxR - 4}" fill="#111"/>
+    <image href="${img}" x="${boxX + 4}" y="${boxY + 4}" width="${boxW - 8}" height="${boxH - 8}" preserveAspectRatio="xMidYMid slice" clip-path="url(#coverClip)"/>
+    <rect x="${boxX}" y="${boxY}" width="${boxW}" height="${boxH}" rx="${boxR}" fill="none" stroke="${accent}" stroke-width="1" opacity=".3"/>
+  ` : '';
+
+  // Title + stat on the left
+  const textX = 56;
+  const titleHtml = hasStat
+    ? `<text x="${textX}" y="170" fill="#fff" font-size="${valSize}" font-weight="900" font-family="${ff}">${esc(trunc(opts.statValue!, 20))}</text>
+       ${opts.statLabel ? `<text x="${textX}" y="206" fill="${accent}" font-size="13" font-weight="700" font-family="${ff}" letter-spacing="2">${esc(trunc(opts.statLabel, 28)).toUpperCase()}</text>` : ''}
+       <text x="${textX}" y="270" fill="#fff" font-size="${titleSize}" font-weight="800" font-family="${ff}">${esc(trunc(opts.title, 28))}</text>`
+    : `<text x="${textX}" y="200" fill="#fff" font-size="${titleSize}" font-weight="800" font-family="${ff}">${esc(trunc(opts.title, 36))}</text>`;
+
+  const subtitleHtml = hasImg
+    ? `<text x="${textX}" y="${hasStat ? 318 : 260}" fill="rgba(255,255,255,.4)" font-size="${subSize}" font-weight="500" font-family="${ff}">${esc(trunc(opts.subtitle, 50))}</text>`
+    : '';
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${TW}" height="${TH}" viewBox="0 0 ${TW} ${TH}">
+    <defs>${defs}</defs>
+    <rect width="100%" height="100%" fill="#050505"/>
+    <rect width="100%" height="100%" fill="url(#a)"/>
+    <rect width="100%" height="100%" fill="url(#b)"/>
+    <rect x="24" y="24" width="1232" height="672" rx="24" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="1"/>
+    <rect x="24" y="24" width="1232" height="3" rx="1.5" fill="${accent}"/>
+    ${titleHtml}
+    ${subtitleHtml}
+    ${coverHtml}
+    <rect x="48" y="678" width="1184" height="1" fill="rgba(255,255,255,.08)"/>
+    <text x="48" y="698" fill="rgba(255,255,255,.12)" font-size="10" font-weight="600" font-family="${ff}" letter-spacing="2">INSIGHT</text>
+    <text x="1232" y="698" fill="${accent}" font-size="14" font-weight="900" text-anchor="end" font-family="${ff}">&#9679;</text>
   </svg>`;
 }
 

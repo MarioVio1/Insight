@@ -174,20 +174,25 @@ export async function videoPosterHandler(req: Request, res: Response) {
     const vid = videos[parseInt(vIdx, 10)];
     if (!vid) { res.status(404).send('Video not found'); return; }
 
+    let imgUrl: string | null = null;
     if (vid.tmdb_id) {
       const { fetchTmdbDetails } = await import('../services/tmdbService.js');
       const tmdbData = await fetchTmdbDetails(vid.tmdb_id, vid.trakt_type || 'movie');
-      const imgUrl = tmdbData?.backdrop || tmdbData?.poster;
-      if (imgUrl) {
-        res.redirect(imgUrl);
-        return;
-      }
+      imgUrl = tmdbData?.backdrop || tmdbData?.poster;
     }
 
-    const fallback = generateSvgThumbnail({ title: vid.title, subtitle: 'Nessuna immagine disponibile' });
-    res.setHeader('Content-Type', 'image/svg+xml');
+    const svg = generateSvgThumbnail({
+      title: vid.title,
+      subtitle: 'Nessuna immagine disponibile',
+      accent: '#0ea5e9',
+      imageUrl: imgUrl || undefined
+    });
+
+    const { default: sharp } = await import('sharp');
+    const buf = await sharp(Buffer.from(svg)).png({ compressionLevel: 6 }).toBuffer();
+    res.setHeader('Content-Type', 'image/png');
     res.setHeader('Cache-Control', 'public, max-age=3600');
-    res.send(fallback);
+    res.send(buf);
   } catch {
     res.setHeader('Content-Type', 'image/svg+xml');
     res.send(generateSvgPoster({ title: 'Insight', subtitle: 'Statistiche personali' }));
