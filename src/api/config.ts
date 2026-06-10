@@ -203,9 +203,11 @@ router.post('/migrate', async (_req, res) => {
     if (error && String(error?.message || error).includes('does not exist')) {
       return res.status(400).json({ ok: false, error: 'Tabella insight_snapshots non esiste. Esegui supabase/init.sql prima.' });
     }
-    // Prova a fare un upsert con tutte le colonne per forzare l'errore e capire se mancano
+    // Prendi un config_id reale per bypassare il FK constraint
+    const { data: existing } = await supabase.from('insight_snapshots').select('config_id').limit(1);
+    const testConfigId = existing?.[0]?.config_id || crypto.randomUUID();
     const testPayload: Record<string, any> = {
-      config_id: '00000000-0000-0000-0000-000000000000',
+      config_id: testConfigId,
       summary: {},
       top_writers: [],
       first_play: null,
@@ -214,11 +216,13 @@ router.post('/migrate', async (_req, res) => {
     };
     const { error: testErr } = await supabase.from('insight_snapshots').upsert(testPayload, { onConflict: 'config_id' });
     if (!testErr) {
-      // Ha funzionato, pulisci il record di test
-      await supabase.from('insight_snapshots').delete().eq('config_id', '00000000-0000-0000-0000-000000000000');
       return res.json({ ok: true, message: 'Nessuna migrazione necessaria - tutte le colonne esistono già.' });
     }
     const testMsg = testErr?.message || JSON.stringify(testErr);
+    // Se l'errore è FK, le colonne esistono
+    if (testMsg.includes('foreign key')) {
+      return res.json({ ok: true, message: 'Colonne presenti (errore solo FK) - nessuna migrazione necessaria.' });
+    }
     const missingColumns: string[] = [];
     for (const col of ['top_writers', 'first_play', 'plays_by_month', 'content_by_year']) {
       if (testMsg.includes(`"${col}"`) || testMsg.includes(`column "${col}"`)) {
