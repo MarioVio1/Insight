@@ -467,16 +467,10 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
       const id = `adaptive_${configId}_actor`;
       const top = actors[0];
 
-      let imageUrl = '';
-      try {
-        const p = await searchTmdbPerson(top.name);
-        if (p?.profile_path) imageUrl = tmdbPersonImage(p.profile_path) || '';
-      } catch {}
-
       cards.push(await cardMeta(configId, id,
         `Attore: ${top.name}`,
         `Appare in ${top.count} dei tuoi contenuti guardati.`,
-        { accent: '#ec4899', statValue: top.name, statLabel: 'ATTORE TOP', imageUrl: imageUrl || undefined }
+        { accent: '#ec4899', statValue: top.name, statLabel: 'ATTORE TOP' }
       ));
 
       const actorVids = await Promise.all(actors.slice(0, 10).map(async (a: any, i: number) => {
@@ -508,16 +502,10 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
       const id = `adaptive_${configId}_director`;
       const top = directors[0];
 
-      let imageUrl = '';
-      try {
-        const p = await searchTmdbPerson(top.name);
-        if (p?.profile_path) imageUrl = tmdbPersonImage(p.profile_path) || '';
-      } catch {}
-
       cards.push(await cardMeta(configId, id,
         `Regista: ${top.name}`,
         `Compare in ${top.count} dei tuoi contenuti.`,
-        { accent: '#8b5cf6', statValue: top.name, statLabel: 'REGISTA TOP', imageUrl: imageUrl || undefined }
+        { accent: '#8b5cf6', statValue: top.name, statLabel: 'REGISTA TOP' }
       ));
 
       const directorVids = await Promise.all(directors.slice(0, 10).map(async (d: any, i: number) => {
@@ -549,16 +537,10 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
       const id = `adaptive_${configId}_writer`;
       const top = writers[0];
 
-      let imageUrl = '';
-      try {
-        const p = await searchTmdbPerson(top.name);
-        if (p?.profile_path) imageUrl = tmdbPersonImage(p.profile_path) || '';
-      } catch {}
-
       cards.push(await cardMeta(configId, id,
         `Sceneggiatore: ${top.name}`,
         `Compare in ${top.count} dei tuoi contenuti.`,
-        { accent: '#f59e0b', statValue: top.name, statLabel: 'SCENEGGIATORE', imageUrl: imageUrl || undefined }
+        { accent: '#f59e0b', statValue: top.name, statLabel: 'SCENEGGIATORE' }
       ));
 
       const writerVids = await Promise.all(writers.slice(0, 10).map(async (w: any, i: number) => {

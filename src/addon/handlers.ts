@@ -156,8 +156,7 @@ export async function metaHandler(configId: string, metaId: string) {
     });
   }
 
-  const hasRealContent = enrichedVideos.some(v => v.tmdb_id);
-  if (!hasRealContent && enrichedVideos.length > 0) {
+  if (enrichedVideos.length === 0) {
     try {
       const { data: recent } = await supabase
         .from('trakt_events')
