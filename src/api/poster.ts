@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { supabase } from '../services/supabase.js';
-import { generatePosterBuffer, generateSvgPoster } from '../services/artworkService.js';
+import { generatePosterBuffer, generateSvgPoster, generateSvgThumbnail } from '../services/artworkService.js';
 import { resolveConfigId } from '../services/db.js';
 import { fetchImageBuffer } from '../services/tmdbService.js';
 import { INSIGHT_CATALOG_ID, LEGACY_INSIGHT_CATALOG_ID } from '../addon/manifest.js';
@@ -184,8 +184,9 @@ export async function videoPosterHandler(req: Request, res: Response) {
       }
     }
 
-    const fallback = generateSvgPoster({ title: vid.title, subtitle: 'Nessuna immagine disponibile', imageUrl: '' });
+    const fallback = generateSvgThumbnail({ title: vid.title, subtitle: 'Nessuna immagine disponibile' });
     res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
     res.send(fallback);
   } catch {
     res.setHeader('Content-Type', 'image/svg+xml');
