@@ -513,7 +513,7 @@ export async function computeTopPeople(events: any[]): Promise<{ actors: { name:
     if (i + 5 < missing.length) await new Promise(r => setTimeout(r, 30));
   }
 
-  const all = [...seenMap.values()].sort((a, b) => b.weight - a.weight).slice(0, 200);
+  const all = [...seenMap.values()].sort((a, b) => b.weight - a.weight);
 
   const actorCount: Record<string, number> = {};
   const directorCount: Record<string, number> = {};

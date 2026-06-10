@@ -117,33 +117,32 @@ export async function metaHandler(configId: string, metaId: string) {
   const anyVideos = videos as any[];
   const tmdbLookups = anyVideos
     .filter(v => v.tmdb_id)
-    .map(v => getTmdbData(v.tmdb_id, v.trakt_type || 'movie'));
+    .map(v => getTmdbData(v.tmdb_id, (v.trakt_type === 'show' ? 'tv' : v.trakt_type) || 'movie'));
   const tmdbResults = tmdbLookups.length > 0 ? await Promise.all(tmdbLookups) : [];
 
   let tmdbIdx = 0;
   const enrichedVideos = [];
   for (const v of videos) {
     let thumbnail = v.thumbnail || null;
+    let poster: string | null = null;
     let rating: number | null = v.rating || null;
     let overview = v.overview || '';
+    let traktType = v.trakt_type || '';
 
     if (v.tmdb_id) {
       const tmdbData = tmdbResults[tmdbIdx];
       tmdbIdx++;
       if (tmdbData) {
-        if (tmdbData.backdrop || tmdbData.poster) {
-          thumbnail = tmdbData.backdrop || tmdbData.poster;
-        }
+        poster = tmdbData.poster || tmdbData.backdrop;
+        thumbnail = poster;
         if (rating === null) rating = tmdbData.rating;
       }
     }
 
     if (!thumbnail) {
-      if (cardType === 'actor' || cardType === 'director') {
+      if (cardType === 'actor' || cardType === 'director' || cardType === 'writer') {
         thumbnail = await getPersonImage(v.title);
-      } else if (v.tmdb_id) {
-        const tmdbData = tmdbResults[tmdbIdx - 1];
-        if (tmdbData) thumbnail = tmdbData.backdrop || tmdbData.poster;
+        poster = thumbnail;
       }
     }
 
@@ -153,6 +152,7 @@ export async function metaHandler(configId: string, metaId: string) {
       released: v.released,
       overview: overview || 'Nessuna descrizione',
       thumbnail: thumbnail || undefined,
+      poster: poster || undefined,
       rating: rating || undefined,
       ...(v.tmdb_id ? { tmdb_id: v.tmdb_id } : {})
     });

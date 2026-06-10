@@ -349,7 +349,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
           videos: recurringTitles.slice(0, 100).map((r: any, i: number) => {
             const evt = titleTmdbMap.get(r.title.toLowerCase());
             const v: any = video(`${id}_${i}`, r.title, new Date().toISOString(), `Visto ${r.count} volte nei mesi: ${r.months.join(', ')}.`);
-            if (evt?.tmdb_id) v.tmdb_id = evt.tmdb_id;
+            if (evt?.tmdb_id) { v.tmdb_id = evt.tmdb_id; v.trakt_type = evt.trakt_type; }
             return v;
           })
         }
@@ -429,7 +429,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
           ? seasonalTitles.slice(0, 100).map((t: any, i: number) => {
               const evt = titleTmdbMap.get(t.title.toLowerCase());
               const v: any = video(`${id}_${i}`, t.title, new Date().toISOString(), `Visto ${t.count} volte in questa stagione.`);
-              if (evt?.tmdb_id) v.tmdb_id = evt.tmdb_id;
+              if (evt?.tmdb_id) { v.tmdb_id = evt.tmdb_id; v.trakt_type = evt.trakt_type; }
               return v;
             })
           : [video(`${id}_1`, seasonalKey, new Date().toISOString(), seasonTexts[seasonalKey] || seasonTexts.standard)]
