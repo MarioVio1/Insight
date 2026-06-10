@@ -80,7 +80,7 @@ export function findBingeSessions(events: any[]): { title: string; episodes: num
       if (info.count >= 3) binges.push({ title, episodes: info.count, date, tmdb_id: info.tmdb_id });
     }
   }
-  return binges.sort((a, b) => b.episodes - a.episodes).slice(0, 10);
+  return binges.sort((a, b) => b.episodes - a.episodes);
 }
 
 export function findDroppedShows(events: any[]): { title: string; lastDate: string; totalEpisodes: number; tmdb_id: number | null }[] {
@@ -100,7 +100,7 @@ export function findDroppedShows(events: any[]): { title: string; lastDate: stri
       dropped.push({ title, lastDate: info.dates[info.dates.length - 1], totalEpisodes: info.dates.length, tmdb_id: info.tmdb_id });
     }
   }
-  return dropped.sort((a, b) => b.totalEpisodes - a.totalEpisodes).slice(0, 10);
+  return dropped.sort((a, b) => b.totalEpisodes - a.totalEpisodes);
 }
 
 export function computeTraktStats(events: any[], apiStats?: { movies: { plays: number; minutes: number }; episodes: { plays: number; minutes: number } }) {
@@ -389,7 +389,7 @@ export function findRecurringTitles(events: any[]) {
       recurring.push({ title, count: info.count, months: [...info.months].sort() });
     }
   }
-  return recurring.sort((a, b) => b.count - a.count).slice(0, 12);
+  return recurring.sort((a, b) => b.count - a.count);
 }
 
 export function findRewatchTitles(events: any[]) {
@@ -404,8 +404,7 @@ export function findRewatchTitles(events: any[]) {
   return Object.entries(keyInfo)
     .filter(([_, info]) => info.count >= 2)
     .map(([_, info]) => ({ title: info.title, count: info.count, tmdb_id: info.tmdb_id, type: info.type }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 12);
+    .sort((a, b) => b.count - a.count);
 }
 
 export function findSeasonalTitles(events: any[], now = new Date()): { title: string; count: number }[] {
@@ -428,8 +427,7 @@ export function findSeasonalTitles(events: any[], now = new Date()): { title: st
   }
   return Object.entries(titles)
     .map(([title, count]) => ({ title, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 5);
+    .sort((a, b) => b.count - a.count);
 }
 
 export function findMemories(events: any[], now = new Date()): { year: number; title: string; tmdb_id: number | null; type: string }[] {
@@ -455,7 +453,7 @@ export function findMemories(events: any[], now = new Date()): { year: number; t
     }
   }
 
-  return memories.sort((a, b) => b.year - a.year).slice(0, 10);
+  return memories.sort((a, b) => b.year - a.year);
 }
 
 export async function computeTopPeople(events: any[]): Promise<{ actors: { name: string; count: number }[]; directors: { name: string; count: number }[]; writers: { name: string; count: number }[] }> {
@@ -566,7 +564,7 @@ export async function computeRankings(configId: string, stats: { totalHours: num
     hoursRank,
     streakRank,
     contentRank,
-    topHours: entries.slice(0, 3).map(e => e.totalHours)
+    topHours: entries.slice(0, 20).map(e => e.totalHours)
   };
 }
 

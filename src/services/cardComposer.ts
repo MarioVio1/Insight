@@ -8,7 +8,7 @@ async function getEvents(configId: string, daysBack?: number): Promise<any[]> {
     const cutoff = new Date(Date.now() - daysBack * 86400000).toISOString();
     q = q.gte('watched_at', cutoff);
   }
-  const { data } = await q.order('watched_at', { ascending: false }).limit(daysBack ? 50 : 200);
+  const { data } = await q.order('watched_at', { ascending: false }).limit(daysBack ? 500 : 2000);
   return data || [];
 }
 
@@ -222,7 +222,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
       { accent: '#a855f7', statValue: tg, statLabel: 'GENERE TOP' }
     ));
 
-    const genreEvents = tg && tg.length > 0 ? dedupeEvents((await getEvents(configId)).filter((e: any) => (e.genres || []).includes(tg))).slice(0, 30) : [];
+    const genreEvents = tg && tg.length > 0 ? dedupeEvents((await getEvents(configId)).filter((e: any) => (e.genres || []).includes(tg))).slice(0, 100) : [];
     const genreVids = genreEvents.length > 0
       ? genreEvents.map((evt: any, i: number) => eventToVideo(evt, i, id))
       : genreCounts.slice(0, 10).map((g: any, i: number) =>
@@ -259,7 +259,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
       meta_id: id, meta: {
         id, type: 'movie', name: 'Le tue maratone',
         description: 'I giorni in cui hai guardato più episodi della stessa serie.',
-        videos: s.binges.slice(0, 10).map((b: any, i: number) => ({
+        videos: s.binges.slice(0, 100).map((b: any, i: number) => ({
           id: `${id}_${i}`,
           title: `${b.title} (${b.episodes}ep)`,
           released: b.date,
@@ -291,7 +291,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
         meta_id: id, meta: {
           id, type: 'movie', name: 'Serie in pausa',
           description: 'Serie che non guardi da più di 3 mesi.',
-          videos: s.dropped.slice(0, 10).map((d: any, i: number) => ({
+          videos: s.dropped.slice(0, 100).map((d: any, i: number) => ({
             id: `${id}_${i}`,
             title: `${d.title} (${d.totalEpisodes}ep)`,
             released: d.lastDate,
@@ -318,7 +318,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
     ));
 
     const recentEvents = dedupeEvents(await getEvents(configId, 30));
-    const monthlyVids = recentEvents.slice(0, 40).map((evt, i) => eventToVideo(evt, i, id));
+    const monthlyVids = recentEvents.slice(0, 100).map((evt, i) => eventToVideo(evt, i, id));
 
     details.push({
       meta_id: id, meta: {
@@ -348,7 +348,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
         meta_id: id, meta: {
           id, type: 'movie', name: 'Le tue ricorrenze',
           description: 'Titoli che guardi sempre nello stesso mese.',
-          videos: recurringTitles.slice(0, 12).map((r: any, i: number) => {
+          videos: recurringTitles.slice(0, 100).map((r: any, i: number) => {
             const evt = titleTmdbMap.get(r.title.toLowerCase());
             const v: any = video(`${id}_${i}`, r.title, new Date().toISOString(), `Visto ${r.count} volte nei mesi: ${r.months.join(', ')}.`);
             if (evt?.tmdb_id) v.tmdb_id = evt.tmdb_id;
@@ -387,7 +387,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
         meta_id: id, meta: {
           id, type: 'movie', name: 'I tuoi comfort rewatch',
           description: 'Quelli che non guardi una volta sola.',
-          videos: rewatchTitles.slice(0, 12).map((r: any, i: number) => ({
+          videos: rewatchTitles.slice(0, 100).map((r: any, i: number) => ({
             id: `${id}_${i}`,
             title: `${r.title} (${r.count}x)`,
             released: new Date().toISOString(),
@@ -416,7 +416,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
     };
 
     const desc = seasonalTitles.length > 0
-      ? `Più visti: ${seasonalTitles.slice(0, 5).map((t: any) => t.title).join(', ')}`
+      ? `Più visti: ${seasonalTitles.slice(0, 20).map((t: any) => t.title).join(', ')}`
       : (seasonTexts[seasonalKey] || seasonTexts.standard);
 
     let imageUrl = '';
@@ -439,7 +439,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
         id, type: 'movie', name: 'La stagione del tuo profilo',
         description: desc,
         videos: seasonalTitles.length > 0
-          ? seasonalTitles.slice(0, 12).map((t: any, i: number) => {
+          ? seasonalTitles.slice(0, 100).map((t: any, i: number) => {
               const evt = titleTmdbMap.get(t.title.toLowerCase());
               const v: any = video(`${id}_${i}`, t.title, new Date().toISOString(), `Visto ${t.count} volte in questa stagione.`);
               if (evt?.tmdb_id) v.tmdb_id = evt.tmdb_id;
@@ -463,7 +463,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
         { accent: '#ec4899', statValue: top.name, statLabel: 'ATTORE TOP' }
       ));
 
-      const actorVids = await Promise.all(actors.slice(0, 10).map(async (a: any, i: number) => {
+      const actorVids = await Promise.all(actors.slice(0, 100).map(async (a: any, i: number) => {
         const v: any = video(`${id}_${i}`, a.name, new Date().toISOString(), `Appare in ${a.count} contenuti.`);
         try {
           const p = await searchTmdbPerson(a.name);
@@ -498,7 +498,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
         { accent: '#8b5cf6', statValue: top.name, statLabel: 'REGISTA TOP' }
       ));
 
-      const directorVids = await Promise.all(directors.slice(0, 10).map(async (d: any, i: number) => {
+      const directorVids = await Promise.all(directors.slice(0, 100).map(async (d: any, i: number) => {
         const v: any = video(`${id}_${i}`, d.name, new Date().toISOString(), `Compare in ${d.count} contenuti.`);
         try {
           const p = await searchTmdbPerson(d.name);
@@ -533,7 +533,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
         { accent: '#f59e0b', statValue: top.name, statLabel: 'SCENEGGIATORE' }
       ));
 
-      const writerVids = await Promise.all(writers.slice(0, 10).map(async (w: any, i: number) => {
+      const writerVids = await Promise.all(writers.slice(0, 100).map(async (w: any, i: number) => {
         const v: any = video(`${id}_${i}`, w.name, new Date().toISOString(), `Compare in ${w.count} contenuti.`);
         try {
           const p = await searchTmdbPerson(w.name);
@@ -581,7 +581,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
 
     const animeEvts = dedupeEvents((await getEvents(configId)).filter((e: any) => (e.genres || []).includes('anime')));
     const animeVids = animeEvts.length > 0
-      ? animeEvts.slice(0, 30).map((evt: any, i: number) => eventToVideo(evt, i, id))
+      ? animeEvts.slice(0, 100).map((evt: any, i: number) => eventToVideo(evt, i, id))
       : av;
 
     details.push({
@@ -646,7 +646,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
         meta_id: id, meta: {
           id, type: 'movie', name: 'I tuoi ricordi',
           description: 'Cosa guardavi negli stessi giorni degli anni scorsi.',
-          videos: memories.slice(0, 10).map((m: any, i: number) => ({
+          videos: memories.slice(0, 100).map((m: any, i: number) => ({
             id: `${id}_${i}`,
             title: m.title,
             released: new Date().toISOString(),
@@ -839,7 +839,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
   if (enabled.includes('events')) {
     const id = `adaptive_${configId}_events`;
     const recentEvts = dedupeEvents(await getEvents(configId, 7));
-    const evtVids = recentEvts.slice(0, 40).map((evt, i) => eventToVideo(evt, i, id));
+    const evtVids = recentEvts.slice(0, 100).map((evt, i) => eventToVideo(evt, i, id));
 
     cards.push(await cardMeta(configId, id,
       `${recentEvts.length} attività recenti (7gg)`,
