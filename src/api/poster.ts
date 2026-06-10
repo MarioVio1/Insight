@@ -162,7 +162,7 @@ export async function videoPosterHandler(req: Request, res: Response) {
     const card = rowData.metas.find((m: any) => m.id === cardId || m.id.endsWith(`_${cardId}`));
     if (!card) { res.status(404).send('Card not found'); return; }
 
-    const metaId = `adaptive_${uuid}_${cardId}`;
+    const metaId = cardId.startsWith('adaptive_') ? cardId : `adaptive_${uuid}_${cardId}`;
     const { data: metaData } = await supabase
       .from('adaptive_meta')
       .select('meta')
