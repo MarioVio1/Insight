@@ -173,4 +173,21 @@ router.get('/status/:configId', async (req, res) => {
   });
 });
 
+router.post('/cleanup', async (_req, res) => {
+  try {
+    const { data: configs } = await supabase
+      .from('addon_configs')
+      .select('id, slug, last_sync_at, trakt_username')
+      .is('last_sync_at', null);
+    const count = configs?.length || 0;
+    if (count > 0) {
+      const ids = configs!.map(c => c.id);
+      await supabase.from('addon_configs').delete().in('id', ids);
+    }
+    res.json({ ok: true, deleted_configs: count });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: String(err) });
+  }
+});
+
 export default router;

@@ -543,7 +543,7 @@ export async function computeRankings(configId: string, stats: { totalHours: num
   if (!all) return null;
 
   const entries = (all as any[])
-    .filter((s: any) => s.summary && s.summary.totalHours != null)
+    .filter((s: any) => s.summary && s.summary.totalHours > 0)
     .map((s: any) => ({
       configId: s.config_id,
       totalHours: s.summary.totalHours as number,
