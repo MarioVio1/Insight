@@ -16,6 +16,21 @@ export async function searchTmdbMulti(query: string) {
   return data?.results?.[0] ?? null;
 }
 
+export async function searchTmdbByTitle(title: string, type: 'movie' | 'tv', year?: number | null): Promise<string | null> {
+  if (!process.env.TMDB_API_KEY && !process.env.TMDB_BEARER_TOKEN) return null;
+  const params: Record<string, string> = { query: title };
+  if (process.env.TMDB_API_KEY) params.api_key = process.env.TMDB_API_KEY;
+  if (year) params.year = String(year);
+  try {
+    const endpoint = type === 'movie' ? '/search/movie' : '/search/tv';
+    const { data } = await axios.get(`${TMDB_BASE}${endpoint}`, { params, headers: authHeaders() });
+    const result = data?.results?.[0];
+    return result?.id ? String(result.id) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function tmdbImage(path?: string | null) {
   return path ? `${IMAGE_BASE}${path}` : null;
 }
@@ -63,7 +78,7 @@ export async function fetchCredits(tmdbId: string, type: 'movie' | 'tv') {
   try {
     const headers = authHeaders();
     const { data } = await axios.get(`${TMDB_BASE}/${type}/${tmdbId}/credits`, { params, headers });
-    const cast = (data.cast || []).slice(0, 10).map((c: any) => c.name).filter(Boolean);
+    const cast = (data.cast || []).map((c: any) => c.name).filter(Boolean);
     const directors = (data.crew || [])
       .filter((c: any) => c.job === 'Director' || c.department === 'Directing')
       .map((c: any) => c.name)

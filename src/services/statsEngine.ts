@@ -1,5 +1,5 @@
 import { supabase } from './supabase.js';
-import { fetchCredits, fetchTmdbDetails } from './tmdbService.js';
+import { fetchCredits, fetchTmdbDetails, searchTmdbByTitle } from './tmdbService.js';
 import { isAnimeByKitsu } from './kitsuService.js';
 
 const DAY_MS = 86400000;
@@ -459,15 +459,47 @@ export function findMemories(events: any[], now = new Date()): { year: number; t
 }
 
 export async function computeTopPeople(events: any[]): Promise<{ actors: { name: string; count: number }[]; directors: { name: string; count: number }[]; writers: { name: string; count: number }[] }> {
+  // Risolvi TMDB ID mancanti via ricerca TMDB
+  const missingMap = new Map<string, { title: string; type: 'movie' | 'tv'; year: number | null; weight: number }>();
   const seenMap = new Map<string, { tmdb_id: string; type: 'movie' | 'tv'; weight: number }>();
   for (const e of events) {
-    const tid = String(e.tmdb_id);
     if (e.tmdb_id) {
+      const tid = String(e.tmdb_id);
       const existing = seenMap.get(tid);
       if (existing) existing.weight++;
       else seenMap.set(tid, { tmdb_id: tid, type: e.trakt_type === 'movie' ? 'movie' : 'tv', weight: 1 });
+    } else if (e.title) {
+      const key = `${(e.trakt_type || 'movie')}_${e.title.toLowerCase().trim()}`;
+      const existing = missingMap.get(key);
+      if (existing) existing.weight++;
+      else missingMap.set(key, { title: e.title, type: e.trakt_type === 'movie' ? 'movie' : 'tv', year: e.year || null, weight: 1 });
     }
   }
+
+  // Cerca TMDB per titoli senza ID (batch 5 con cache)
+  const tmdbSearchCache = new Map<string, string | null>();
+  const missing = [...missingMap.values()];
+  for (let i = 0; i < missing.length; i += 5) {
+    const chunk = missing.slice(i, i + 5);
+    const results = await Promise.allSettled(
+      chunk.map(item => searchTmdbByTitle(item.title, item.type, item.year))
+    );
+    for (let j = 0; j < results.length; j++) {
+      const r = results[j];
+      const item = chunk[j];
+      const key = `${item.type}_${item.title.toLowerCase().trim()}`;
+      if (r.status === 'fulfilled' && r.value) {
+        tmdbSearchCache.set(key, r.value);
+        const existing = seenMap.get(r.value);
+        if (existing) existing.weight += item.weight;
+        else seenMap.set(r.value, { tmdb_id: r.value, type: item.type, weight: item.weight });
+      } else {
+        tmdbSearchCache.set(key, null);
+      }
+    }
+    if (i + 5 < missing.length) await new Promise(r => setTimeout(r, 30));
+  }
+
   const all = [...seenMap.values()].sort((a, b) => b.weight - a.weight);
 
   const actorCount: Record<string, number> = {};
