@@ -199,43 +199,25 @@ alter table insight_snapshots add column if not exists content_by_year jsonb not
 
 router.post('/migrate', async (_req, res) => {
   try {
-    const { error } = await supabase.from('insight_snapshots').select('config_id').limit(1);
-    if (error && String(error?.message || error).includes('does not exist')) {
-      return res.status(400).json({ ok: false, error: 'Tabella insight_snapshots non esiste. Esegui supabase/init.sql prima.' });
-    }
-    // Prendi un config_id reale per bypassare il FK constraint
-    const { data: existing } = await supabase.from('insight_snapshots').select('config_id').limit(1);
-    const testConfigId = existing?.[0]?.config_id || crypto.randomUUID();
-    const testPayload: Record<string, any> = {
-      config_id: testConfigId,
-      summary: {},
-      top_writers: [],
-      first_play: null,
-      plays_by_month: [],
-      content_by_year: []
-    };
-    const { error: testErr } = await supabase.from('insight_snapshots').upsert(testPayload, { onConflict: 'config_id' });
-    if (!testErr) {
-      return res.json({ ok: true, message: 'Nessuna migrazione necessaria - tutte le colonne esistono già.' });
-    }
-    const testMsg = testErr?.message || JSON.stringify(testErr);
-    // Se l'errore è FK, le colonne esistono
-    if (testMsg.includes('foreign key')) {
-      return res.json({ ok: true, message: 'Colonne presenti (errore solo FK) - nessuna migrazione necessaria.' });
-    }
+    // Verifica colonne usando una select mirata (non serve FK)
+    const cols = ['top_writers', 'first_play', 'plays_by_month', 'content_by_year'];
     const missingColumns: string[] = [];
-    for (const col of ['top_writers', 'first_play', 'plays_by_month', 'content_by_year']) {
-      if (testMsg.includes(`"${col}"`) || testMsg.includes(`column "${col}"`)) {
-        missingColumns.push(col);
+    for (const col of cols) {
+      const { error } = await supabase.from('insight_snapshots').select(col).limit(1);
+      if (error) {
+        const msg = error?.message || JSON.stringify(error);
+        if (msg.includes(`"${col}"`) || msg.includes(`column "${col}"`)) {
+          missingColumns.push(col);
+        }
       }
     }
     if (missingColumns.length === 0) {
-      return res.status(500).json({ ok: false, error: testMsg, message: 'Errore sconosciuto. Vai su Supabase SQL Editor e incolla:' + MIGRATION_SQL });
+      return res.json({ ok: true, message: 'Nessuna migrazione necessaria - tutte le colonne esistono già.' });
     }
     res.json({
       ok: false,
       missing_columns: missingColumns,
-      message: `Mancano ${missingColumns.length} colonne. Vai su Supabase SQL Editor (https://supabase.com/dashboard/project/_/sql/new) e incolla:`,
+      message: `Mancano ${missingColumns.length}/${cols.length} colonne. Vai su Supabase SQL Editor (https://supabase.com/dashboard/project/_/sql/new) e incolla:`,
       sql: MIGRATION_SQL
     });
   } catch (err) {
