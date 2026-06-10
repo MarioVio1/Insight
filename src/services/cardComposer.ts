@@ -338,17 +338,10 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
     if (recurringTitles.length > 0) {
       const id = `adaptive_${configId}_recurring`;
 
-      const firstTitle = recurringTitles[0].title;
-      const firstEvt = titleTmdbMap.get(firstTitle.toLowerCase());
-      let imageUrl = '';
-      if (firstEvt?.tmdb_id) {
-        try { const dt = await fetchTmdbDetails(firstEvt.tmdb_id, firstEvt.trakt_type === 'movie' ? 'movie' : 'tv'); imageUrl = dt.poster || ''; } catch {}
-      }
-
       cards.push(await cardMeta(configId, id,
         `${recurringTitles.length} titoli ricorrenti`,
         `Titoli che torni a guardare ogni anno nello stesso periodo.`,
-        { accent: '#f59e0b', statValue: `${recurringTitles.length}`, statLabel: 'RICORRENTI', imageUrl: imageUrl || undefined }
+        { accent: '#f59e0b', statValue: `${recurringTitles.length}`, statLabel: 'RICORRENTI' }
       ));
 
       details.push({
