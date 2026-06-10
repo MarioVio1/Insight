@@ -711,7 +711,7 @@ export async function computeAdaptiveInsights(configId: string, accessToken?: st
     // TMDB non configurato o errore di rete
   }
 
-  let ranking: Record<string, number> | null = null;
+  let ranking: { totalUsers: number; hoursRank: number; streakRank: number; contentRank: number; topHours: number[] } | null = null;
   try {
     ranking = await computeRankings(configId, stats);
   } catch (err) {

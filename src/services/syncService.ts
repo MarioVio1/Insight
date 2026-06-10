@@ -5,10 +5,10 @@ import { ensureDefaultProfile } from './profileService.js';
 import { computeAdaptiveInsights } from './statsEngine.js';
 import { rebuildAdaptiveRow } from './cardComposer.js';
 import { logger } from '../utils/logger.js';
-import type { TraktEvent, TraktHistoryPayload } from '../types.js';
+import type { TraktEvent } from '../types.js';
 
-async function ensureFreshToken(row: { id: string; expires_at?: string; refresh_token_enc: string }) {
-  if (!row.expires_at || new Date(row.expires_at).getTime() > Date.now() + 60000) return row;
+async function ensureFreshToken(row: { id: string; expires_at?: string; refresh_token_enc: string; access_token_enc?: string }) {
+  if (!row.expires_at || new Date(row.expires_at).getTime() > Date.now() + 60000) return row as { id: string; expires_at?: string; refresh_token_enc: string; access_token_enc: string };
   logger.info({ configId: row.id }, 'Refreshing Trakt token');
   const refreshed = await refreshToken(decrypt(row.refresh_token_enc));
   const updated = {
@@ -17,11 +17,11 @@ async function ensureFreshToken(row: { id: string; expires_at?: string; refresh_
     expires_at: new Date(Date.now() + refreshed.expires_in * 1000).toISOString()
   };
   await supabase.from('addon_configs').update(updated).eq('id', row.id);
-  return { ...row, ...updated };
+  return { ...row, ...updated } as { id: string; expires_at?: string; refresh_token_enc: string; access_token_enc: string };
 }
 
-function normalizeWatchItem(configId: string, item: TraktHistoryPayload, traktType: 'movie' | 'show'): TraktEvent {
-  const source = item.movie || item.show || item;
+function normalizeWatchItem(configId: string, item: Record<string, any>, traktType: 'movie' | 'show'): TraktEvent {
+  const source: Record<string, any> = item.movie || item.show || item;
   const episode = item.episode || null;
   const ts = item.watched_at || new Date().toISOString();
   const contentId = String(episode?.ids?.trakt || source.ids?.trakt || source.ids?.imdb || source.title || 'unknown');
@@ -71,8 +71,8 @@ export async function syncConfig(configId: string) {
 
     // Save in batches to avoid overwhelming Supabase
     const historyRows = [
-      ...hm.map((x: TraktHistoryPayload) => normalizeWatchItem(configId, x, 'movie')),
-      ...hs.map((x: TraktHistoryPayload) => normalizeWatchItem(configId, x, 'show'))
+      ...hm.map((x: Record<string, any>) => normalizeWatchItem(configId, x, 'movie')),
+      ...hs.map((x: Record<string, any>) => normalizeWatchItem(configId, x, 'show'))
     ];
 
     logger.info({ configId, total: historyRows.length }, 'Cleaning old events');
