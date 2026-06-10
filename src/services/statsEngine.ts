@@ -300,6 +300,15 @@ export function computeTraktStats(events: any[], apiStats?: { movies: { plays: n
   }).length;
   const nightPct = totalWatched > 0 ? Math.round(nightCount / totalWatched * 100) : 0;
 
+  // Statistiche anime aggiuntive
+  const animeStreak = computeStreak(anime);
+  const animePeakHour = computePeakHour(anime);
+  const animeUniqueTitles = new Set(anime.map(e => e.title)).size;
+  const animeTotalDays = new Set(anime.filter(e => e.watched_at).map(e => e.watched_at.substring(0, 10))).size;
+  const animeAvgPerDay = animeTotalDays > 0 ? Math.round(anime.length / animeTotalDays * 10) / 10 : 0;
+  const animePct = totalWatched > 0 ? Math.round(anime.length / totalWatched * 100) : 0;
+  const animeWeekdayPattern = computeWeekdayPattern(anime);
+
   // Serie uniche e media episodi per show
   const showEpisodeMap: Record<string, number> = {};
   for (const e of series) {
@@ -335,6 +344,12 @@ export function computeTraktStats(events: any[], apiStats?: { movies: { plays: n
     seriesHours,
     animeEpisodes: animeEpisodesCount,
     animeMovies: animeMoviesCount,
+    animeStreak,
+    animePeakHour,
+    animeUniqueTitles,
+    animeTotalDays,
+    animeAvgPerDay,
+    animePct,
     totalDays,
     avgPerDay,
     yearlyTotals,
@@ -498,7 +513,7 @@ export async function computeTopPeople(events: any[]): Promise<{ actors: { name:
     if (i + 5 < missing.length) await new Promise(r => setTimeout(r, 30));
   }
 
-  const all = [...seenMap.values()].sort((a, b) => b.weight - a.weight);
+  const all = [...seenMap.values()].sort((a, b) => b.weight - a.weight).slice(0, 200);
 
   const actorCount: Record<string, number> = {};
   const directorCount: Record<string, number> = {};
@@ -568,7 +583,7 @@ export async function computeRankings(configId: string, stats: { totalHours: num
   };
 }
 
-export async function enrichEventsWithTmdbAnime(events: any[]): Promise<any[]> {
+export async function enrichEventsWithTmdbAnime(events: any[]): Promise<{ events: any[]; animeTmdbIds: number[] }> {
   const unique = new Map<string, { tmdb_id: string; type: string }>();
   const ANIME_GENRE_ID = 16;
 
@@ -611,7 +626,7 @@ export async function enrichEventsWithTmdbAnime(events: any[]): Promise<any[]> {
     if (i + 10 < batch.length) await new Promise(r => setTimeout(r, 20));
   }
 
-  return events.map(e => {
+  const enriched = events.map(e => {
     if (e.tmdb_id && animeSet.has(String(e.tmdb_id))) {
       const g = e.genres || [];
       if (!g.includes('anime')) g.push('anime');
@@ -619,6 +634,9 @@ export async function enrichEventsWithTmdbAnime(events: any[]): Promise<any[]> {
     }
     return e;
   });
+
+  const animeTmdbIds = [...animeSet].map(Number).filter(Boolean);
+  return { events: enriched, animeTmdbIds };
 }
 
 export async function computeAdaptiveInsights(configId: string, accessToken?: string, traktUsername?: string) {
@@ -636,7 +654,7 @@ export async function computeAdaptiveInsights(configId: string, accessToken?: st
       config_id: configId,
       taste_profile: 'mixed',
       seasonal_key: 'standard',
-      summary: { memories: [], seriesRewatch: [], animeRewatch: [], animeBinges: [], animeDropped: [] },
+      summary: { memories: [], seriesRewatch: [], animeRewatch: [], animeBinges: [], animeDropped: [], animeTmdbIds: [] },
       recurring_titles: [],
       rewatch_titles: [],
       genre_counts: [],
@@ -656,7 +674,7 @@ export async function computeAdaptiveInsights(configId: string, accessToken?: st
     } catch {}
   }
 
-  const enriched = await enrichEventsWithTmdbAnime(events);
+  const { events: enriched, animeTmdbIds } = await enrichEventsWithTmdbAnime(events);
   const stats = computeTraktStats(enriched, apiStats || undefined);
   const recurring = findRecurringTitles(enriched);
   const rewatch = findRewatchTitles(enriched);
@@ -701,7 +719,8 @@ export async function computeAdaptiveInsights(configId: string, accessToken?: st
       ...stats,
       memories,
       seriesRewatch,
-      animeRewatch
+      animeRewatch,
+      animeTmdbIds
     },
     first_play: firstPlay,
     plays_by_month: playsByMonth,
