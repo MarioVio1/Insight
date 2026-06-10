@@ -5,7 +5,7 @@ import { ensureDefaultProfile } from './profileService.js';
 import { computeAdaptiveInsights } from './statsEngine.js';
 import { rebuildAdaptiveRow } from './cardComposer.js';
 import { logger } from '../utils/logger.js';
-import type { TraktEvent } from '../types.js';
+import type { TraktEvent, TraktHistoryPayload } from '../types.js';
 
 async function ensureFreshToken(row: { id: string; expires_at?: string; refresh_token_enc: string; access_token_enc?: string }) {
   if (!row.expires_at || new Date(row.expires_at).getTime() > Date.now() + 60000) return row as { id: string; expires_at?: string; refresh_token_enc: string; access_token_enc: string };
@@ -36,7 +36,7 @@ function normalizeWatchItem(configId: string, item: Record<string, any>, traktTy
     runtime_minutes: episode?.runtime || (traktType === 'movie' ? source.runtime : null) || null,
     genres: source.genres || null,
     tmdb_id: source.ids?.tmdb || episode?.ids?.tmdb || null,
-    payload: item
+    payload: item as TraktHistoryPayload
   };
 }
 
