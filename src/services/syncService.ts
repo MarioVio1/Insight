@@ -74,12 +74,16 @@ export async function syncConfig(configId: string) {
       ...hs.map((x: any) => normalizeWatchItem(configId, x, 'show'))
     ];
 
+    logger.info({ configId, total: historyRows.length }, 'Cleaning old events');
+    const { error: deleteErr } = await supabase.from('trakt_events').delete().eq('config_id', configId);
+    if (deleteErr) logger.error({ configId, error: deleteErr }, 'Delete error');
+
     logger.info({ configId, total: historyRows.length }, 'Saving events');
     const batchSize = 100;
     for (let i = 0; i < historyRows.length; i += batchSize) {
       const batch = historyRows.slice(i, i + batchSize);
-      const { error: upsertErr } = await supabase.from('trakt_events').upsert(batch, { onConflict: 'id', ignoreDuplicates: false });
-      if (upsertErr) logger.error({ configId, error: upsertErr }, 'Batch upsert error');
+      const { error: insertErr } = await supabase.from('trakt_events').insert(batch);
+      if (insertErr) logger.error({ configId, error: insertErr }, 'Batch insert error');
     }
 
     await ensureDefaultProfile(configId);
