@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { supabase } from '../services/supabase.js';
 import { generatePosterBuffer, generateSvgPoster, generateSvgThumbnail } from '../services/artworkService.js';
 import { resolveConfigId } from '../services/db.js';
-import { fetchImageBuffer } from '../services/tmdbService.js';
+import { fetchImageBuffer, fetchTmdbDetails } from '../services/tmdbService.js';
 import { INSIGHT_CATALOG_ID, LEGACY_INSIGHT_CATALOG_ID } from '../addon/manifest.js';
 
 const CACHE_TTL = 300_000;
@@ -66,6 +66,30 @@ function buildCardData(rowData: any, cardId: string) {
 }
 
 const pngCache = new Map<string, { buf: Buffer; age: number }>();
+const thumbCache = new Map<string, { buf: Buffer; age: number }>();
+const THUMB_CACHE_TTL = 300_000;
+
+function accentForCardType(cardId: string): string {
+  if (cardId.includes('totals')) return '#22c55e';
+  if (cardId.includes('streak')) return '#f97316';
+  if (cardId.includes('peak')) return '#a855f7';
+  if (cardId.includes('day') || cardId.includes('weekly')) return '#38bdf8';
+  if (cardId.includes('genre')) return '#a855f7';
+  if (cardId.includes('binge')) return '#ef4444';
+  if (cardId.includes('dropped')) return '#6b7280';
+  if (cardId.includes('monthly')) return '#14b8a6';
+  if (cardId.includes('recurring')) return '#f59e0b';
+  if (cardId.includes('rewatch')) return '#ef4444';
+  if (cardId.includes('seasonal')) return '#0ea5e9';
+  if (cardId.includes('actor')) return '#ec4899';
+  if (cardId.includes('director')) return '#8b5cf6';
+  if (cardId.includes('anime')) return '#f43f5e';
+  if (cardId.includes('ranking')) return '#fbbf24';
+  if (cardId.includes('memories')) return '#d946ef';
+  if (cardId.includes('writer')) return '#f59e0b';
+  if (cardId.includes('firstplay')) return '#fbbf24';
+  return '#0ea5e9';
+}
 
 export async function posterHandler(req: Request, res: Response) {
   setCors(res);
@@ -140,6 +164,15 @@ export async function videoPosterHandler(req: Request, res: Response) {
     const uuid = await resolveConfigId(configId);
     if (!uuid) { res.status(404).send('Config not found'); return; }
 
+    const cacheKey = `vposter_${uuid}_${cardId}_${vIdx}`;
+    const cached = thumbCache.get(cacheKey);
+    if (cached && Date.now() - cached.age < THUMB_CACHE_TTL) {
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      res.send(cached.buf);
+      return;
+    }
+
     let { data: rowData } = await supabase
       .from('adaptive_rows')
       .select('metas')
@@ -174,22 +207,30 @@ export async function videoPosterHandler(req: Request, res: Response) {
     const vid = videos[parseInt(vIdx, 10)];
     if (!vid) { res.status(404).send('Video not found'); return; }
 
-    let imgUrl: string | null = null;
+    // Fetch TMDB image e converti in data URI per compatibilità SVG con sharp
+    let imgDataUri: string | null = null;
     if (vid.tmdb_id) {
-      const { fetchTmdbDetails } = await import('../services/tmdbService.js');
       const tmdbData = await fetchTmdbDetails(vid.tmdb_id, vid.trakt_type || 'movie');
-      imgUrl = tmdbData?.backdrop || tmdbData?.poster;
+      const imgUrl = tmdbData?.backdrop || tmdbData?.poster;
+      if (imgUrl) {
+        try {
+          const imgBuf = await fetchImageBuffer(imgUrl);
+          imgDataUri = `data:image/jpeg;base64,${imgBuf.toString('base64')}`;
+        } catch {}
+      }
     }
 
+    const accent = accentForCardType(cardId);
     const svg = generateSvgThumbnail({
       title: vid.title,
-      subtitle: 'Nessuna immagine disponibile',
-      accent: '#0ea5e9',
-      imageUrl: imgUrl || undefined
+      subtitle: vid.overview || '',
+      accent,
+      imageUrl: imgDataUri || undefined
     });
 
     const { default: sharp } = await import('sharp');
     const buf = await sharp(Buffer.from(svg)).png({ compressionLevel: 6 }).toBuffer();
+    thumbCache.set(cacheKey, { buf, age: Date.now() });
     res.setHeader('Content-Type', 'image/png');
     res.setHeader('Cache-Control', 'public, max-age=3600');
     res.send(buf);

@@ -552,13 +552,24 @@ export async function computeTopPeople(events: any[]): Promise<{ actors: { name:
 }
 
 export async function computeRankings(configId: string, stats: { totalHours: number; totalMovies: number; totalEpisodes: number; streak: number }) {
-  const { data: all } = await supabase
+  const { data: snapshots } = await supabase
     .from('insight_snapshots')
     .select('config_id, summary');
-  if (!all) return null;
+  if (!snapshots) return null;
 
-  const entries = (all as any[])
-    .filter((s: any) => s.summary && s.summary.totalHours > 0)
+  // Prendi solo i config che hanno un trakt_username (utenti reali, non test)
+  const { data: configs } = await supabase
+    .from('addon_configs')
+    .select('id')
+    .not('trakt_username', 'is', null);
+  const activeConfigIds = new Set((configs || []).map(c => c.id));
+
+  const entries = (snapshots as any[])
+    .filter((s: any) =>
+      s.summary &&
+      s.summary.totalHours > 0 &&
+      activeConfigIds.has(s.config_id)
+    )
     .map((s: any) => ({
       configId: s.config_id,
       totalHours: s.summary.totalHours as number,
