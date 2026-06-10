@@ -68,6 +68,10 @@ export async function fetchCredits(tmdbId: string, type: 'movie' | 'tv') {
       .filter((c: any) => c.job === 'Director' || c.department === 'Directing')
       .map((c: any) => c.name)
       .filter(Boolean);
+    const writers = (data.crew || [])
+      .filter((c: any) => c.department === 'Writing')
+      .map((c: any) => c.name)
+      .filter(Boolean);
 
     if (type === 'tv') {
       try {
@@ -77,7 +81,7 @@ export async function fetchCredits(tmdbId: string, type: 'movie' | 'tv') {
       } catch {}
     }
 
-    return { cast, crew: { directors: [...new Set(directors)] } };
+    return { cast, crew: { directors: [...new Set(directors)], writers: [...new Set(writers)] } };
   } catch {
     return null;
   }

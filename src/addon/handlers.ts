@@ -131,7 +131,9 @@ export async function metaHandler(configId: string, metaId: string) {
       const tmdbData = tmdbResults[tmdbIdx];
       tmdbIdx++;
       if (tmdbData) {
-        if (!thumbnail) thumbnail = tmdbData.backdrop || tmdbData.poster;
+        if (tmdbData.backdrop || tmdbData.poster) {
+          thumbnail = tmdbData.backdrop || tmdbData.poster;
+        }
         if (rating === null) rating = tmdbData.rating;
       }
     }
