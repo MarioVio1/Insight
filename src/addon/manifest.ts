@@ -9,9 +9,9 @@ export function getManifest(uuid?: string, slug?: string) {
 
   return {
     id: idStr ? `community.stremio.adaptive.insights.${idStr}` : 'community.stremio.adaptive.insights',
-    version: '3.3.2',
+    version: '3.4.0',
     name: `Adaptive Insights${slug ? ` (${slug})` : ''}`,
-    description: 'Statistiche personali Trakt nella home di Stremio. 32 card dinamiche: streak, binge, generi, attori, anime e molto altro.',
+    description: 'Statistiche personali Trakt nella home di Stremio. 36 card dinamiche: streak, binge, generi, attori, anime e molto altro.',
     logo: `${baseUrl}/logo.png`,
     resources: ['catalog', 'meta'],
     types: [INSIGHT_TYPE],

@@ -31,7 +31,7 @@ router.post('/config', async (req, res) => {
 
     await supabase.from('config_preferences').insert({
       config_id: id,
-      enabled_card_types: body.enabled_card_types ?? ['totals','streak','peak','weekly','genre','binge','monthly','recurring','rewatch','seasonal','actor','director','anime','ranking','memories','giorni','migliore','anno','mese','split','notturno','events','pace','weekend','annuale','primetime','decade','break','avg','night','series'],
+      enabled_card_types: body.enabled_card_types ?? ['totals','streak','peak','weekly','genre','binge','dropped','monthly','recurring','rewatch','seasonal','actor','director','writer','anime','ranking','memories','firstplay','giorni','migliore','anno','mese','split','notturno','events','pace','weekend','annuale','primetime','decade','break','avg','night','series','vintage','completion'],
       focus_mode: body.focus_mode ?? 'adaptive',
       seasonal_enabled: body.seasonal_enabled ?? true,
       festive_enabled: body.festive_enabled ?? true,
@@ -185,6 +185,55 @@ router.post('/cleanup', async (_req, res) => {
       await supabase.from('addon_configs').delete().in('id', ids);
     }
     res.json({ ok: true, deleted_configs: count });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: String(err) });
+  }
+});
+
+const MIGRATION_SQL = `
+alter table insight_snapshots add column if not exists top_writers jsonb not null default '[]'::jsonb;
+alter table insight_snapshots add column if not exists first_play jsonb null default null;
+alter table insight_snapshots add column if not exists plays_by_month jsonb not null default '[]'::jsonb;
+alter table insight_snapshots add column if not exists content_by_year jsonb not null default '[]'::jsonb;
+`;
+
+router.post('/migrate', async (_req, res) => {
+  try {
+    const { error } = await supabase.from('insight_snapshots').select('config_id').limit(1);
+    if (error && String(error?.message || error).includes('does not exist')) {
+      return res.status(400).json({ ok: false, error: 'Tabella insight_snapshots non esiste. Esegui supabase/init.sql prima.' });
+    }
+    // Prova a fare un upsert con tutte le colonne per forzare l'errore e capire se mancano
+    const testPayload: Record<string, any> = {
+      config_id: '00000000-0000-0000-0000-000000000000',
+      summary: {},
+      top_writers: [],
+      first_play: null,
+      plays_by_month: [],
+      content_by_year: []
+    };
+    const { error: testErr } = await supabase.from('insight_snapshots').upsert(testPayload, { onConflict: 'config_id' });
+    if (!testErr) {
+      // Ha funzionato, pulisci il record di test
+      await supabase.from('insight_snapshots').delete().eq('config_id', '00000000-0000-0000-0000-000000000000');
+      return res.json({ ok: true, message: 'Nessuna migrazione necessaria - tutte le colonne esistono già.' });
+    }
+    const testMsg = testErr?.message || JSON.stringify(testErr);
+    const missingColumns: string[] = [];
+    for (const col of ['top_writers', 'first_play', 'plays_by_month', 'content_by_year']) {
+      if (testMsg.includes(`"${col}"`) || testMsg.includes(`column "${col}"`)) {
+        missingColumns.push(col);
+      }
+    }
+    if (missingColumns.length === 0) {
+      return res.status(500).json({ ok: false, error: testMsg, message: 'Errore sconosciuto. Vai su Supabase SQL Editor e incolla:' + MIGRATION_SQL });
+    }
+    res.json({
+      ok: false,
+      missing_columns: missingColumns,
+      message: `Mancano ${missingColumns.length} colonne. Vai su Supabase SQL Editor (https://supabase.com/dashboard/project/_/sql/new) e incolla:`,
+      sql: MIGRATION_SQL
+    });
   } catch (err) {
     res.status(500).json({ ok: false, error: String(err) });
   }

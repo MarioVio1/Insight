@@ -722,29 +722,53 @@ export async function computeAdaptiveInsights(configId: string, accessToken?: st
   const contentByYear = computeContentByYear(enriched);
   const primeTimePct = stats.primeTimePct ?? 0;
 
-  await safeUpsert(configId, {
-    config_id: configId,
-    taste_profile: 'mixed',
-    seasonal_key: season.seasonKey,
-    summary: {
-      ...stats,
-      memories,
-      seriesRewatch,
-      animeRewatch,
-      animeTmdbIds
-    },
-    first_play: firstPlay,
-    plays_by_month: playsByMonth,
-    content_by_year: contentByYear,
-    recurring_titles: recurring,
-    rewatch_titles: rewatch,
-    genre_counts: stats.genre_counts,
-    top_actors: topActors,
-    top_directors: topDirectors,
-    top_writers: topWriters,
-    ranking,
-    generated_at: new Date().toISOString()
-  });
+  try {
+    await safeUpsert(configId, {
+      config_id: configId,
+      taste_profile: 'mixed',
+      seasonal_key: season.seasonKey,
+      summary: {
+        ...stats,
+        memories,
+        seriesRewatch,
+        animeRewatch,
+        animeTmdbIds
+      },
+      first_play: firstPlay,
+      plays_by_month: playsByMonth,
+      content_by_year: contentByYear,
+      recurring_titles: recurring,
+      rewatch_titles: rewatch,
+      genre_counts: stats.genre_counts,
+      top_actors: topActors,
+      top_directors: topDirectors,
+      top_writers: topWriters,
+      ranking,
+      generated_at: new Date().toISOString()
+    });
+  } catch {
+    // Se l'upsert completo fallisce (colonne mancanti), salva un payload minimo
+    console.error('safeUpsert completo fallito, salvo payload minimo');
+    await safeUpsertMinimal(configId, {
+      config_id: configId,
+      taste_profile: 'mixed',
+      seasonal_key: season.seasonKey,
+      summary: {
+        ...stats,
+        memories,
+        seriesRewatch,
+        animeRewatch,
+        animeTmdbIds
+      },
+      recurring_titles: recurring,
+      rewatch_titles: rewatch,
+      genre_counts: stats.genre_counts,
+      top_actors: topActors,
+      top_directors: topDirectors,
+      ranking,
+      generated_at: new Date().toISOString()
+    });
+  }
 }
 
 function computeFirstPlay(events: any[]): { title: string; date: string; tmdb_id: number | null } | null {
@@ -788,13 +812,26 @@ function computeContentByYear(events: any[]): { year: number; count: number }[] 
 
 async function safeUpsert(configId: string, payload: Record<string, any>) {
   if (!payload) return;
-  const { error } = await supabase.from('insight_snapshots').upsert(payload, { onConflict: 'config_id' });
-  if (!error) return;
-  const msg = String(error);
+  const { error: firstErr } = await supabase.from('insight_snapshots').upsert(payload, { onConflict: 'config_id' });
+  if (!firstErr) return;
+  const msg = firstErr?.message || JSON.stringify(firstErr);
   if (msg.includes('does not exist')) {
-    console.error(`ERRORE: Tabella "insight_snapshots" non esiste! Esegui supabase/init.sql.`, msg.slice(0, 200));
+    console.error(`ERRORE: Tabella "insight_snapshots" non esiste! Esegui supabase/init.sql.`, msg);
     throw new Error('Database tables missing. Run supabase/init.sql in Supabase SQL Editor.');
   }
-  console.error('safeUpsert error:', msg.slice(0, 200));
-  throw new Error('insight_snapshots upsert failed: ' + msg.slice(0, 200));
+  if (msg.includes('does not exist') || msg.includes('column') || msg.includes('not exist')) {
+    console.error('safeUpsert COLUMN MISSING:', msg);
+    throw new Error('Mancano colonne in insight_snapshots. Vai su Supabase SQL Editor ed esegui la migrazione.');
+  }
+  console.error('safeUpsert error:', firstErr?.message || JSON.stringify(firstErr), firstErr?.details || '', firstErr?.hint || '');
+  throw new Error('insight_snapshots upsert failed: ' + msg);
+}
+
+async function safeUpsertMinimal(configId: string, payload: Record<string, any>) {
+  if (!payload) return;
+  const { error } = await supabase.from('insight_snapshots').upsert(payload, { onConflict: 'config_id' });
+  if (error) {
+    console.error('safeUpsertMinimal fallito:', error?.message || JSON.stringify(error));
+    throw new Error('safeUpsertMinimal fallito: ' + (error?.message || JSON.stringify(error)));
+  }
 }
