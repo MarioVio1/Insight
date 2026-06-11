@@ -113,7 +113,6 @@ export async function metaHandler(configId: string, metaId: string) {
 
   const cardType = (metaId.split('_').pop() || '').toLowerCase();
   const videos = meta.videos || [];
-  const shortType = cardType;
 
   const anyVideos = videos as any[];
   const tmdbLookups = anyVideos
@@ -123,8 +122,7 @@ export async function metaHandler(configId: string, metaId: string) {
 
   let tmdbIdx = 0;
   const enrichedVideos = [];
-  for (let vi = 0; vi < videos.length; vi++) {
-    const v = videos[vi];
+  for (const v of videos) {
     let thumbnail = v.thumbnail || null;
     let poster: string | null = null;
     let rating: number | null = v.rating || null;
@@ -149,15 +147,12 @@ export async function metaHandler(configId: string, metaId: string) {
       }
     }
 
-    // Always point to vposter endpoint so Stremio gets the designed thumbnail
-    const vposterUrl = `/vposter/${configId}/${shortType}/${vi}`;
-
     enrichedVideos.push({
       id: v.id,
       title: v.title,
       released: v.released,
       overview: overview || 'Nessuna descrizione',
-      thumbnail: vposterUrl,
+      thumbnail: thumbnail || undefined,
       poster: poster || undefined,
       rating: rating || undefined,
       ...(v.tmdb_id ? { tmdb_id: v.tmdb_id } : {})
