@@ -242,7 +242,7 @@ export async function videoPosterHandler(req: Request, res: Response) {
       const ct = cardId.toLowerCase();
       if (ct.includes('actors') || ct.includes('directors') || ct.includes('writers') || ct === 'actor' || ct === 'director' || ct === 'writer') {
         try {
-          const { searchTmdbPerson, tmdbPersonImage } = await import('../services/tmdbService');
+          const { searchTmdbPerson, tmdbPersonImage } = await import('../services/tmdbService.js');
           const person = await searchTmdbPerson(vid.title);
           if (person?.profile_path) {
             const imgBuf = await fetchImageBuffer(tmdbPersonImage(person.profile_path));
