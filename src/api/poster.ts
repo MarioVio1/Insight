@@ -245,7 +245,11 @@ export async function videoPosterHandler(req: Request, res: Response) {
           const { searchTmdbPerson, tmdbPersonImage } = await import('../services/tmdbService.js');
           const person = await searchTmdbPerson(vid.title);
           if (person?.profile_path) {
-            const imgBuf = await fetchImageBuffer(tmdbPersonImage(person.profile_path!));
+            const imgUrl = tmdbPersonImage(person.profile_path);
+            if (imgUrl) {
+              const imgBuf = await fetchImageBuffer(imgUrl);
+              imgDataUri = `data:image/jpeg;base64,${imgBuf.toString('base64')}`;
+            }
             imgDataUri = `data:image/jpeg;base64,${imgBuf.toString('base64')}`;
           }
         } catch {}
