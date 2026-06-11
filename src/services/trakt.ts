@@ -37,13 +37,14 @@ export async function getUserSettings(accessToken: string) {
   return data;
 }
 
-export async function getHistory(accessToken: string, type: 'movies' | 'shows') {
+export async function getHistory(accessToken: string, type: 'movies' | 'shows', startAt?: string | null) {
   const path = type === 'movies' ? '/sync/history/movies' : '/sync/history/shows';
   const headers = { Authorization: `Bearer ${accessToken}` };
   const allItems: any[] = [];
   const maxPages = parseInt(process.env.TRAKT_MAX_PAGES || '100', 10);
 
   const params: Record<string, any> = { page: 1, limit: 100 };
+  if (startAt) params.start_at = startAt;
 
   const first = await api.get(path, { headers, params });
   const items = first.data || [];

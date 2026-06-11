@@ -58,32 +58,38 @@ export async function syncConfig(configId: string) {
     const settings = await getUserSettings(access);
     logger.info({ configId, username: settings.user?.username }, 'Trakt connected');
 
+    const isFirstSync = !row.last_sync_at;
+    const isStale = row.last_sync_at && Date.now() - new Date(row.last_sync_at).getTime() > 7 * 24 * 3600 * 1000;
+    const doFullSync = isFirstSync || isStale;
+
+    const startAt = doFullSync ? undefined : row.last_sync_at;
     const [hm, hs] = await Promise.all([
-      getHistory(access, 'movies'),
-      getHistory(access, 'shows')
+      getHistory(access, 'movies', startAt),
+      getHistory(access, 'shows', startAt)
     ]);
-    logger.info({ configId, movies: hm.length, shows: hs.length }, 'History fetched');
+    logger.info({ configId, movies: hm.length, shows: hs.length, fullSync: doFullSync }, 'History fetched');
 
     await supabase.from('addon_configs').update({
       trakt_username: settings.user?.username || row.trakt_username || null,
       last_sync_at: new Date().toISOString()
     }).eq('id', configId);
 
-    // Save in batches to avoid overwhelming Supabase
     const historyRows = [
       ...hm.map((x: Record<string, any>) => normalizeWatchItem(configId, x, 'movie')),
       ...hs.map((x: Record<string, any>) => normalizeWatchItem(configId, x, 'show'))
     ];
 
-    logger.info({ configId, total: historyRows.length }, 'Cleaning old events');
-    const { error: deleteErr } = await supabase.from('trakt_events').delete().eq('config_id', configId);
-    if (deleteErr) logger.error({ configId, error: deleteErr }, 'Delete error');
+    if (doFullSync) {
+      logger.info({ configId, total: historyRows.length }, 'Cleaning old events');
+      const { error: deleteErr } = await supabase.from('trakt_events').delete().eq('config_id', configId);
+      if (deleteErr) logger.error({ configId, error: deleteErr }, 'Delete error');
+    }
 
-    logger.info({ configId, total: historyRows.length }, 'Saving events');
+    logger.info({ configId, total: historyRows.length, mode: doFullSync ? 'full' : 'diff' }, 'Saving events');
     const batchSize = 100;
     for (let i = 0; i < historyRows.length; i += batchSize) {
       const batch = historyRows.slice(i, i + batchSize);
-      const { error: insertErr } = await supabase.from('trakt_events').insert(batch);
+      const { error: insertErr } = await supabase.from('trakt_events').insert(batch, { onConflict: 'id', ignoreDuplicates: true });
       if (insertErr) logger.error({ configId, error: insertErr }, 'Batch insert error');
     }
 

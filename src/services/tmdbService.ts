@@ -2,6 +2,20 @@ import axios from 'axios';
 
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const IMAGE_BASE = 'https://image.tmdb.org/t/p/w780';
+const AXIOS_TIMEOUT = 10000;
+
+const tmdbCache = new Map<string, { data: any; age: number }>();
+const TMDB_CACHE_TTL = 3600000; // 1 hour
+
+function cachedFetch(url: string, params: Record<string, any>, headers: any): Promise<any> {
+  const key = `${url}?${JSON.stringify(params)}`;
+  const cached = tmdbCache.get(key);
+  if (cached && Date.now() - cached.age < TMDB_CACHE_TTL) return Promise.resolve(cached.data);
+  return axios.get(url, { params, headers, timeout: AXIOS_TIMEOUT }).then(r => {
+    tmdbCache.set(key, { data: r.data, age: Date.now() });
+    return r.data;
+  });
+}
 
 function authHeaders() {
   const token = process.env.TMDB_BEARER_TOKEN;
@@ -12,8 +26,12 @@ export async function searchTmdbMulti(query: string) {
   if (!process.env.TMDB_API_KEY && !process.env.TMDB_BEARER_TOKEN) return null;
   const params: Record<string, string> = { query };
   if (process.env.TMDB_API_KEY) params.api_key = process.env.TMDB_API_KEY;
-  const { data } = await axios.get(`${TMDB_BASE}/search/multi`, { params, headers: authHeaders() });
-  return data?.results?.[0] ?? null;
+  try {
+    const data = await cachedFetch(`${TMDB_BASE}/search/multi`, params, authHeaders());
+    return data?.results?.[0] ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export async function searchTmdbByTitle(title: string, type: 'movie' | 'tv', year?: number | null): Promise<string | null> {
@@ -23,7 +41,7 @@ export async function searchTmdbByTitle(title: string, type: 'movie' | 'tv', yea
   if (year) params.year = String(year);
   try {
     const endpoint = type === 'movie' ? '/search/movie' : '/search/tv';
-    const { data } = await axios.get(`${TMDB_BASE}${endpoint}`, { params, headers: authHeaders() });
+    const data = await cachedFetch(`${TMDB_BASE}${endpoint}`, params, authHeaders());
     const result = data?.results?.[0];
     return result?.id ? String(result.id) : null;
   } catch {
@@ -42,7 +60,7 @@ export async function fetchTmdbPoster(tmdbId: number | string | null, type: stri
   if (process.env.TMDB_API_KEY) params.api_key = process.env.TMDB_API_KEY;
   try {
     const mediaType = type === 'movie' ? 'movie' : 'tv';
-    const { data } = await axios.get(`${TMDB_BASE}/${mediaType}/${tmdbId}`, { params, headers: authHeaders() });
+    const data = await cachedFetch(`${TMDB_BASE}/${mediaType}/${tmdbId}`, params, authHeaders());
     if (data?.poster_path) {
       return `https://image.tmdb.org/t/p/w500${data.poster_path}`;
     }
@@ -59,7 +77,7 @@ export async function fetchTmdbDetails(tmdbId: number | string | null, type: str
   if (process.env.TMDB_API_KEY) params.api_key = process.env.TMDB_API_KEY;
   try {
     const mediaType = type === 'movie' ? 'movie' : 'tv';
-    const { data } = await axios.get(`${TMDB_BASE}/${mediaType}/${tmdbId}`, { params, headers: authHeaders() });
+    const data = await cachedFetch(`${TMDB_BASE}/${mediaType}/${tmdbId}`, params, authHeaders());
     const poster = data?.poster_path ? `https://image.tmdb.org/t/p/w500${data.poster_path}` : null;
     const backdrop = data?.backdrop_path ? `https://image.tmdb.org/t/p/w780${data.backdrop_path}` : null;
     const rating = data?.vote_average ? Math.round(data.vote_average * 10) / 10 : null;
@@ -77,7 +95,7 @@ export async function fetchCredits(tmdbId: string, type: 'movie' | 'tv') {
   if (process.env.TMDB_API_KEY) params.api_key = process.env.TMDB_API_KEY;
   try {
     const headers = authHeaders();
-    const { data } = await axios.get(`${TMDB_BASE}/${type}/${tmdbId}/credits`, { params, headers });
+    const data = await cachedFetch(`${TMDB_BASE}/${type}/${tmdbId}/credits`, params, headers);
     const cast = (data.cast || []).map((c: any) => c.name).filter(Boolean);
     const directors = (data.crew || [])
       .filter((c: any) => c.job === 'Director' || c.department === 'Directing')
@@ -90,7 +108,7 @@ export async function fetchCredits(tmdbId: string, type: 'movie' | 'tv') {
 
     if (type === 'tv') {
       try {
-        const { data: details } = await axios.get(`${TMDB_BASE}/tv/${tmdbId}`, { params, headers });
+        const details = await cachedFetch(`${TMDB_BASE}/tv/${tmdbId}`, params, headers);
         const creators = (details.created_by || []).map((c: any) => c.name).filter(Boolean);
         directors.push(...creators);
       } catch {}
@@ -103,7 +121,7 @@ export async function fetchCredits(tmdbId: string, type: 'movie' | 'tv') {
 }
 
 export async function fetchImageBuffer(url: string): Promise<Buffer> {
-  const { data } = await axios.get(url, { responseType: 'arraybuffer' });
+  const { data } = await axios.get(url, { responseType: 'arraybuffer', timeout: 15000 });
   return Buffer.from(data);
 }
 
