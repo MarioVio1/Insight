@@ -209,7 +209,17 @@ export async function videoPosterHandler(req: Request, res: Response) {
 
     // Fetch TMDB image e converti in data URI per compatibilità SVG con sharp
     let imgDataUri: string | null = null;
-    if (vid.tmdb_id) {
+
+    // First try the video's own thumbnail (person photo, TMDB poster, etc.)
+    if (vid.thumbnail) {
+      try {
+        const imgBuf = await fetchImageBuffer(vid.thumbnail);
+        imgDataUri = `data:image/jpeg;base64,${imgBuf.toString('base64')}`;
+      } catch {}
+    }
+
+    // Fallback: try TMDB lookup via tmdb_id
+    if (!imgDataUri && vid.tmdb_id) {
       const tmdbData = await fetchTmdbDetails(vid.tmdb_id, vid.trakt_type || 'movie');
       const imgUrl = tmdbData?.poster || tmdbData?.backdrop;
       if (imgUrl) {
