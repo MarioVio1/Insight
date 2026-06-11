@@ -1,6 +1,6 @@
 import { supabase } from '../services/supabase.js';
 import { fetchTmdbDetails, searchTmdbPerson, tmdbPersonImage } from '../services/tmdbService.js';
-import { INSIGHT_CATALOG_ID, LEGACY_INSIGHT_CATALOG_ID } from './manifest.js';
+import { INSIGHT_CATALOG_ID, LEGACY_INSIGHT_CATALOG_ID, INSIGHT_TYPE } from './manifest.js';
 
 const tmdbCache = new Map<string, { poster: string | null; backdrop: string | null; rating: number | null; age: number }>();
 const TMDB_CACHE_TTL = 86_400_000;
@@ -73,7 +73,7 @@ export async function catalogHandler(configId: string, catalogId: string, baseUr
   if (!data?.metas?.length) {
     return { metas: [{
       id: 'adaptive_setup',
-      type: 'movie',
+      type: INSIGHT_TYPE,
       name: '⚙️ Configura l\'addon',
       poster: 'data:image/svg+xml;base64,' + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900"><rect fill="#0f172a" width="600" height="900"/><text x="300" y="400" fill="#0ea5e9" font-size="28" font-weight="800" text-anchor="middle" font-family="Arial">Configura</text><text x="300" y="440" fill="#64748b" font-size="16" text-anchor="middle" font-family="Arial">Connetti Trakt e fai il sync</text></svg>').toString('base64'),
       background: 'data:image/svg+xml;base64,' + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900"><rect fill="#0f172a" width="600" height="900"/></svg>').toString('base64'),

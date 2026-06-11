@@ -411,9 +411,21 @@ export function findRecurringTitles(events: TraktEvent[]) {
 export function findRewatchTitles(events: TraktEvent[]) {
   const keyInfo: Record<string, { title: string; count: number; tmdb_id: number | null; type: string }> = {};
   for (const e of events) {
-    const key = e.tmdb_id ? `${e.trakt_type}_${e.tmdb_id}` : (e.trakt_id || e.title);
+    let key: string;
+    if (e.trakt_type === 'show') {
+      key = `show_ep_${e.trakt_id}`;
+    } else {
+      key = e.tmdb_id ? `movie_${e.tmdb_id}` : (e.trakt_id || e.title);
+    }
     if (!keyInfo[key]) {
-      keyInfo[key] = { title: e.title, count: 0, tmdb_id: e.tmdb_id || null, type: e.trakt_type };
+      let title = e.title;
+      if (e.trakt_type === 'show') {
+        const ep = (e.payload as any)?.episode;
+        if (ep) {
+          title = `${e.title} S${String(ep.season).padStart(2, '0')}E${String(ep.number).padStart(2, '0')} — ${ep.title || ''}`;
+        }
+      }
+      keyInfo[key] = { title, count: 0, tmdb_id: e.tmdb_id || null, type: e.trakt_type };
     }
     keyInfo[key].count++;
   }

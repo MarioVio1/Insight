@@ -1,6 +1,6 @@
 import { supabase } from './supabase.js';
 import { fetchTmdbDetails, searchTmdbPerson, tmdbPersonImage } from './tmdbService.js';
-import { INSIGHT_CATALOG_ID } from '../addon/manifest.js';
+import { INSIGHT_CATALOG_ID, INSIGHT_TYPE } from '../addon/manifest.js';
 
 async function getEvents(configId: string, daysBack?: number): Promise<any[]> {
   let q = supabase.from('trakt_events').select('*').eq('config_id', configId);
@@ -47,7 +47,7 @@ async function cardMeta(
 
   const meta: any = {
     id,
-    type: 'movie',
+    type: INSIGHT_TYPE,
     name,
     poster: opts?.imageUrl || `/poster/${configId}/${id}.png`,
     posterShape: 'poster',
