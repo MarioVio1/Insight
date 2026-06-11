@@ -95,6 +95,9 @@ function accentForCardType(cardId: string): string {
   if (cardId.includes('varieta')) return '#a855f7';
   if (cardId.includes('matiniero')) return '#fbbf24';
   if (cardId.includes('intensita')) return '#f59e0b';
+  if (cardId.includes('esploratore')) return '#06b6d4';
+  if (cardId.includes('bilancioAnime')) return '#f43f5e';
+  if (cardId.includes('pomeriggio')) return '#f97316';
   return '#0ea5e9';
 }
 

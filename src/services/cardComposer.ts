@@ -93,7 +93,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
   if (!prefs) {
     const { data: newPrefs } = await supabase.from('config_preferences').insert({
       config_id: configId,
-      enabled_card_types: ['totals','streak','peak','weekly','genre','binge','dropped','monthly','recurring','rewatch','seasonal','actor','director','writer','movieActors','seriesActors','animeActors','movieDirectors','seriesDirectors','animeDirectors','movieWriters','seriesWriters','animeWriters','top5genres','anime','ranking','memories','firstplay','giorni','migliore','anno','mese','split','notturno','events','pace','weekend','annuale','primetime','decade','break','avg','night','series','vintage','completion','tipologia','confronto','decenni','revisioni','varieta','matiniero','intensita'],
+      enabled_card_types: ['totals','streak','peak','weekly','genre','binge','dropped','monthly','recurring','rewatch','seasonal','actor','director','writer','movieActors','seriesActors','animeActors','movieDirectors','seriesDirectors','animeDirectors','movieWriters','seriesWriters','animeWriters','top5genres','anime','ranking','memories','firstplay','giorni','migliore','anno','mese','split','notturno','events','pace','weekend','annuale','primetime','decade','break','avg','night','series','vintage','completion','tipologia','confronto','decenni','revisioni','varieta','matiniero','intensita','esploratore','bilancioAnime','pomeriggio'],
       focus_mode: 'adaptive',
       seasonal_enabled: true,
       festive_enabled: true,
@@ -1323,6 +1323,85 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
         ]
       }
     });
+  }
+
+  // Esploratore (unicità)
+  if (enabled.includes('esploratore') && s.totalEvents !== undefined && s.uniqueTitles !== undefined && s.totalEvents > 0) {
+    const id = `adaptive_${configId}_esploratore`;
+    const ratio = Math.round(s.uniqueTitles / s.totalEvents * 100);
+    const rewcnt = s.totalEvents - s.uniqueTitles;
+    const isExplorer = ratio >= 70;
+    const emoji = isExplorer ? '🧭' : '🔁';
+    cards.push(await cardMeta(configId, id,
+      `${emoji} ${isExplorer ? 'Esploratore' : 'Rivisitatore'}: ${ratio}% unici`,
+      `${s.uniqueTitles} titoli unici su ${s.totalEvents} totali (${rewcnt} rewatch).`,
+      { accent: isExplorer ? '#06b6d4' : '#f59e0b', statValue: `${ratio}%`, statLabel: 'UNICITÀ' }
+    ));
+    details.push({
+      meta_id: id, meta: {
+        id, type: 'movie', name: 'Esploratore o Rivisitatore?',
+        description: 'Quanto spesso guardi cose nuove vs cose già viste.',
+        videos: [
+          video(`${id}_1`, `${s.uniqueTitles} titoli unici`, new Date().toISOString(), `${ratio}% dei contenuti sono prime visioni.`),
+          video(`${id}_2`, `${rewcnt} rewatch`, new Date().toISOString(), `Il ${100 - ratio}% dei tuoi contenuti sono ripetizioni.`)
+        ]
+      }
+    });
+  }
+
+  // Bilancio anime
+  if (enabled.includes('bilancioAnime')) {
+    const id = `adaptive_${configId}_bilancioAnime`;
+    const aMovies = s.animeMovies || 0;
+    const aEpisodes = s.animeEpisodes || 0;
+    const aTotal = aMovies + aEpisodes;
+    if (aTotal > 0) {
+      const moviePct = Math.round(aMovies / aTotal * 100);
+      const epPct = Math.round(aEpisodes / aTotal * 100);
+      const isMovieHeavy = aMovies > aEpisodes;
+      cards.push(await cardMeta(configId, id,
+        `${isMovieHeavy ? 'Film' : 'Serie'} anime: ${isMovieHeavy ? moviePct : epPct}%`,
+        `${aMovies} film · ${aEpisodes} episodi (${s.animeHours || 0}h totali).`,
+        { accent: '#f43f5e', statValue: isMovieHeavy ? `${moviePct}%` : `${epPct}%`, statLabel: isMovieHeavy ? 'FILM ANIME' : 'SERIE ANIME' }
+      ));
+      details.push({
+        meta_id: id, meta: {
+          id, type: 'movie', name: 'Bilancio anime',
+          description: 'Film anime vs serie anime.',
+          videos: [
+            video(`${id}_1`, `Film anime: ${aMovies} (${moviePct}%)`, new Date().toISOString(), 'Film di animazione giapponese.'),
+            video(`${id}_2`, `Serie anime: ${aEpisodes} (${epPct}%)`, new Date().toISOString(), 'Episodi di serie animate giapponesi.')
+          ]
+        }
+      });
+    }
+  }
+
+  // Pomeriggio (fascia pomeridiana)
+  if (enabled.includes('pomeriggio') && s.timeOfDay) {
+    const id = `adaptive_${configId}_pomeriggio`;
+    const td = s.timeOfDay as { morning: number; afternoon: number; evening: number; night: number };
+    const totalTd = td.morning + td.afternoon + td.evening + td.night;
+    if (totalTd > 0) {
+      const afternoonPct = Math.round(td.afternoon / totalTd * 100);
+      cards.push(await cardMeta(configId, id,
+        `${afternoonPct}% delle visioni al pomeriggio`,
+        `${td.afternoon} contenuti tra le 12 e le 18.`,
+        { accent: '#f97316', statValue: `${afternoonPct}%`, statLabel: 'POMERIGGIO' }
+      ));
+      details.push({
+        meta_id: id, meta: {
+          id, type: 'movie', name: 'Fascia pomeridiana',
+          description: 'Quanto guardi il pomeriggio (12:00-18:00).',
+          videos: [
+            video(`${id}_1`, `Pomeriggio: ${td.afternoon} (${afternoonPct}%)`, new Date().toISOString(), '12:00-18:00.'),
+            video(`${id}_2`, `Mattino: ${td.morning}`, new Date().toISOString(), '6:00-12:00.'),
+            video(`${id}_3`, `Sera: ${td.evening}`, new Date().toISOString(), '18:00-24:00.'),
+            video(`${id}_4`, `Notte: ${td.night}`, new Date().toISOString(), '0:00-6:00.')
+          ]
+        }
+      });
+    }
   }
 
   // Arricchisce ogni video con thumbnail
