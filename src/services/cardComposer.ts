@@ -93,7 +93,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
   if (!prefs) {
     const { data: newPrefs } = await supabase.from('config_preferences').insert({
       config_id: configId,
-      enabled_card_types: ['totals','streak','peak','weekly','genre','binge','dropped','monthly','recurring','rewatch','seasonal','actor','director','writer','movieActors','seriesActors','animeActors','movieDirectors','seriesDirectors','animeDirectors','movieWriters','seriesWriters','animeWriters','top5genres','anime','ranking','memories','firstplay','giorni','migliore','anno','mese','split','notturno','events','pace','weekend','annuale','primetime','decade','break','avg','night','series','vintage','completion','tipologia','confronto','decenni','revisioni'],
+      enabled_card_types: ['totals','streak','peak','weekly','genre','binge','dropped','monthly','recurring','rewatch','seasonal','actor','director','writer','movieActors','seriesActors','animeActors','movieDirectors','seriesDirectors','animeDirectors','movieWriters','seriesWriters','animeWriters','top5genres','anime','ranking','memories','firstplay','giorni','migliore','anno','mese','split','notturno','events','pace','weekend','annuale','primetime','decade','break','avg','night','series','vintage','completion','tipologia','confronto','decenni','revisioni','varieta','matiniero','intensita'],
       focus_mode: 'adaptive',
       seasonal_enabled: true,
       festive_enabled: true,
@@ -1251,6 +1251,78 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
         }
       });
     }
+  }
+
+  // Varietà generi
+  if (enabled.includes('varieta') && s.genre_counts && s.genre_counts.length > 0) {
+    const id = `adaptive_${configId}_varieta`;
+    const totalG = s.genre_counts.length;
+    const topG = s.genre_counts.sort((a: any, b: any) => b.count - a.count);
+    const mainG = topG.slice(0, 3).map((g: any) => g.name).join(', ');
+    cards.push(await cardMeta(configId, id,
+      `${totalG} generi diversi`,
+      `I tuoi generi principali: ${mainG}.`,
+      { accent: '#a855f7', statValue: `${totalG}`, statLabel: 'GENERI' }
+    ));
+    details.push({
+      meta_id: id, meta: {
+        id, type: 'movie', name: 'Varietà generi',
+        description: 'Quanti generi diversi hai guardato.',
+        videos: topG.slice(0, 50).map((g: any, i: number) =>
+          video(`${id}_${i}`, g.name, new Date().toISOString(), `${g.count} visioni.`)
+        )
+      }
+    });
+  }
+
+  // Mattiniero (fascia mattutina)
+  if (enabled.includes('matiniero') && s.timeOfDay) {
+    const id = `adaptive_${configId}_matiniero`;
+    const td = s.timeOfDay as { morning: number; afternoon: number; evening: number; night: number };
+    const totalTd = td.morning + td.afternoon + td.evening + td.night;
+    if (totalTd > 0) {
+      const morningPct = Math.round(td.morning / totalTd * 100);
+      cards.push(await cardMeta(configId, id,
+        `${morningPct}% delle visioni al mattino`,
+        `${td.morning} contenuti tra le 6 e le 12.`,
+        { accent: '#fbbf24', statValue: `${morningPct}%`, statLabel: 'MATTINO' }
+      ));
+      details.push({
+        meta_id: id, meta: {
+          id, type: 'movie', name: 'Fascia mattutina',
+          description: 'Quanto guardi la mattina (6:00-12:00).',
+          videos: [
+            video(`${id}_1`, `Mattino: ${td.morning} (${morningPct}%)`, new Date().toISOString(), '6:00-12:00.'),
+            video(`${id}_2`, `Pomeriggio: ${td.afternoon}`, new Date().toISOString(), '12:00-18:00.'),
+            video(`${id}_3`, `Sera: ${td.evening}`, new Date().toISOString(), '18:00-24:00.'),
+            video(`${id}_4`, `Notte: ${td.night}`, new Date().toISOString(), '0:00-6:00.')
+          ]
+        }
+      });
+    }
+  }
+
+  // Intensità (media per giorno attivo)
+  if (enabled.includes('intensita') && s.totalDays !== undefined && s.totalDays > 0 && s.totalEvents !== undefined) {
+    const id = `adaptive_${configId}_intensita`;
+    const intensity = Math.round(s.totalEvents / s.totalDays * 10) / 10;
+    const level = intensity >= 5 ? 'alta' : intensity >= 3 ? 'media' : 'bassa';
+    const emoji = intensity >= 5 ? '🔥' : intensity >= 3 ? '📺' : '😴';
+    cards.push(await cardMeta(configId, id,
+      `${emoji} Intensità ${level}: ${intensity} al giorno`,
+      `${s.totalEvents} contenuti in ${s.totalDays} giorni attivi.`,
+      { accent: '#f59e0b', statValue: `${intensity}`, statLabel: 'INTENSITÀ' }
+    ));
+    details.push({
+      meta_id: id, meta: {
+        id, type: 'movie', name: 'La tua intensità',
+        description: 'Media contenuti nei giorni in cui guardi qualcosa.',
+        videos: [
+          video(`${id}_1`, `${intensity} contenuti/giorno`, new Date().toISOString(), `${s.totalEvents} eventi in ${s.totalDays} giorni.`),
+          video(`${id}_2`, `${s.avgPerWeek || 0}/settimana`, new Date().toISOString(), 'Media settimanale.')
+        ]
+      }
+    });
   }
 
   // Arricchisce ogni video con thumbnail

@@ -92,6 +92,9 @@ function accentForCardType(cardId: string): string {
   if (cardId.includes('confronto')) return '#22c55e';
   if (cardId.includes('decenni')) return '#06b6d4';
   if (cardId.includes('revisioni')) return '#f43f5e';
+  if (cardId.includes('varieta')) return '#a855f7';
+  if (cardId.includes('matiniero')) return '#fbbf24';
+  if (cardId.includes('intensita')) return '#f59e0b';
   return '#0ea5e9';
 }
 

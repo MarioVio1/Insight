@@ -135,7 +135,7 @@ export async function metaHandler(configId: string, metaId: string) {
       tmdbIdx++;
       if (tmdbData && (tmdbData.poster || tmdbData.backdrop) && !isPersonCard) {
         poster = tmdbData.poster || tmdbData.backdrop;
-        thumbnail = poster;
+        if (!thumbnail) thumbnail = poster;
         if (rating === null) rating = tmdbData.rating;
       }
     }
