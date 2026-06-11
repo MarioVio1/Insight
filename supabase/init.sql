@@ -20,7 +20,7 @@ create unique index if not exists idx_addon_configs_trakt_username on addon_conf
 create table if not exists config_preferences (
   id uuid primary key default gen_random_uuid(),
   config_id uuid not null references addon_configs(id) on delete cascade,
-  enabled_card_types jsonb not null default '["totals","streak","peak","weekly","genre","binge","dropped","monthly","recurring","rewatch","seasonal","actor","director","writer","movieActors","seriesActors","animeActors","movieDirectors","seriesDirectors","animeDirectors","movieWriters","seriesWriters","animeWriters","top5genres","anime","ranking","memories","firstplay","giorni","migliore","anno","mese","split","notturno","events","pace","weekend","annuale","primetime","decade","break","avg","night","series","vintage","completion"]'::jsonb,
+  enabled_card_types jsonb not null default '["totals","streak","peak","weekly","genre","binge","dropped","monthly","recurring","rewatch","seasonal","actor","director","writer","movieActors","seriesActors","animeActors","movieDirectors","seriesDirectors","animeDirectors","movieWriters","seriesWriters","animeWriters","top5genres","anime","ranking","memories","firstplay","giorni","migliore","anno","mese","split","notturno","events","pace","weekend","annuale","primetime","decade","break","avg","night","series","vintage","completion","tipologia","confronto","decenni","revisioni"]'::jsonb,
   focus_mode text not null default 'adaptive',
   seasonal_enabled boolean not null default true,
   festive_enabled boolean not null default true,

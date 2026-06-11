@@ -93,7 +93,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
   if (!prefs) {
     const { data: newPrefs } = await supabase.from('config_preferences').insert({
       config_id: configId,
-      enabled_card_types: ['totals','streak','peak','weekly','genre','binge','dropped','monthly','recurring','rewatch','seasonal','actor','director','writer','movieActors','seriesActors','animeActors','movieDirectors','seriesDirectors','animeDirectors','movieWriters','seriesWriters','animeWriters','top5genres','anime','ranking','memories','firstplay','giorni','migliore','anno','mese','split','notturno','events','pace','weekend','annuale','primetime','decade','break','avg','night','series','vintage','completion'],
+      enabled_card_types: ['totals','streak','peak','weekly','genre','binge','dropped','monthly','recurring','rewatch','seasonal','actor','director','writer','movieActors','seriesActors','animeActors','movieDirectors','seriesDirectors','animeDirectors','movieWriters','seriesWriters','animeWriters','top5genres','anime','ranking','memories','firstplay','giorni','migliore','anno','mese','split','notturno','events','pace','weekend','annuale','primetime','decade','break','avg','night','series','vintage','completion','tipologia','confronto','decenni','revisioni'],
       focus_mode: 'adaptive',
       seasonal_enabled: true,
       festive_enabled: true,
@@ -1129,6 +1129,128 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
         ]
       }
     });
+  }
+
+  // Tipologia contenuti (film/serie/anime)
+  if (enabled.includes('tipologia')) {
+    const id = `adaptive_${configId}_tipologia`;
+    const movieCnt = s.totalMovies || 0;
+    const showCnt = s.seriesEpisodes || 0;
+    const animeCnt = s.animeEpisodes || 0;
+    const animeMovieCnt = s.animeMovies || 0;
+    const total = movieCnt + showCnt + animeCnt + animeMovieCnt;
+    if (total > 0) {
+      const labels = [
+        { name: 'Film', count: movieCnt, hours: s.movieHours || 0, color: '#3b82f6' },
+        { name: 'Serie', count: showCnt, hours: s.seriesHours || 0, color: '#8b5cf6' },
+        { name: 'Anime', count: animeCnt + animeMovieCnt, hours: s.animeHours || 0, color: '#f43f5e' },
+      ].sort((a, b) => b.count - a.count);
+      const top = labels[0];
+      const topPct = Math.round(top.count / total * 100);
+      cards.push(await cardMeta(configId, id,
+        `${topPct}% ${top.name.toLowerCase()}: ${top.count}`,
+        `${labels.map(l => `${l.count} ${l.name.toLowerCase()}`).join(' · ')}`,
+        { accent: top.color, statValue: `${topPct}%`, statLabel: top.name.toUpperCase() }
+      ));
+      details.push({
+        meta_id: id, meta: {
+          id, type: 'movie', name: 'Film, Serie e Anime',
+          description: 'Come si dividono le tue visioni per tipologia.',
+          videos: labels.map((l, i) =>
+            video(`${id}_${i}`, l.name, new Date().toISOString(), `${l.count} contenuti, ${Math.floor(l.hours)} ore.`)
+          )
+        }
+      });
+    }
+  }
+
+  // Confronto settimanale
+  if (enabled.includes('confronto') && s.weekCount !== undefined && s.prevWeekCount !== undefined) {
+    const id = `adaptive_${configId}_confronto`;
+    const curr = s.weekCount;
+    const prev = s.prevWeekCount || 0;
+    const diff = curr - prev;
+    const diffText = diff > 0 ? `+${diff} rispetto a 7gg fa` : diff < 0 ? `${diff} rispetto a 7gg fa` : 'invariato';
+    const isUp = diff > 0;
+    cards.push(await cardMeta(configId, id,
+      `${curr} contenuti questa settimana`,
+      diffText,
+      { accent: isUp ? '#22c55e' : '#ef4444', statValue: `${curr}`, statLabel: 'SETTIMANA' }
+    ));
+    details.push({
+      meta_id: id, meta: {
+        id, type: 'movie', name: 'Confronto settimanale',
+        description: 'Questa settimana vs la precedente.',
+        videos: [
+          video(`${id}_1`, `Questa settimana: ${curr}`, new Date().toISOString(), 'Contenuti degli ultimi 7 giorni.'),
+          video(`${id}_2`, `Settimana scorsa: ${prev}`, new Date().toISOString(), 'Contenuti dei 7 giorni precedenti.')
+        ]
+      }
+    });
+  }
+
+  // Decenni
+  if (enabled.includes('decenni') && allEvents.length > 0) {
+    const id = `adaptive_${configId}_decenni`;
+    const years = allEvents.filter(e => e.year).map(e => e.year);
+    if (years.length > 0) {
+      const decadeGroups: Record<string, number> = {};
+      for (const y of years) {
+        const d = `${Math.floor(y / 10) * 10}s`;
+        decadeGroups[d] = (decadeGroups[d] || 0) + 1;
+      }
+      const sorted = Object.entries(decadeGroups).sort(([a], [b]) => a.localeCompare(b));
+      const top = sorted[sorted.length - 1] || ['', 0];
+      cards.push(await cardMeta(configId, id,
+        `Anni ${top[0].replace('s', '')}: ${top[1]} contenuti`,
+        `${sorted.length} decenni coperti, dal ${sorted[0][0].replace('s', '')} al ${sorted[sorted.length - 1][0].replace('s', '')}.`,
+        { accent: '#06b6d4', statValue: `${top[1]}`, statLabel: top[0].replace('s', '') }
+      ));
+      details.push({
+        meta_id: id, meta: {
+          id, type: 'movie', name: 'I tuoi decenni',
+          description: 'Distribuzione delle tue visioni per decennio.',
+          videos: sorted.map(([dec, cnt], i) =>
+            video(`${id}_${i}`, dec.replace('s', ''), new Date().toISOString(), `${cnt} contenuti`)
+          )
+        }
+      });
+    }
+  }
+
+  // Revisioni (rewatch)
+  if (enabled.includes('revisioni')) {
+    const id = `adaptive_${configId}_revisioni`;
+    const seriesRw = (s.seriesRewatch as any[]) || [];
+    const animeRw = (s.animeRewatch as any[]) || [];
+    const totalRw = seriesRw.length + animeRw.length;
+    if (totalRw > 0) {
+      const rwLabels = [
+        { name: 'Serie riviste', count: seriesRw.length, color: '#8b5cf6' },
+        { name: 'Anime rivisti', count: animeRw.length, color: '#f43f5e' },
+      ].sort((a, b) => b.count - a.count);
+      const topRw = rwLabels[0];
+      cards.push(await cardMeta(configId, id,
+        `${totalRw} titoli rivisti, ${topRw.count} ${topRw.name.toLowerCase()}`,
+        `${seriesRw.length} serie · ${animeRw.length} anime`,
+        { accent: topRw.color, statValue: `${totalRw}`, statLabel: 'RIVISTI' }
+      ));
+      const rwVids = [...seriesRw, ...animeRw].slice(0, 100).map((r: any, i: number) => ({
+        id: `${id}_${i}`,
+        title: r.title,
+        released: new Date().toISOString(),
+        overview: `Rivisto ${r.count} volte.`,
+        tmdb_id: r.tmdb_id || null,
+        trakt_type: r.type || 'movie'
+      }));
+      details.push({
+        meta_id: id, meta: {
+          id, type: 'movie', name: 'Titoli rivisti',
+          description: 'Serie e anime che hai guardato più di una volta.',
+          videos: rwVids
+        }
+      });
+    }
   }
 
   // Arricchisce ogni video con thumbnail

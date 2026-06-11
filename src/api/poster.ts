@@ -88,6 +88,10 @@ function accentForCardType(cardId: string): string {
   if (cardId.includes('memories')) return '#d946ef';
   if (cardId.includes('writer')) return '#f59e0b';
   if (cardId.includes('firstplay')) return '#fbbf24';
+  if (cardId.includes('tipologia')) return '#3b82f6';
+  if (cardId.includes('confronto')) return '#22c55e';
+  if (cardId.includes('decenni')) return '#06b6d4';
+  if (cardId.includes('revisioni')) return '#f43f5e';
   return '#0ea5e9';
 }
 
