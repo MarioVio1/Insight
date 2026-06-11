@@ -211,7 +211,7 @@ export async function videoPosterHandler(req: Request, res: Response) {
     let imgDataUri: string | null = null;
     if (vid.tmdb_id) {
       const tmdbData = await fetchTmdbDetails(vid.tmdb_id, vid.trakt_type || 'movie');
-      const imgUrl = tmdbData?.backdrop || tmdbData?.poster;
+      const imgUrl = tmdbData?.poster || tmdbData?.backdrop;
       if (imgUrl) {
         try {
           const imgBuf = await fetchImageBuffer(imgUrl);

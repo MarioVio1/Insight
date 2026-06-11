@@ -128,11 +128,12 @@ export async function metaHandler(configId: string, metaId: string) {
     let rating: number | null = v.rating || null;
     let overview = v.overview || '';
     let traktType = v.trakt_type || '';
+    const isPersonCard = cardType.includes('actors') || cardType.includes('directors') || cardType.includes('writers') || cardType === 'actor' || cardType === 'director' || cardType === 'writer';
 
     if (v.tmdb_id) {
       const tmdbData = tmdbResults[tmdbIdx];
       tmdbIdx++;
-      if (tmdbData) {
+      if (tmdbData && (tmdbData.poster || tmdbData.backdrop) && !isPersonCard) {
         poster = tmdbData.poster || tmdbData.backdrop;
         thumbnail = poster;
         if (rating === null) rating = tmdbData.rating;
@@ -140,7 +141,7 @@ export async function metaHandler(configId: string, metaId: string) {
     }
 
     if (!thumbnail) {
-      if (cardType === 'actor' || cardType === 'director' || cardType === 'writer') {
+      if (isPersonCard) {
         thumbnail = await getPersonImage(v.title);
         poster = thumbnail;
       }
