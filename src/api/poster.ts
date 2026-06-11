@@ -250,7 +250,6 @@ export async function videoPosterHandler(req: Request, res: Response) {
               const imgBuf = await fetchImageBuffer(imgUrl);
               imgDataUri = `data:image/jpeg;base64,${imgBuf.toString('base64')}`;
             }
-            imgDataUri = `data:image/jpeg;base64,${imgBuf.toString('base64')}`;
           }
         } catch {}
       }
