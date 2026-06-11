@@ -101,9 +101,10 @@ export function generateSvgThumbnail(opts: {
   const hasImg = !!img;
   const hasStat = !!opts.statValue;
 
-  const titleSize = hasStat ? autoSize(opts.title, 580, 56, 0.6) : autoSize(opts.title, 1100, 64, 0.6);
-  const valSize = hasStat ? autoSize(opts.statValue!, 400, 72) : 0;
-  const subSize = 20;
+  const textMaxW = hasImg ? 580 : 1180;
+  const titleSize = hasStat ? autoSize(opts.title, textMaxW, hasImg ? 56 : 72, 0.6) : autoSize(opts.title, textMaxW, hasImg ? 64 : 80, 0.6);
+  const valSize = hasStat ? autoSize(opts.statValue!, hasImg ? 400 : textMaxW, hasImg ? 72 : 96) : 0;
+  const subSize = hasImg ? 20 : 24;
 
   const clipDef = hasImg ? `<clipPath id="c"><rect x="${640 + 6}" y="${80 + 6}" width="${580 - 12}" height="${580 - 12}" rx="${24 - 6}"/></clipPath>` : '';
   const gradDefs = hasImg ? '' : `<radialGradient id="a" cx="50%" cy="0%" r="100%"><stop offset="0%" stop-color="${accent}" stop-opacity=".25"/><stop offset="100%" stop-color="${accent}" stop-opacity="0"/></radialGradient>
@@ -119,21 +120,21 @@ export function generateSvgThumbnail(opts: {
 
   const coverHtml = hasImg ? `
     <rect x="${boxX}" y="${boxY}" width="${boxW}" height="${boxH}" rx="${boxR}" fill="#000" stroke="rgba(255,255,255,.12)" stroke-width="2"/>
-    <image href="${img}" x="${boxX + 6}" y="${boxY + 6}" width="${boxW - 12}" height="${boxH - 12}" preserveAspectRatio="xMidYMid slice" clip-path="url(#c)"/>
+    <image href="${img}" x="${boxX + 6}" y="${boxY + 6}" width="${boxW - 12}" height="${boxH - 12}" preserveAspectRatio="xMidYMid meet" clip-path="url(#c)"/>
     <rect x="${boxX}" y="${boxY}" width="${boxW}" height="${boxH}" rx="${boxR}" fill="none" stroke="${accent}" stroke-width="1.5" opacity=".4"/>
   ` : '';
 
   // Title + stat on the left (larger text, left-aligned)
   const textX = 48;
   const titleHtml = hasStat
-    ? `<text x="${textX}" y="180" fill="#fff" font-size="${valSize}" font-weight="900" font-family="${ff}">${esc(trunc(opts.statValue!, 15))}</text>
-       ${opts.statLabel ? `<text x="${textX}" y="220" fill="${accent}" font-size="16" font-weight="700" font-family="${ff}" letter-spacing="3">${esc(trunc(opts.statLabel, 24)).toUpperCase()}</text>` : ''}
-       <text x="${textX}" y="310" fill="#fff" font-size="${titleSize}" font-weight="800" font-family="${ff}">${esc(trunc(opts.title, 22))}</text>`
-    : `<text x="${textX}" y="240" fill="#fff" font-size="${titleSize}" font-weight="800" font-family="${ff}">${esc(trunc(opts.title, 28))}</text>`;
+    ? `<text x="${textX}" y="${hasImg ? 180 : 240}" fill="#fff" font-size="${valSize}" font-weight="900" font-family="${ff}">${esc(trunc(opts.statValue!, hasImg ? 15 : 25))}</text>
+       ${opts.statLabel ? `<text x="${textX}" y="${hasImg ? 220 : 290}" fill="${accent}" font-size="${hasImg ? 16 : 22}" font-weight="700" font-family="${ff}" letter-spacing="3">${esc(trunc(opts.statLabel, hasImg ? 24 : 40)).toUpperCase()}</text>` : ''}
+       <text x="${textX}" y="${hasImg ? 310 : 380}" fill="#fff" font-size="${titleSize}" font-weight="800" font-family="${ff}">${esc(trunc(opts.title, hasImg ? 22 : 40))}</text>`
+    : `<text x="${textX}" y="${hasImg ? 240 : 280}" fill="#fff" font-size="${titleSize}" font-weight="800" font-family="${ff}">${esc(trunc(opts.title, hasImg ? 28 : 50))}</text>`;
 
   const subtitleHtml = hasImg
     ? `<text x="${textX}" y="${hasStat ? 380 : 310}" fill="rgba(255,255,255,.35)" font-size="${subSize}" font-weight="500" font-family="${ff}">${esc(trunc(opts.subtitle, 40))}</text>`
-    : `<text x="${textX}" y="${hasStat ? 380 : 330}" fill="rgba(255,255,255,.35)" font-size="${subSize}" font-weight="500" font-family="${ff}">${esc(trunc(opts.subtitle, 80))}</text>`;
+    : `<text x="${textX}" y="${hasStat ? 430 : 340}" fill="rgba(255,255,255,.35)" font-size="${subSize}" font-weight="500" font-family="${ff}">${esc(trunc(opts.subtitle, 80))}</text>`;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${TW}" height="${TH}" viewBox="0 0 ${TW} ${TH}">
     <defs>${defs}</defs>

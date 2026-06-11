@@ -18,13 +18,13 @@ if (!isConfig) {
     e.preventDefault();
     const slug = slugInput.value.trim().replace(/[^a-zA-Z0-9_-]/g,'').toLowerCase();
     if (!slug) return;
-    createBtn.disabled = true; createBtn.textContent = '...';
+    createBtn.disabled = true; createBtn.classList.add('loading'); createBtn.innerHTML = '<span class="spinner"></span>';
     const r = await fetch('/api/config', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ slug, enabled_card_types: [], focus_mode: 'adaptive', seasonal_enabled: true, festive_enabled: true, style_mode: 'cinematic' })
     });
     const d = await r.json();
-    createBtn.disabled = false; createBtn.textContent = 'Accedi';
+    createBtn.disabled = false; createBtn.classList.remove('loading'); createBtn.textContent = 'Accedi';
     if (r.ok) window.location.href = `/configure/${d.slug}`;
   };
 } else {
@@ -244,13 +244,13 @@ if (!isConfig) {
     e.preventDefault();
     const slug = slugInput2.value.trim().replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
     if (!slug) return;
-    createBtn2.disabled = true; createBtn2.textContent = '...';
+    createBtn2.disabled = true; createBtn2.classList.add('loading'); createBtn2.innerHTML = '<span class="spinner"></span>';
     const r = await fetch('/api/config', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ slug, enabled_card_types: selTypes(), focus_mode: focusMode.value, seasonal_enabled: true, festive_enabled: true, style_mode: 'cinematic' })
     });
     const d = await r.json();
-    createBtn2.disabled = false; createBtn2.textContent = 'Accedi';
+    createBtn2.disabled = false; createBtn2.classList.remove('loading'); createBtn2.textContent = 'Accedi';
     if (r.ok) window.location.href = `/configure/${d.slug}`;
   };
 

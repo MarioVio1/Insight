@@ -217,8 +217,8 @@ export async function videoPosterHandler(req: Request, res: Response) {
     // Fetch TMDB image e converti in data URI per compatibilità SVG con sharp
     let imgDataUri: string | null = null;
 
-    // First try the video's own thumbnail (person photo, TMDB poster, etc.)
-    if (vid.thumbnail) {
+    // Try the video's own thumbnail but skip circular /vposter/ URLs
+    if (vid.thumbnail && !vid.thumbnail.includes('/vposter/')) {
       try {
         const imgBuf = await fetchImageBuffer(vid.thumbnail);
         imgDataUri = `data:image/jpeg;base64,${imgBuf.toString('base64')}`;
@@ -233,6 +233,21 @@ export async function videoPosterHandler(req: Request, res: Response) {
         try {
           const imgBuf = await fetchImageBuffer(imgUrl);
           imgDataUri = `data:image/jpeg;base64,${imgBuf.toString('base64')}`;
+        } catch {}
+      }
+    }
+
+    // Last resort: try person search for actor/director/writer cards
+    if (!imgDataUri) {
+      const ct = cardId.toLowerCase();
+      if (ct.includes('actors') || ct.includes('directors') || ct.includes('writers') || ct === 'actor' || ct === 'director' || ct === 'writer') {
+        try {
+          const { searchTmdbPerson, tmdbPersonImage } = await import('../services/tmdbService');
+          const person = await searchTmdbPerson(vid.title);
+          if (person?.profile_path) {
+            const imgBuf = await fetchImageBuffer(tmdbPersonImage(person.profile_path));
+            imgDataUri = `data:image/jpeg;base64,${imgBuf.toString('base64')}`;
+          }
         } catch {}
       }
     }

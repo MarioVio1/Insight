@@ -1329,7 +1329,6 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
   for (const d of details) {
     if (d.meta?.videos?.length) {
       d.meta.videos = d.meta.videos.map((v: any, i: number) => {
-        if (v.thumbnail) return v;
         const posterFallback = `${baseUrl}/vposter/${configId}/${encodeURIComponent(d.meta_id)}/${i}.png`;
         return { ...v, thumbnail: posterFallback };
       });
