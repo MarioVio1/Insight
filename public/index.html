@@ -390,8 +390,18 @@
  <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M4 10a6 6 0 0112 0M16 10l-3-3M4 10l3-3" stroke="#000" stroke-width="2" stroke-linecap="round"/></svg>
  Sincronizza con Trakt
  </button>
- <div id="syncStatus" class="ssync"></div>
- </div>
+  <div id="syncStatus" class="ssync"></div>
+  <div class="p-section" id="section-status">
+  <div class="p-section-title">Stato</div>
+  <div class="sinfo">
+  <div class="srow"><span class="sl">Tabelle:</span><span class="sdot pending" id="sTables"></span></div>
+  <div class="srow"><span class="sl">Trakt:</span><span class="sdot pending" id="sTrakt"></span></div>
+  <div class="srow"><span class="sl">Sync:</span><span id="sSync"></span></div>
+  <div class="srow"><span class="sl">Cards:</span><span id="sCards"></span></div>
+  </div>
+  <div class="sissues" id="sIssues"></div>
+  </div>
+  </div>
  </div>
  </div>
  <div class="panel" style="grid-column:2">
@@ -455,22 +465,12 @@
  <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 2v10M6 8l4 4 4-4M4 14v2a2 2 0 002 2h8a2 2 0 002-2v-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
  Scarica JSON storico
  </a>
- </div>
- <div class="p-section" id="section-status">
- <div class="p-section-title">Stato</div>
- <div class="sinfo">
- <div class="srow"><span class="sl">Tabelle:</span><span class="sdot pending" id="sTables"></span></div>
- <div class="srow"><span class="sl">Trakt:</span><span class="sdot pending" id="sTrakt"></span></div>
- <div class="srow"><span class="sl">Sync:</span><span id="sSync"></span></div>
- <div class="srow"><span class="sl">Cards:</span><span id="sCards"></span></div>
- </div>
- <div class="sissues" id="sIssues"></div>
- </div>
- </div>
- </div>
- </div>
- </div>
- </div>
+   </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  </div>
 
   <script>
     (function() {
