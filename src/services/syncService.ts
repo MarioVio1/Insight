@@ -89,7 +89,7 @@ export async function syncConfig(configId: string) {
     const batchSize = 100;
     for (let i = 0; i < historyRows.length; i += batchSize) {
       const batch = historyRows.slice(i, i + batchSize);
-      const { error: insertErr } = await supabase.from('trakt_events').insert(batch, { onConflict: 'id', ignoreDuplicates: true });
+      const { error: insertErr } = await supabase.from('trakt_events').upsert(batch, { onConflict: 'id', ignoreDuplicates: true });
       if (insertErr) logger.error({ configId, error: insertErr }, 'Batch insert error');
     }
 
