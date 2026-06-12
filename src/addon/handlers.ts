@@ -1,11 +1,14 @@
 import { supabase } from '../services/supabase.js';
-import { fetchTmdbDetails, searchTmdbPerson, tmdbPersonImage } from '../services/tmdbService.js';
-import { INSIGHT_CATALOG_ID, LEGACY_INSIGHT_CATALOG_ID, INSIGHT_TYPE } from './manifest.js';
+import { fetchTmdbDetails, fetchWatchProviders, searchTmdbPerson, tmdbPersonImage, discoverByGenre, discoverByPerson, genreNameToTmdbId, searchTmdbPersonId } from '../services/tmdbService.js';
+import { t } from '../services/locale.js';
+import { INSIGHT_CATALOG_ID, LEGACY_INSIGHT_CATALOG_ID, INSIGHT_TYPE, DISCOVER_CATALOG_ID } from './manifest.js';
 
 const tmdbCache = new Map<string, { poster: string | null; backdrop: string | null; rating: number | null; age: number }>();
 const TMDB_CACHE_TTL = 86_400_000;
 const personCache = new Map<string, { image: string | null; age: number }>();
 const PERSON_CACHE_TTL = 86_400_000;
+const providerCache = new Map<string, { providers: { provider_name: string; logo: string }[]; age: number }>();
+const PROVIDER_CACHE_TTL = 86_400_000;
 
 async function getTmdbData(tmdbId: number | string, type: string) {
   const key = `${type}_${tmdbId}`;
@@ -24,6 +27,20 @@ async function getTmdbData(tmdbId: number | string, type: string) {
   } catch {
     tmdbCache.set(key, { poster: null, backdrop: null, rating: null, age: Date.now() });
     return null;
+  }
+}
+
+async function getWatchProviders(tmdbId: number | string, type: string) {
+  const key = `${type}_${tmdbId}`;
+  const cached = providerCache.get(key);
+  if (cached && Date.now() - cached.age < PROVIDER_CACHE_TTL) return cached.providers;
+  try {
+    const providers = await fetchWatchProviders(tmdbId, type);
+    providerCache.set(key, { providers, age: Date.now() });
+    return providers;
+  } catch {
+    providerCache.set(key, { providers: [], age: Date.now() });
+    return [];
   }
 }
 
@@ -74,10 +91,10 @@ export async function catalogHandler(configId: string, catalogId: string, baseUr
     return { metas: [{
       id: 'adaptive_setup',
       type: INSIGHT_TYPE,
-      name: '⚙️ Configura l\'addon',
-      poster: 'data:image/svg+xml;base64,' + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900"><rect fill="#0f172a" width="600" height="900"/><text x="300" y="400" fill="#0ea5e9" font-size="28" font-weight="800" text-anchor="middle" font-family="Arial">Configura</text><text x="300" y="440" fill="#64748b" font-size="16" text-anchor="middle" font-family="Arial">Connetti Trakt e fai il sync</text></svg>').toString('base64'),
+      name: t('setupTitle'),
+      poster: 'data:image/svg+xml;base64,' + Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900"><rect fill="#0f172a" width="600" height="900"/><text x="300" y="400" fill="#0ea5e9" font-size="28" font-weight="800" text-anchor="middle" font-family="Arial">${t('setupPosterFallback')}</text><text x="300" y="440" fill="#64748b" font-size="16" text-anchor="middle" font-family="Arial">${t('setupPosterSub')}</text></svg>`).toString('base64'),
       background: 'data:image/svg+xml;base64,' + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900"><rect fill="#0f172a" width="600" height="900"/></svg>').toString('base64'),
-      description: 'Collega Trakt e sincronizza per vedere le tue statistiche.'
+      description: t('setupDesc')
     }]};
   }
 
@@ -92,6 +109,79 @@ export async function catalogHandler(configId: string, catalogId: string, baseUr
     }
     return meta;
   });
+
+  return { metas };
+}
+
+export async function discoverHandler(configId: string, baseUrl?: string) {
+  const { data: insight } = await supabase
+    .from('insight_snapshots')
+    .select('summary, genre_counts, top_actors, top_directors, top_writers')
+    .eq('config_id', configId)
+    .maybeSingle();
+
+  if (!insight) return { metas: [] };
+
+  const summary = insight.summary || {};
+  const genreCounts: { genre: string; count: number }[] = insight.genre_counts || [];
+  const topActors: { name: string; count: number }[] = insight.top_actors || [];
+  const topDirectors: { name: string; count: number }[] = insight.top_directors || [];
+
+  // Get already watched TMDB IDs to filter out
+  const { data: watched } = await supabase
+    .from('trakt_events')
+    .select('tmdb_id')
+    .eq('config_id', configId)
+    .not('tmdb_id', 'is', null);
+
+  const watchedSet = new Set<number>((watched || []).map((w: any) => w.tmdb_id));
+
+  // Build recommendations from TMDB
+  const results: any[] = [];
+
+  // 1. Try top genres
+  const topGenres = genreCounts.sort((a, b) => b.count - a.count).slice(0, 3);
+  const genreIds = topGenres.map(g => genreNameToTmdbId(g.genre)).filter(Boolean) as number[];
+
+  if (genreIds.length > 0) {
+    const byGenre = await discoverByGenre(genreIds, 1, 'movie');
+    for (const r of byGenre) {
+      if (!watchedSet.has(r.id)) results.push(r);
+    }
+  }
+
+  // 2. Try top actor's movies
+  if (topActors.length > 0 && results.length < 30) {
+    for (const actor of topActors.slice(0, 3)) {
+      const personId = await searchTmdbPersonId(actor.name);
+      if (!personId) continue;
+      const byPerson = await discoverByPerson(personId);
+      for (const r of byPerson) {
+        if (!watchedSet.has(r.id)) results.push(r);
+      }
+      if (results.length >= 50) break;
+    }
+  }
+
+  // Deduplicate by ID
+  const seen = new Set<number>();
+  const deduped = results.filter(r => {
+    if (seen.has(r.id)) return false;
+    seen.add(r.id);
+    return true;
+  }).slice(0, 50);
+
+  const metas = deduped.map((r: any) => ({
+    id: `discover_${r.media_type}_${r.id}`,
+    type: 'movie',
+    name: `${r.title} (${r.year || ''})`.trim(),
+    poster: r.poster || undefined,
+    background: r.backdrop || undefined,
+    description: r.overview?.substring(0, 300) || '',
+    genres: [],
+    releaseInfo: r.year || '',
+    imdbRating: r.vote_average ? Math.round(r.vote_average * 10) / 10 : undefined
+  }));
 
   return { metas };
 }
@@ -118,9 +208,16 @@ export async function metaHandler(configId: string, metaId: string) {
   const tmdbLookups = anyVideos
     .filter(v => v.tmdb_id)
     .map(v => getTmdbData(v.tmdb_id, (v.trakt_type === 'show' ? 'tv' : v.trakt_type) || 'movie'));
-  const tmdbResults = tmdbLookups.length > 0 ? await Promise.all(tmdbLookups) : [];
+  const providerLookups = anyVideos
+    .filter(v => v.tmdb_id && !(v.trakt_type === 'show' || v.trakt_type === 'episode'))
+    .map(v => getWatchProviders(v.tmdb_id, (v.trakt_type === 'show' ? 'tv' : v.trakt_type) || 'movie'));
+  const [tmdbResults, providerResults] = await Promise.all([
+    tmdbLookups.length > 0 ? Promise.all(tmdbLookups) : [],
+    providerLookups.length > 0 ? Promise.all(providerLookups) : []
+  ]);
 
   let tmdbIdx = 0;
+  let provIdx = 0;
   const enrichedVideos = [];
   for (const v of videos) {
     let thumbnail = v.thumbnail || null;
@@ -128,7 +225,10 @@ export async function metaHandler(configId: string, metaId: string) {
     let rating: number | null = v.rating || null;
     let overview = v.overview || '';
     let traktType = v.trakt_type || '';
+    const hasTmdb = !!v.tmdb_id;
     const isPersonCard = cardType.includes('actors') || cardType.includes('directors') || cardType.includes('writers') || cardType === 'actor' || cardType === 'director' || cardType === 'writer';
+
+    let providers: { provider_name: string; logo: string }[] = [];
 
     if (v.tmdb_id) {
       const tmdbData = tmdbResults[tmdbIdx];
@@ -137,6 +237,11 @@ export async function metaHandler(configId: string, metaId: string) {
         poster = tmdbData.poster || tmdbData.backdrop;
         if (!thumbnail) thumbnail = poster;
         if (rating === null) rating = tmdbData.rating;
+      }
+      // Fetch providers for movies only
+      if (traktType !== 'show' && traktType !== 'episode') {
+        providers = providerResults[provIdx] || [];
+        provIdx++;
       }
     }
 
@@ -151,11 +256,12 @@ export async function metaHandler(configId: string, metaId: string) {
       id: v.id,
       title: v.title,
       released: v.released,
-      overview: overview || 'Nessuna descrizione',
+      overview: overview || t('noDesc'),
       thumbnail: thumbnail || undefined,
       poster: poster || undefined,
       rating: rating || undefined,
-      ...(v.tmdb_id ? { tmdb_id: v.tmdb_id } : {})
+      ...(hasTmdb ? { tmdb_id: v.tmdb_id } : {}),
+      ...(providers.length > 0 ? { streamProviders: providers } : {})
     });
   }
 

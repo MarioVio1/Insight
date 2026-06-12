@@ -97,7 +97,10 @@ function accentForCardType(cardId: string): string {
   if (cardId.includes('intensita')) return '#f59e0b';
   if (cardId.includes('esploratore')) return '#06b6d4';
   if (cardId.includes('bilancioAnime')) return '#f43f5e';
+  if (cardId.includes('bilancioAnime')) return '#f43f5e';
   if (cardId.includes('pomeriggio')) return '#f97316';
+  if (cardId.includes('yearreview')) return '#f97316';
+  if (cardId.includes('badge')) return '#fbbf24';
   return '#0ea5e9';
 }
 

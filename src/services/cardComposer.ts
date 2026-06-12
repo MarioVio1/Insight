@@ -1,5 +1,6 @@
 import { supabase } from './supabase.js';
 import { fetchTmdbDetails, searchTmdbPerson, tmdbPersonImage } from './tmdbService.js';
+import { t } from './locale.js';
 import { INSIGHT_CATALOG_ID, INSIGHT_TYPE } from '../addon/manifest.js';
 
 async function getEvents(configId: string, daysBack?: number): Promise<any[]> {
@@ -14,13 +15,14 @@ async function getEvents(configId: string, daysBack?: number): Promise<any[]> {
 
 function eventToVideo(event: any, index: number, prefix: string) {
   const episodeTitle = event.payload?.episode?.title;
+  const isMovie = event.trakt_type === 'movie';
   return {
     id: `${prefix}_c_${index}`,
     title: episodeTitle || event.title,
     released: event.watched_at,
     overview: episodeTitle
-      ? `${event.title} · Stagione ${event.payload.episode.season} Episodio ${event.payload.episode.number}`
-      : `${event.trakt_type === 'movie' ? 'Film' : event.year ? `Episodio (${event.year})` : 'Episodio'}`,
+      ? `${event.title} · S${event.payload.episode.season}E${event.payload.episode.number}`
+      : isMovie ? t('noDesc') : event.year ? `(${event.year})` : '',
     tmdb_id: event.tmdb_id,
     trakt_type: event.trakt_type
   };
@@ -93,7 +95,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
   if (!prefs) {
     const { data: newPrefs } = await supabase.from('config_preferences').insert({
       config_id: configId,
-      enabled_card_types: ['totals','streak','peak','weekly','genre','binge','dropped','monthly','recurring','rewatch','seasonal','actor','director','writer','movieActors','seriesActors','animeActors','movieDirectors','seriesDirectors','animeDirectors','movieWriters','seriesWriters','animeWriters','top5genres','anime','ranking','memories','firstplay','giorni','migliore','anno','mese','split','notturno','events','pace','weekend','annuale','primetime','decade','break','avg','night','series','vintage','completion','tipologia','confronto','decenni','revisioni','varieta','matiniero','intensita','esploratore','bilancioAnime','pomeriggio'],
+      enabled_card_types: ['totals','streak','peak','weekly','genre','binge','dropped','monthly','recurring','rewatch','seasonal','actor','director','writer','movieActors','seriesActors','animeActors','movieDirectors','seriesDirectors','animeDirectors','movieWriters','seriesWriters','animeWriters','top5genres','anime','ranking','memories','firstplay','giorni','migliore','anno','mese','split','notturno','events','pace','weekend','annuale','primetime','decade','break','avg','night','series','vintage','completion','tipologia','confronto','decenni','revisioni','varieta','matiniero','intensita','esploratore','bilancioAnime','pomeriggio','yearreview','badge'],
       focus_mode: 'adaptive',
       seasonal_enabled: true,
       festive_enabled: true,
@@ -450,8 +452,10 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
         { accent: '#ec4899', statValue: top.name, statLabel: 'ATTORE TOP' }
       ));
 
-      const actorVids = await Promise.all(actors.slice(0, 100).map(async (a: any, i: number) => {
-        const v: any = video(`${id}_${i}`, `${i + 1}. ${a.name}`, new Date().toISOString(), `Appare in ${a.count} contenuti.`);
+      const actorList = actors.slice(0, 100);
+      const actorN = actorList.length;
+      const actorVids = await Promise.all(actorList.reverse().map(async (a: any, i: number) => {
+        const v: any = video(`${id}_${i}`, `${actorN - i}. ${a.name}`, new Date().toISOString(), `Appare in ${a.count} contenuti.`);
         try {
           const p = await searchTmdbPerson(a.name);
           if (p?.profile_path) {
@@ -485,8 +489,10 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
         { accent: '#8b5cf6', statValue: top.name, statLabel: 'REGISTA TOP' }
       ));
 
-      const directorVids = await Promise.all(directors.slice(0, 100).map(async (d: any, i: number) => {
-        const v: any = video(`${id}_${i}`, `${i + 1}. ${d.name}`, new Date().toISOString(), `Compare in ${d.count} contenuti.`);
+      const directorList = directors.slice(0, 100);
+      const directorN = directorList.length;
+      const directorVids = await Promise.all(directorList.reverse().map(async (d: any, i: number) => {
+        const v: any = video(`${id}_${i}`, `${directorN - i}. ${d.name}`, new Date().toISOString(), `Compare in ${d.count} contenuti.`);
         try {
           const p = await searchTmdbPerson(d.name);
           if (p?.profile_path) {
@@ -520,8 +526,10 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
         { accent: '#f59e0b', statValue: top.name, statLabel: 'SCENEGGIATORE' }
       ));
 
-      const writerVids = await Promise.all(writers.slice(0, 100).map(async (w: any, i: number) => {
-        const v: any = video(`${id}_${i}`, `${i + 1}. ${w.name}`, new Date().toISOString(), `Compare in ${w.count} contenuti.`);
+      const writerList = writers.slice(0, 100);
+      const writerN = writerList.length;
+      const writerVids = await Promise.all(writerList.reverse().map(async (w: any, i: number) => {
+        const v: any = video(`${id}_${i}`, `${writerN - i}. ${w.name}`, new Date().toISOString(), `Compare in ${w.count} contenuti.`);
         try {
           const p = await searchTmdbPerson(w.name);
           if (p?.profile_path) {
@@ -560,8 +568,10 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
       `Compare in ${top.count} contenuti ${metaName.toLowerCase()}.`,
       { accent, statValue: top.name, statLabel }
     ));
-    const vids = await Promise.all(list.slice(0, 100).map(async (item: any, i: number) => {
-      const v: any = video(`${id}_${i}`, `${i + 1}. ${item.name}`, new Date().toISOString(), `Compare in ${item.count} contenuti.`);
+    const listSliced = list.slice(0, 100);
+    const listN = listSliced.length;
+    const vids = await Promise.all(listSliced.reverse().map(async (item: any, i: number) => {
+      const v: any = video(`${id}_${i}`, `${listN - i}. ${item.name}`, new Date().toISOString(), `Compare in ${item.count} contenuti.`);
       try {
         const p = await searchTmdbPerson(item.name);
         if (p?.profile_path) {
@@ -1402,6 +1412,85 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
         }
       });
     }
+  }
+
+  // Year in Review — riassunto annuale
+  if (enabled.includes('yearreview')) {
+    const cyData = (insight as any).content_by_year as { year: number; count: number }[];
+    if (cyData && cyData.length > 0) {
+      const id = `adaptive_${configId}_yearreview`;
+      const sorted = [...cyData].sort((a, b) => b.year - a.year);
+      const latest = sorted[0];
+      const totalAll = cyData.reduce((s, y) => s + y.count, 0);
+      const best = cyData.reduce((a, b) => b.count > a.count ? b : a);
+      cards.push(await cardMeta(configId, id,
+        `${latest.year}: ${latest.count} contenuti`,
+        `${sorted.length} anni tracciati. Il tuo anno migliore: ${best.year} (${best.count} contenuti).`,
+        { accent: '#f97316', statValue: `${latest.count}`, statLabel: `${latest.year}` }
+      ));
+      details.push({
+        meta_id: id, meta: {
+          id, type: 'movie', name: `Year in Review`,
+          description: `I tuoi anni su Trakt: ${totalAll} contenuti totali.`,
+          videos: sorted.map((y, i) =>
+            video(`${id}_${i}`, `${y.year}`, new Date().toISOString(), `${y.count} contenuti (${Math.round(y.count / totalAll * 100)}% del totale).`)
+          )
+        }
+      });
+    }
+  }
+
+  // Badge/Obiettivi
+  if (enabled.includes('badge')) {
+    const id = `adaptive_${configId}_badge`;
+    const totalHours = s.totalHours || 0;
+    const streak = s.streak || 0;
+    const totalM = s.totalMovies || 0;
+    const totalE = s.seriesEpisodes || 0;
+    const animeCount = s.animeCount || 0;
+    const uniqueTitles = s.uniqueTitles || 0;
+    const totalEvents = (s.totalMovies || 0) + (s.seriesEpisodes || 0) + (s.animeCount || 0);
+    const binges = (s.binges || []).length;
+    const rewatches = (s.rewatch_titles || []).length || (s.totalRewatches || 0);
+    const primeTimePct = s.primeTimePct || 0;
+    const completionRate = s.completionRate || 0;
+
+    const badges: { name: string; desc: string; earned: boolean; icon: string }[] = [
+      { name: 'Maratoneta', desc: '30+ giorni di streak', earned: streak >= 30, icon: '🔥' },
+      { name: 'Cinefilo', desc: '100+ film visti', earned: totalM >= 100, icon: '🎬' },
+      { name: 'Serie-dipendente', desc: '500+ episodi', earned: totalE >= 500, icon: '📺' },
+      { name: 'Binge-Watcher', desc: '10+ maratone', earned: binges >= 10, icon: '🍿' },
+      { name: 'Nottambulo', desc: '60%+ visioni notturne', earned: primeTimePct >= 60, icon: '🌙' },
+      { name: 'Veterano', desc: '1000+ ore guardate', earned: totalHours >= 1000, icon: '👑' },
+      { name: 'Anime Fan', desc: '100+ anime', earned: animeCount >= 100, icon: '🇯🇵' },
+      { name: 'Completista', desc: '90%+ completamento', earned: completionRate >= 90, icon: '✅' },
+      { name: 'Esploratore', desc: '70%+ titoli unici', earned: totalEvents > 0 && (uniqueTitles / totalEvents) >= 0.7, icon: '🧭' },
+    ];
+
+    const earned = badges.filter(b => b.earned);
+    const total = badges.length;
+
+    cards.push(await cardMeta(configId, id,
+      earned.length > 0 ? `${earned.length}/${total} badge ottenuti` : `0/${total} badge — inizia a guardare!`,
+      earned.length > 0
+        ? `🏆 ${earned.slice(0, 3).map(b => b.name).join(' · ')}${earned.length > 3 ? ` e altri ${earned.length - 3}` : ''}`
+        : `Guarda di più per sbloccare i badge.`,
+      { accent: '#fbbf24', statValue: `${earned.length}/${total}`, statLabel: 'BADGE' }
+    ));
+
+    details.push({
+      meta_id: id, meta: {
+        id, type: 'movie', name: 'I tuoi badge',
+        description: `${earned.length} badge ottenuti su ${total}.`,
+        videos: badges.map((b, i) =>
+          video(`${id}_${i}`,
+            `${b.earned ? '✅' : '🔒'} ${b.name}`,
+            new Date().toISOString(),
+            `${b.desc}${b.earned ? ' — ottenuto!' : ''}`
+          )
+        )
+      }
+    });
   }
 
   // Arricchisce ogni video con thumbnail

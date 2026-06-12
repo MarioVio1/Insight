@@ -25,7 +25,7 @@ router.post('/config', async (req, res) => {
     }
 
     const id = crypto.randomUUID();
-    const payload = { id, slug, sync_enabled: true, selected_catalogs: [INSIGHT_CATALOG_ID] };
+    const payload = { id, slug, sync_enabled: true, selected_catalogs: [INSIGHT_CATALOG_ID, 'insight-discover'] };
     const { error } = await supabase.from('addon_configs').insert(payload);
     if (error) return res.status(500).json({ ok: false, error: error.message });
 

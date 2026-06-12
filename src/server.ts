@@ -4,8 +4,8 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import routes from './api/routes.js';
-import { getManifest } from './addon/manifest.js';
-import { catalogHandler, metaHandler } from './addon/handlers.js';
+import { getManifest, DISCOVER_CATALOG_ID } from './addon/manifest.js';
+import { catalogHandler, discoverHandler, metaHandler } from './addon/handlers.js';
 import { startCron } from './jobs/cron.js';
 import { logger } from './utils/logger.js';
 import * as poster from './api/poster.js';
@@ -88,8 +88,13 @@ app.get('/:configId/catalog/:type/:id.json', async (req, res) => {
   const uuid = await resolveConfigId(req.params.configId);
   if (!uuid) return res.status(404).json({ metas: [] });
   const baseUrl = `${req.protocol}://${req.get('host')}`;
-  try { res.json(await catalogHandler(uuid, req.params.id, baseUrl)); }
-  catch (error) { logger.error({ error }, 'Catalog error'); res.status(500).json({ metas: [] }); }
+  try {
+    if (req.params.id === DISCOVER_CATALOG_ID) {
+      res.json(await discoverHandler(uuid, baseUrl));
+    } else {
+      res.json(await catalogHandler(uuid, req.params.id, baseUrl));
+    }
+  } catch (error) { logger.error({ error }, 'Catalog error'); res.status(500).json({ metas: [] }); }
 });
 
 app.get('/:configId/meta/:type/:id.json', async (req, res) => {

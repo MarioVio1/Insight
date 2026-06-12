@@ -147,3 +147,98 @@ export async function searchTmdbPerson(query: string): Promise<{ name: string; p
 export function tmdbPersonImage(profilePath: string | null): string | null {
   return profilePath ? `https://image.tmdb.org/t/p/w185${profilePath}` : null;
 }
+
+export async function fetchWatchProviders(tmdbId: number | string, type: string): Promise<{ provider_name: string; logo: string }[]> {
+  if (!tmdbId) return [];
+  if (!process.env.TMDB_API_KEY && !process.env.TMDB_BEARER_TOKEN) return [];
+  const params: Record<string, string> = {};
+  if (process.env.TMDB_API_KEY) params.api_key = process.env.TMDB_API_KEY;
+  try {
+    const mediaType = type === 'movie' ? 'movie' : 'tv';
+    const data = await cachedFetch(`${TMDB_BASE}/${mediaType}/${tmdbId}/watch/providers`, params, authHeaders());
+    const results = data?.results || {};
+    // Prefer Italian providers (IT), fallback to US, then any
+    const region = results['IT'] || results['US'] || Object.values(results)[0] as any;
+    if (!region) return [];
+    const flatrate = region.flatrate || [];
+    return flatrate.slice(0, 5).map((p: any) => ({
+      provider_name: p.provider_name,
+      logo: `https://image.tmdb.org/t/p/w92${p.logo_path}`
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export async function discoverByGenre(genreIds: number[], page = 1, mediaType: 'movie' | 'tv' = 'movie'): Promise<any[]> {
+  if (!process.env.TMDB_API_KEY && !process.env.TMDB_BEARER_TOKEN) return [];
+  if (!genreIds.length) return [];
+  const params: Record<string, any> = {
+    sort_by: 'vote_count.desc',
+    'vote_count.gte': 50,
+    page
+  };
+  if (process.env.TMDB_API_KEY) params.api_key = process.env.TMDB_API_KEY;
+  if (genreIds.length > 0) params.with_genres = genreIds.join(',');
+  try {
+    const data = await cachedFetch(`${TMDB_BASE}/discover/${mediaType}`, params, authHeaders());
+    return (data?.results || []).slice(0, 20).map((r: any) => ({
+      id: r.id,
+      title: r.title || r.name,
+      poster: r.poster_path ? `https://image.tmdb.org/t/p/w500${r.poster_path}` : null,
+      backdrop: r.backdrop_path ? `https://image.tmdb.org/t/p/w780${r.backdrop_path}` : null,
+      year: (r.release_date || r.first_air_date || '').substring(0, 4),
+      overview: r.overview?.substring(0, 200) || '',
+      vote_average: r.vote_average,
+      media_type: mediaType,
+      genre_ids: r.genre_ids || []
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export async function discoverByPerson(personId: number, page = 1): Promise<any[]> {
+  if (!process.env.TMDB_API_KEY && !process.env.TMDB_BEARER_TOKEN) return [];
+  const params: Record<string, any> = { sort_by: 'popularity.desc', page };
+  if (process.env.TMDB_API_KEY) params.api_key = process.env.TMDB_API_KEY;
+  try {
+    const data = await cachedFetch(`${TMDB_BASE}/person/${personId}/movie_credits`, params, authHeaders());
+    return (data?.cast || []).slice(0, 20).map((r: any) => ({
+      id: r.id,
+      title: r.title || r.name,
+      poster: r.poster_path ? `https://image.tmdb.org/t/p/w500${r.poster_path}` : null,
+      backdrop: r.backdrop_path ? `https://image.tmdb.org/t/p/w780${r.backdrop_path}` : null,
+      year: (r.release_date || '').substring(0, 4),
+      overview: r.overview?.substring(0, 200) || '',
+      vote_average: r.vote_average,
+      media_type: 'movie'
+    }));
+  } catch {
+    return [];
+  }
+}
+
+const GENRE_MAP: Record<string, number> = {
+  action: 28, adventure: 12, animation: 16, comedy: 35, crime: 80,
+  documentary: 99, drama: 18, family: 10751, fantasy: 14, history: 36,
+  horror: 27, music: 10402, mystery: 9648, romance: 10749,
+  'science fiction': 878, thriller: 53, war: 10752, western: 37
+};
+
+export function genreNameToTmdbId(name: string): number | undefined {
+  const key = name.toLowerCase().trim();
+  return GENRE_MAP[key];
+}
+
+export async function searchTmdbPersonId(query: string): Promise<number | null> {
+  if (!process.env.TMDB_API_KEY && !process.env.TMDB_BEARER_TOKEN) return null;
+  const params: Record<string, string> = { query };
+  if (process.env.TMDB_API_KEY) params.api_key = process.env.TMDB_API_KEY;
+  try {
+    const { data } = await axios.get(`${TMDB_BASE}/search/person`, { params, headers: authHeaders() });
+    return data?.results?.[0]?.id || null;
+  } catch {
+    return null;
+  }
+}

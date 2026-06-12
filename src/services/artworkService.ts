@@ -62,6 +62,8 @@ export function pickIcon(cardType?: string): string {
   if (ct.includes('totals') || ct.includes('total')) return ICONS.chart;
   if (ct.includes('events') || ct.includes('pace') || ct.includes('ritmo')) return ICONS.bolt;
   if (ct.includes('serie') || ct.includes('series') || ct.includes('tv')) return ICONS.tv;
+  if (ct.includes('yearreview') || ct.includes('annuale')) return ICONS.calendar;
+  if (ct.includes('badge')) return ICONS.trophy;
   return ICONS.film;
 }
 
