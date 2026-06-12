@@ -450,7 +450,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
         { accent: '#ec4899', statValue: top.name, statLabel: 'ATTORE TOP' }
       ));
 
-      const actorVids = await Promise.all(actors.slice(0, 100).map(async (a: any, i: number) => {
+      const actorVids = await Promise.all(actors.slice().sort((a: any, b: any) => a.name.localeCompare(b.name)).slice(0, 100).map(async (a: any, i: number) => {
         const v: any = video(`${id}_${i}`, a.name, new Date().toISOString(), `Appare in ${a.count} contenuti.`);
         try {
           const p = await searchTmdbPerson(a.name);
@@ -485,7 +485,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
         { accent: '#8b5cf6', statValue: top.name, statLabel: 'REGISTA TOP' }
       ));
 
-      const directorVids = await Promise.all(directors.slice(0, 100).map(async (d: any, i: number) => {
+      const directorVids = await Promise.all(directors.slice().sort((a: any, b: any) => a.name.localeCompare(b.name)).slice(0, 100).map(async (d: any, i: number) => {
         const v: any = video(`${id}_${i}`, d.name, new Date().toISOString(), `Compare in ${d.count} contenuti.`);
         try {
           const p = await searchTmdbPerson(d.name);
@@ -520,7 +520,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
         { accent: '#f59e0b', statValue: top.name, statLabel: 'SCENEGGIATORE' }
       ));
 
-      const writerVids = await Promise.all(writers.slice(0, 100).map(async (w: any, i: number) => {
+      const writerVids = await Promise.all(writers.slice().sort((a: any, b: any) => a.name.localeCompare(b.name)).slice(0, 100).map(async (w: any, i: number) => {
         const v: any = video(`${id}_${i}`, w.name, new Date().toISOString(), `Compare in ${w.count} contenuti.`);
         try {
           const p = await searchTmdbPerson(w.name);
@@ -560,7 +560,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
       `Compare in ${top.count} contenuti ${metaName.toLowerCase()}.`,
       { accent, statValue: top.name, statLabel }
     ));
-    const vids = await Promise.all(list.slice(0, 100).map(async (item: any, i: number) => {
+    const vids = await Promise.all(list.slice().sort((a: any, b: any) => a.name.localeCompare(b.name)).slice(0, 100).map(async (item: any, i: number) => {
       const v: any = video(`${id}_${i}`, item.name, new Date().toISOString(), `Compare in ${item.count} contenuti.`);
       try {
         const p = await searchTmdbPerson(item.name);
