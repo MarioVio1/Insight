@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { supabase } from '../services/supabase.js';
-import { generatePosterBuffer, generateSvgPoster, generateSvgThumbnail } from '../services/artworkService.js';
+import { generatePosterBuffer, generateSvgPoster, generateSvgThumbnail, pickIcon } from '../services/artworkService.js';
 import { resolveConfigId } from '../services/db.js';
 import { fetchImageBuffer, fetchTmdbDetails } from '../services/tmdbService.js';
 import { INSIGHT_CATALOG_ID, LEGACY_INSIGHT_CATALOG_ID } from '../addon/manifest.js';
@@ -151,7 +151,8 @@ export async function posterHandler(req: Request, res: Response) {
       accent: cardData.accent,
       statValue: cardData.statValue,
       statLabel: cardData.statLabel,
-      imageBuffer
+      imageBuffer,
+      icon: pickIcon(cardId)
     });
 
     pngCache.set(cacheKey, { buf, age: Date.now() });
@@ -263,7 +264,8 @@ export async function videoPosterHandler(req: Request, res: Response) {
       title: vid.title,
       subtitle: vid.overview || '',
       accent,
-      imageUrl: imgDataUri || undefined
+      imageUrl: imgDataUri || undefined,
+      icon: pickIcon(cardId)
     });
 
     const { default: sharp } = await import('sharp');
