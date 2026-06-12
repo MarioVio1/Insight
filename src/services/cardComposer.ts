@@ -451,7 +451,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
       ));
 
       const actorVids = await Promise.all(actors.slice(0, 100).map(async (a: any, i: number) => {
-        const v: any = video(`${id}_${i}`, a.name, new Date().toISOString(), `Appare in ${a.count} contenuti.`);
+        const v: any = video(`${id}_${i}`, `${i + 1}. ${a.name}`, new Date().toISOString(), `Appare in ${a.count} contenuti.`);
         try {
           const p = await searchTmdbPerson(a.name);
           if (p?.profile_path) {
@@ -486,7 +486,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
       ));
 
       const directorVids = await Promise.all(directors.slice(0, 100).map(async (d: any, i: number) => {
-        const v: any = video(`${id}_${i}`, d.name, new Date().toISOString(), `Compare in ${d.count} contenuti.`);
+        const v: any = video(`${id}_${i}`, `${i + 1}. ${d.name}`, new Date().toISOString(), `Compare in ${d.count} contenuti.`);
         try {
           const p = await searchTmdbPerson(d.name);
           if (p?.profile_path) {
@@ -521,7 +521,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
       ));
 
       const writerVids = await Promise.all(writers.slice(0, 100).map(async (w: any, i: number) => {
-        const v: any = video(`${id}_${i}`, w.name, new Date().toISOString(), `Compare in ${w.count} contenuti.`);
+        const v: any = video(`${id}_${i}`, `${i + 1}. ${w.name}`, new Date().toISOString(), `Compare in ${w.count} contenuti.`);
         try {
           const p = await searchTmdbPerson(w.name);
           if (p?.profile_path) {
@@ -561,7 +561,7 @@ export async function rebuildAdaptiveRow(configId: string, baseUrl = '') {
       { accent, statValue: top.name, statLabel }
     ));
     const vids = await Promise.all(list.slice(0, 100).map(async (item: any, i: number) => {
-      const v: any = video(`${id}_${i}`, item.name, new Date().toISOString(), `Compare in ${item.count} contenuti.`);
+      const v: any = video(`${id}_${i}`, `${i + 1}. ${item.name}`, new Date().toISOString(), `Compare in ${item.count} contenuti.`);
       try {
         const p = await searchTmdbPerson(item.name);
         if (p?.profile_path) {
