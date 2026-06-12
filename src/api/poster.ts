@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { supabase } from '../services/supabase.js';
 import { generatePosterBuffer, generateSvgPoster, generateSvgThumbnail, pickIcon } from '../services/artworkService.js';
 import { resolveConfigId } from '../services/db.js';
-import { fetchImageBuffer, fetchTmdbDetails } from '../services/tmdbService.js';
+import { fetchImageBuffer, fetchTmdbDetails, searchTmdbPerson, tmdbPersonImage } from '../services/tmdbService.js';
 import { INSIGHT_CATALOG_ID, LEGACY_INSIGHT_CATALOG_ID } from '../addon/manifest.js';
 
 const CACHE_TTL = 300_000;
@@ -220,6 +220,7 @@ export async function videoPosterHandler(req: Request, res: Response) {
 
     // Fetch TMDB image e converti in data URI per compatibilità SVG con sharp
     let imgDataUri: string | null = null;
+    const isPersonCard = cardId.toLowerCase().includes('actors') || cardId.toLowerCase().includes('directors') || cardId.toLowerCase().includes('writers') || cardId === 'actor' || cardId === 'director' || cardId === 'writer';
 
     // Try the video's own thumbnail but skip circular /vposter/ URLs
     if (vid.thumbnail && !vid.thumbnail.includes('/vposter/')) {
@@ -229,32 +230,29 @@ export async function videoPosterHandler(req: Request, res: Response) {
       } catch {}
     }
 
-    // Fallback: try TMDB lookup via tmdb_id
-    if (!imgDataUri && vid.tmdb_id) {
+    // For person cards: skip movie/TV TMDB lookup, go straight to person search
+    if (!imgDataUri && isPersonCard) {
+      try {
+        const cleanName = vid.title.replace(/^\d+\.\s*/, '');
+        const person = await searchTmdbPerson(cleanName);
+        if (person?.profile_path) {
+          const imgUrl = tmdbPersonImage(person.profile_path);
+          if (imgUrl) {
+            const imgBuf = await fetchImageBuffer(imgUrl);
+            imgDataUri = `data:image/jpeg;base64,${imgBuf.toString('base64')}`;
+          }
+        }
+      } catch {}
+    }
+
+    // Fallback: try TMDB lookup via tmdb_id (skip for person cards, already tried)
+    if (!imgDataUri && vid.tmdb_id && !isPersonCard) {
       const tmdbData = await fetchTmdbDetails(vid.tmdb_id, vid.trakt_type || 'movie');
       const imgUrl = tmdbData?.poster || tmdbData?.backdrop;
       if (imgUrl) {
         try {
           const imgBuf = await fetchImageBuffer(imgUrl);
           imgDataUri = `data:image/jpeg;base64,${imgBuf.toString('base64')}`;
-        } catch {}
-      }
-    }
-
-    // Last resort: try person search for actor/director/writer cards
-    if (!imgDataUri) {
-      const ct = cardId.toLowerCase();
-      if (ct.includes('actors') || ct.includes('directors') || ct.includes('writers') || ct === 'actor' || ct === 'director' || ct === 'writer') {
-        try {
-          const { searchTmdbPerson, tmdbPersonImage } = await import('../services/tmdbService.js');
-          const person = await searchTmdbPerson(vid.title);
-          if (person?.profile_path) {
-            const imgUrl = tmdbPersonImage(person.profile_path);
-            if (imgUrl) {
-              const imgBuf = await fetchImageBuffer(imgUrl);
-              imgDataUri = `data:image/jpeg;base64,${imgBuf.toString('base64')}`;
-            }
-          }
         } catch {}
       }
     }
